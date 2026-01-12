@@ -146,7 +146,7 @@ export default function Customers() {
       const { data: requiredDocs } = await supabase
         .from("required_documents")
         .select("document_type")
-        .eq("for_type", "event");
+        .eq("for_type", "event_owner");
       
       const requiredDocTypes = requiredDocs?.map(d => d.document_type) || [];
       
