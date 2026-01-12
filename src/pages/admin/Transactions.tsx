@@ -203,23 +203,7 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
     <div className="bg-[#e5e5e5] min-h-[500px] max-h-[80vh] overflow-y-auto">
       {/* Header Row */}
       <div className="flex items-center justify-between px-8 py-6">
-        {/* Left - Search field and Filter separately */}
-        <div className="flex items-center gap-3">
-          <button className="bg-white rounded-full p-3 shadow-sm">
-            <Filter className="w-5 h-5 text-muted-foreground" />
-          </button>
-          <div className="flex items-center gap-2 bg-white rounded-full px-5 py-3 shadow-sm">
-            <Input
-              placeholder="חיפוש חופשי"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-40 p-0"
-            />
-            <Search className="w-5 h-5 text-muted-foreground" />
-          </div>
-        </div>
-
-        {/* Right - Event Info */}
+        {/* Left - Event Info */}
         <div className="flex items-center gap-16">
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-1">שם האולם</p>
@@ -233,6 +217,22 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
             <p className="text-sm text-muted-foreground mb-1">תאריך</p>
             <p className="font-bold text-xl">{new Date(event.event_date).toLocaleDateString("he-IL")}</p>
           </div>
+        </div>
+
+        {/* Right - Search field and Filter separately */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white rounded-full px-5 py-3 shadow-sm">
+            <Search className="w-5 h-5 text-muted-foreground" />
+            <Input
+              placeholder="חיפוש חופשי"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-40 p-0"
+            />
+          </div>
+          <button className="bg-white rounded-full p-3 shadow-sm">
+            <Filter className="w-5 h-5 text-muted-foreground" />
+          </button>
         </div>
       </div>
 
