@@ -254,7 +254,7 @@ export default function Leads() {
             onClick={() => setActiveTab("event_owner")}
             className={`px-6 py-2 rounded-full font-medium transition-colors ${
               activeTab === "event_owner"
-                ? "bg-[#c9a54e] text-white"
+                ? "bg-[#1a2942] text-white"
                 : "bg-white text-foreground hover:bg-gray-100"
             }`}
           >
@@ -264,7 +264,7 @@ export default function Leads() {
             onClick={() => setActiveTab("venue_owner")}
             className={`px-6 py-2 rounded-full font-medium transition-colors ${
               activeTab === "venue_owner"
-                ? "bg-[#c9a54e] text-white"
+                ? "bg-[#1a2942] text-white"
                 : "bg-white text-foreground hover:bg-gray-100"
             }`}
           >
