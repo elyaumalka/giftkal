@@ -3,20 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -34,10 +23,11 @@ import {
   Pencil,
   Save,
   Upload,
+  X,
+  FileText,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Database } from "@/integrations/supabase/types";
 
 type UserRole = Database["public"]["Enums"]["user_role"];
@@ -54,6 +44,7 @@ export default function Settings() {
   // API key state
   const [newApiName, setNewApiName] = useState("");
   const [newApiKey, setNewApiKey] = useState("");
+  const [isAddApiKeyOpen, setIsAddApiKeyOpen] = useState(false);
 
   // Edit user state
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
@@ -61,6 +52,11 @@ export default function Settings() {
   const [editUserName, setEditUserName] = useState("");
   const [editUserPhone, setEditUserPhone] = useState("");
   const [editUserRole, setEditUserRole] = useState<UserRole | "">("");
+
+  // Add document state
+  const [isAddDocOpen, setIsAddDocOpen] = useState(false);
+  const [newDocType, setNewDocType] = useState("");
+  const [newDocForType, setNewDocForType] = useState<"venue_owner" | "event_owner">("venue_owner");
 
   // Fetch system settings
   const { data: settings } = useQuery({
@@ -110,7 +106,6 @@ export default function Settings() {
       
       if (!profiles) return [];
 
-      // Fetch roles for each user
       const usersWithRoles = await Promise.all(
         profiles.map(async (profile) => {
           const { data: roles } = await supabase
@@ -162,6 +157,7 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
       setNewApiName("");
       setNewApiKey("");
+      setIsAddApiKeyOpen(false);
       toast({ title: "מפתח API נוסף בהצלחה" });
     },
     onError: (error: any) => {
@@ -185,9 +181,7 @@ export default function Settings() {
 
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
-      // First delete user roles
       await supabase.from("user_roles").delete().eq("user_id", userId);
-      // Then delete profile
       const { error } = await supabase.from("profiles").delete().eq("user_id", userId);
       if (error) throw error;
     },
@@ -204,7 +198,6 @@ export default function Settings() {
     mutationFn: async () => {
       if (!selectedUser) return;
       
-      // Update profile
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -215,12 +208,9 @@ export default function Settings() {
       
       if (profileError) throw profileError;
 
-      // Update role if changed
       if (editUserRole) {
-        // Delete existing roles
         await supabase.from("user_roles").delete().eq("user_id", selectedUser.user_id);
         
-        // Insert new role
         const { error: roleError } = await supabase.from("user_roles").insert({
           user_id: selectedUser.user_id,
           role: editUserRole,
@@ -237,6 +227,37 @@ export default function Settings() {
     },
     onError: (error: any) => {
       toast({ title: "שגיאה בעדכון משתמש", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const addRequiredDoc = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("required_documents").insert({
+        document_type: newDocType,
+        for_type: newDocForType,
+        is_required: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["required-documents"] });
+      setNewDocType("");
+      setIsAddDocOpen(false);
+      toast({ title: "המסמך נוסף בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה בהוספת מסמך", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteRequiredDoc = useMutation({
+    mutationFn: async (docId: string) => {
+      const { error } = await supabase.from("required_documents").delete().eq("id", docId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["required-documents"] });
+      toast({ title: "המסמך נמחק" });
     },
   });
 
@@ -259,289 +280,366 @@ export default function Settings() {
     }
   };
 
-  const deleteRequiredDoc = useMutation({
-    mutationFn: async (docId: string) => {
-      const { error } = await supabase.from("required_documents").delete().eq("id", docId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["required-documents"] });
-      toast({ title: "המסמך נמחק" });
-    },
-  });
-
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold">הגדרות</h1>
-        <p className="text-muted-foreground mt-1">ניהול הגדרות המערכת</p>
+      {/* Top Bar - Tabs */}
+      <div className="flex items-center justify-between">
+        <div></div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
+              activeTab === "users"
+                ? "bg-[#1a2942] text-white"
+                : "bg-white text-foreground hover:bg-gray-100"
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            משתמשים
+          </button>
+          <button
+            onClick={() => setActiveTab("api")}
+            className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
+              activeTab === "api"
+                ? "bg-[#1a2942] text-white"
+                : "bg-white text-foreground hover:bg-gray-100"
+            }`}
+          >
+            <Key className="w-4 h-4" />
+            API
+          </button>
+          <button
+            onClick={() => setActiveTab("general")}
+            className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
+              activeTab === "general"
+                ? "bg-[#1a2942] text-white"
+                : "bg-white text-foreground hover:bg-gray-100"
+            }`}
+          >
+            <SettingsIcon className="w-4 h-4" />
+            כלליות
+          </button>
+        </div>
       </div>
 
       {/* Edit User Dialog */}
       <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>עריכת משתמש</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>שם מלא</Label>
-              <Input value={editUserName} onChange={(e) => setEditUserName(e.target.value)} placeholder="שם המשתמש" />
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setIsEditUserOpen(false)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">עריכת משתמש</h2>
+            <Pencil className="w-5 h-5" />
+          </div>
+          <div className="bg-white p-6 space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם מלא</Label>
+                <Input variant="form" value={editUserName} onChange={(e) => setEditUserName(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                <Input variant="form" value={editUserPhone} onChange={(e) => setEditUserPhone(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תפקיד</Label>
+                <Select value={editUserRole} onValueChange={(val) => setEditUserRole(val as UserRole)}>
+                  <SelectTrigger className="bg-[#f5f5f5] border-0 rounded-xl text-center">
+                    <SelectValue placeholder="בחר תפקיד" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">מנהל</SelectItem>
+                    <SelectItem value="venue_owner">בעל אולם</SelectItem>
+                    <SelectItem value="event_owner">בעל אירוע</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label>טלפון</Label>
-              <Input value={editUserPhone} onChange={(e) => setEditUserPhone(e.target.value)} placeholder="050-1234567" />
-            </div>
-            <div>
-              <Label>תפקיד</Label>
-              <Select value={editUserRole} onValueChange={(val) => setEditUserRole(val as UserRole)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="בחר תפקיד" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">מנהל</SelectItem>
-                  <SelectItem value="venue_owner">בעל אולם</SelectItem>
-                  <SelectItem value="event_owner">בעל אירוע</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={() => updateUser.mutate()} disabled={!editUserName || updateUser.isPending} className="w-full">
+            <Button 
+              onClick={() => updateUser.mutate()} 
+              disabled={!editUserName || updateUser.isPending} 
+              className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
+            >
+              <span>←</span>
               {updateUser.isPending ? "שומר..." : "שמור שינויים"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
-          <TabsTrigger value="general" className="gap-2">
-            <SettingsIcon className="w-4 h-4" />
-            כלליות
-          </TabsTrigger>
-          <TabsTrigger value="api" className="gap-2">
-            <Key className="w-4 h-4" />
-            API
-          </TabsTrigger>
-          <TabsTrigger value="users" className="gap-2">
-            <Users className="w-4 h-4" />
-            משתמשים
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="general" className="mt-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>הגדרות כלליות</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>כתובת מייל מנהל</Label>
-                  <Input
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="admin@example.com"
-                  />
-                </div>
-                <div>
-                  <Label>סיסמת מנהל ראשי</Label>
-                  <Input
-                    type="password"
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </div>
+      {/* Add API Key Dialog */}
+      <Dialog open={isAddApiKeyOpen} onOpenChange={setIsAddApiKeyOpen}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setIsAddApiKeyOpen(false)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">הוספת מפתח API</h2>
+            <Plus className="w-5 h-5" />
+          </div>
+          <div className="bg-white p-6 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם המפתח</Label>
+                <Input variant="form" value={newApiName} onChange={(e) => setNewApiName(e.target.value)} className="text-center" />
               </div>
               <div>
-                <Label>לוגו המערכת</Label>
-                <div className="mt-2 flex items-center gap-4">
-                  <div className="w-20 h-20 bg-muted rounded-lg flex items-center justify-center">
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">מפתח API</Label>
+                <Input variant="form" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} className="text-center" />
+              </div>
+            </div>
+            <Button 
+              onClick={() => addApiKey.mutate()} 
+              disabled={!newApiName || !newApiKey || addApiKey.isPending} 
+              className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
+            >
+              <span>←</span>
+              {addApiKey.isPending ? "מוסיף..." : "הוסף מפתח"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Document Dialog */}
+      <Dialog open={isAddDocOpen} onOpenChange={setIsAddDocOpen}>
+        <DialogContent className="max-w-md p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setIsAddDocOpen(false)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">הוספת מסמך חובה</h2>
+            <Plus className="w-5 h-5" />
+          </div>
+          <div className="bg-white p-6 space-y-4">
+            <div>
+              <Label className="text-muted-foreground text-sm mb-2 block text-center">שם המסמך</Label>
+              <Input variant="form" value={newDocType} onChange={(e) => setNewDocType(e.target.value)} className="text-center" />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-sm mb-2 block text-center">סוג</Label>
+              <Select value={newDocForType} onValueChange={(val) => setNewDocForType(val as "venue_owner" | "event_owner")}>
+                <SelectTrigger className="bg-[#f5f5f5] border-0 rounded-xl text-center">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="venue_owner">בעלי אולמות</SelectItem>
+                  <SelectItem value="event_owner">בעלי אירועים</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button 
+              onClick={() => addRequiredDoc.mutate()} 
+              disabled={!newDocType || addRequiredDoc.isPending} 
+              className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
+            >
+              <span>←</span>
+              הוסף מסמך
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* General Tab */}
+      {activeTab === "general" && (
+        <div className="space-y-6">
+          {/* General Settings Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <h2 className="text-xl font-bold mb-6 text-right">הגדרות כלליות</h2>
+            <div className="grid grid-cols-3 gap-6">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">לוגו המערכת</Label>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-20 h-20 bg-[#f5f5f5] rounded-xl flex items-center justify-center">
                     {settings?.logo_url ? (
-                      <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain rounded-lg" />
+                      <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain rounded-xl" />
                     ) : (
                       <Upload className="w-8 h-8 text-muted-foreground" />
                     )}
                   </div>
-                  <Button variant="outline">
-                    <Upload className="w-4 h-4 ml-2" />
-                    העלאת לוגו
-                  </Button>
+                  <button className="text-sm text-[#1a2942] hover:underline">העלאת לוגו</button>
                 </div>
               </div>
-              <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending}>
-                <Save className="w-4 h-4 ml-2" />
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">סיסמת מנהל ראשי</Label>
+                <Input variant="form" type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder="••••••••" className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת מייל מנהל</Label>
+                <Input variant="form" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@example.com" className="text-center" />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-start">
+              <Button 
+                onClick={() => saveSettings.mutate()} 
+                disabled={saveSettings.isPending}
+                className="bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full px-8 py-2 flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
                 {saveSettings.isPending ? "שומר..." : "שמור הגדרות"}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>מסמכי חובה</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label className="font-semibold">בעלי אולמות</Label>
-                  <div className="mt-2 space-y-2">
-                    {requiredDocs?.filter(d => d.for_type === "venue_owner").map(doc => (
-                      <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                        <span>{doc.document_type}</span>
-                        <Button variant="ghost" size="icon" onClick={() => deleteRequiredDoc.mutate(doc.id)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
+          {/* Required Documents Card */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <button 
+                onClick={() => setIsAddDocOpen(true)}
+                className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <h2 className="text-xl font-bold">מסמכי חובה</h2>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-6">
+              {/* בעלי אולמות */}
+              <div className="bg-[#dbeafe] rounded-2xl p-4">
+                <h3 className="font-bold text-lg mb-4 text-right">בעלי אולמות</h3>
+                <div className="space-y-2">
+                  {requiredDocs?.filter(d => d.for_type === "venue_owner").map(doc => (
+                    <div key={doc.id} className="bg-white rounded-xl p-3 flex items-center justify-between">
+                      <button onClick={() => deleteRequiredDoc.mutate(doc.id)} className="text-red-500 hover:text-red-700">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{doc.document_type}</span>
+                        <FileText className="w-4 h-4 text-muted-foreground" />
                       </div>
-                    ))}
-                    <Button variant="outline" size="sm">
-                      <Plus className="w-4 h-4 ml-2" />
-                      הוסף מסמך
-                    </Button>
-                  </div>
-                </div>
-                <div>
-                  <Label className="font-semibold">בעלי אירועים</Label>
-                  <div className="mt-2 space-y-2">
-                    {requiredDocs?.filter(d => d.for_type === "event_owner").map(doc => (
-                      <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                        <span>{doc.document_type}</span>
-                        <Button variant="ghost" size="icon" onClick={() => deleteRequiredDoc.mutate(doc.id)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button variant="outline" size="sm">
-                      <Plus className="w-4 h-4 ml-2" />
-                      הוסף מסמך
-                    </Button>
-                  </div>
+                    </div>
+                  ))}
+                  {!requiredDocs?.filter(d => d.for_type === "venue_owner").length && (
+                    <p className="text-center text-muted-foreground py-4">אין מסמכים</p>
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="api" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>מפתחות API</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-4">
-                <Input
-                  placeholder="שם המפתח"
-                  value={newApiName}
-                  onChange={(e) => setNewApiName(e.target.value)}
-                />
-                <Input
-                  placeholder="מפתח API"
-                  value={newApiKey}
-                  onChange={(e) => setNewApiKey(e.target.value)}
-                />
-                <Button onClick={() => addApiKey.mutate()} disabled={!newApiName || !newApiKey || addApiKey.isPending}>
-                  <Plus className="w-4 h-4 ml-2" />
-                  {addApiKey.isPending ? "מוסיף..." : "הוסף"}
-                </Button>
+              {/* בעלי אירועים */}
+              <div className="bg-[#dbeafe] rounded-2xl p-4">
+                <h3 className="font-bold text-lg mb-4 text-right">בעלי אירועים</h3>
+                <div className="space-y-2">
+                  {requiredDocs?.filter(d => d.for_type === "event_owner").map(doc => (
+                    <div key={doc.id} className="bg-white rounded-xl p-3 flex items-center justify-between">
+                      <button onClick={() => deleteRequiredDoc.mutate(doc.id)} className="text-red-500 hover:text-red-700">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{doc.document_type}</span>
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                  ))}
+                  {!requiredDocs?.filter(d => d.for_type === "event_owner").length && (
+                    <p className="text-center text-muted-foreground py-4">אין מסמכים</p>
+                  )}
+                </div>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>שם</TableHead>
-                    <TableHead>מפתח</TableHead>
-                    <TableHead>סטטוס</TableHead>
-                    <TableHead>פעולות</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {apiKeys?.map((key) => (
-                    <TableRow key={key.id}>
-                      <TableCell className="font-medium">{key.name}</TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {key.key_hash?.slice(0, 20)}...
-                      </TableCell>
-                      <TableCell>
-                        {key.is_active ? (
-                          <span className="badge-success px-2 py-1 rounded text-xs">פעיל</span>
-                        ) : (
-                          <span className="badge-error px-2 py-1 rounded text-xs">לא פעיל</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteApiKey.mutate(key.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {!apiKeys?.length && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        לא נמצאו מפתחות API
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
+        </div>
+      )}
 
-        <TabsContent value="users" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>ניהול משתמשים</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>שם</TableHead>
-                    <TableHead>מייל</TableHead>
-                    <TableHead>טלפון</TableHead>
-                    <TableHead>תפקיד</TableHead>
-                    <TableHead>פעולות</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users?.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.full_name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.phone || "—"}</TableCell>
-                      <TableCell>{getUserRole(user.roles)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEditUser(user)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteUser.mutate(user.user_id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {!users?.length && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        לא נמצאו משתמשים
-                      </TableCell>
-                    </TableRow>
+      {/* API Tab */}
+      {activeTab === "api" && (
+        <div className="space-y-6">
+          {/* Add button */}
+          <div className="flex justify-start">
+            <button 
+              onClick={() => setIsAddApiKeyOpen(true)}
+              className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Table Header */}
+          <div className="grid grid-cols-[1fr_2fr_1fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+            <span>שם</span>
+            <span>מפתח</span>
+            <span>סטטוס</span>
+            <span className="w-10"></span>
+          </div>
+
+          {/* API Keys Rows */}
+          <div className="space-y-3">
+            {apiKeys?.map((key) => (
+              <div
+                key={key.id}
+                className="grid grid-cols-[1fr_2fr_1fr_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+              >
+                <span className="text-center font-bold">{key.name}</span>
+                <span className="text-center font-mono text-sm">{key.key_hash?.slice(0, 30)}...</span>
+                <span className="text-center">
+                  {key.is_active ? (
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">פעיל</span>
+                  ) : (
+                    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">לא פעיל</span>
                   )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                </span>
+                <button
+                  onClick={() => deleteApiKey.mutate(key.id)}
+                  className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            {!apiKeys?.length && (
+              <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+                לא נמצאו מפתחות API
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Users Tab */}
+      {activeTab === "users" && (
+        <div className="space-y-6">
+          {/* Table Header */}
+          <div className="grid grid-cols-[auto_1fr_1fr_1.5fr_1fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+            <span className="w-10"></span>
+            <span>שם</span>
+            <span>טלפון</span>
+            <span>מייל</span>
+            <span>תפקיד</span>
+            <span className="w-10"></span>
+          </div>
+
+          {/* Users Rows */}
+          <div className="space-y-3">
+            {users?.map((user) => (
+              <div
+                key={user.id}
+                className="grid grid-cols-[auto_1fr_1fr_1.5fr_1fr_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+              >
+                <button
+                  onClick={() => openEditUser(user)}
+                  className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <span className="text-center font-bold">{user.full_name}</span>
+                <span className="text-center font-bold">{user.phone || "—"}</span>
+                <span className="text-center font-bold">{user.email}</span>
+                <span className="text-center font-bold text-[#1a2942]">{getUserRole(user.roles)}</span>
+                <button
+                  onClick={() => deleteUser.mutate(user.user_id)}
+                  className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            {!users?.length && (
+              <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+                לא נמצאו משתמשים
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
