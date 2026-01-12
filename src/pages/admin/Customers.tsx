@@ -363,124 +363,105 @@ export default function Customers() {
               <Plus className="w-5 h-5" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{activeTab === "venues" ? "הוספת בעל אולם חדש" : "הוספת בעל אירוע חדש"}</DialogTitle>
+              <DialogTitle>{activeTab === "venues" ? "הוספת לקוח חדש" : "הוספת בעל אירוע חדש"}</DialogTitle>
             </DialogHeader>
             {activeTab === "venues" ? (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2">פרטי בעל האולם</h3>
+              <div className="p-6 space-y-6">
+                {/* Row 1: Name, Phone, Email */}
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label>שם מלא *</Label>
-                    <Input value={newOwnerFullName} onChange={(e) => setNewOwnerFullName(e.target.value)} placeholder="שם מלא" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>מייל *</Label>
-                      <Input type="email" value={newOwnerEmail} onChange={(e) => setNewOwnerEmail(e.target.value)} placeholder="email@example.com" />
-                    </div>
-                    <div>
-                      <Label>סיסמה *</Label>
-                      <Input type="password" value={newOwnerPassword} onChange={(e) => setNewOwnerPassword(e.target.value)} placeholder="לפחות 6 תווים" />
-                    </div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">שם הלקוח</Label>
+                    <Input variant="form" value={newOwnerFullName} onChange={(e) => setNewOwnerFullName(e.target.value)} />
                   </div>
                   <div>
-                    <Label>טלפון</Label>
-                    <Input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} placeholder="050-1234567" />
+                    <Label className="text-muted-foreground text-sm mb-2 block">טלפון</Label>
+                    <Input variant="form" value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">כתובת מייל</Label>
+                    <Input variant="form" type="email" value={newOwnerEmail} onChange={(e) => setNewOwnerEmail(e.target.value)} />
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2">פרטי האולם</h3>
+                {/* Row 2: Venue Name, Address, Venue Count */}
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label>שם האולם *</Label>
-                    <Input value={newVenueName} onChange={(e) => setNewVenueName(e.target.value)} placeholder="שם האולם" />
+                    <Label className="text-muted-foreground text-sm mb-2 block">שם האולם</Label>
+                    <Input variant="form" value={newVenueName} onChange={(e) => setNewVenueName(e.target.value)} />
                   </div>
                   <div>
-                    <Label>כתובת *</Label>
-                    <Input value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} placeholder="כתובת האולם" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>טלפון האולם</Label>
-                      <Input value={newVenuePhone} onChange={(e) => setNewVenuePhone(e.target.value)} placeholder="03-1234567" />
-                    </div>
-                    <div>
-                      <Label>מייל האולם</Label>
-                      <Input type="email" value={newVenueEmail} onChange={(e) => setNewVenueEmail(e.target.value)} placeholder="venue@example.com" />
-                    </div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">כתובת האולם</Label>
+                    <Input variant="form" value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} />
                   </div>
                   <div>
-                    <Label>עלות מנוי חודשי (₪)</Label>
-                    <Input type="number" value={newVenueSubscription} onChange={(e) => setNewVenueSubscription(e.target.value)} placeholder="2500" />
+                    <Label className="text-muted-foreground text-sm mb-2 block">כמות אולמות</Label>
+                    <Input variant="form" type="number" defaultValue="1" disabled />
                   </div>
                 </div>
 
-                <Button onClick={() => createVenueWithOwner.mutate()} disabled={!isVenueFormValid || createVenueWithOwner.isPending} className="w-full">
-                  {createVenueWithOwner.isPending ? "יוצר..." : "צור בעל אולם ואולם"}
+                {/* Row 3: Password and Subscription */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">סיסמה</Label>
+                    <Input variant="form" type="password" value={newOwnerPassword} onChange={(e) => setNewOwnerPassword(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">עלות מנוי (₪)</Label>
+                    <Input variant="form" type="number" value={newVenueSubscription} onChange={(e) => setNewVenueSubscription(e.target.value)} />
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={() => createVenueWithOwner.mutate()} 
+                  disabled={!isVenueFormValid || createVenueWithOwner.isPending} 
+                  className="rounded-full bg-secondary hover:bg-secondary/90 px-8"
+                >
+                  {createVenueWithOwner.isPending ? "יוצר..." : "הוספת לקוח חדש ←"}
                 </Button>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2">פרטי בעל האירוע</h3>
+              <div className="p-6 space-y-6">
+                {/* Row 1: Name, Phone, Email */}
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label>שם מלא *</Label>
-                    <Input value={newEventOwnerFullName} onChange={(e) => setNewEventOwnerFullName(e.target.value)} placeholder="שם מלא" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>מייל *</Label>
-                      <Input type="email" value={newEventOwnerEmail} onChange={(e) => setNewEventOwnerEmail(e.target.value)} placeholder="email@example.com" />
-                    </div>
-                    <div>
-                      <Label>סיסמה *</Label>
-                      <Input type="password" value={newEventOwnerPassword} onChange={(e) => setNewEventOwnerPassword(e.target.value)} placeholder="לפחות 6 תווים" />
-                    </div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">שם מלא</Label>
+                    <Input variant="form" value={newEventOwnerFullName} onChange={(e) => setNewEventOwnerFullName(e.target.value)} />
                   </div>
                   <div>
-                    <Label>טלפון</Label>
-                    <Input value={newEventOwnerPhone} onChange={(e) => setNewEventOwnerPhone(e.target.value)} placeholder="050-1234567" />
+                    <Label className="text-muted-foreground text-sm mb-2 block">טלפון</Label>
+                    <Input variant="form" value={newEventOwnerPhone} onChange={(e) => setNewEventOwnerPhone(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">כתובת מייל</Label>
+                    <Input variant="form" type="email" value={newEventOwnerEmail} onChange={(e) => setNewEventOwnerEmail(e.target.value)} />
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg border-b pb-2">פרטי האירוע</h3>
+                {/* Row 2: Event Details */}
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label>סוג אירוע</Label>
-                    <Select value={newEventType} onValueChange={setNewEventType}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="חתונה">חתונה</SelectItem>
-                        <SelectItem value="בר מצווה">בר מצווה</SelectItem>
-                        <SelectItem value="בת מצווה">בת מצווה</SelectItem>
-                        <SelectItem value="ברית">ברית</SelectItem>
-                        <SelectItem value="אירוע אחר">אירוע אחר</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>שם החתן / הילד</Label>
-                      <Input value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} placeholder="שם" />
-                    </div>
-                    <div>
-                      <Label>שם הכלה (אם רלוונטי)</Label>
-                      <Input value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} placeholder="שם" />
-                    </div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">שם החתן</Label>
+                    <Input variant="form" value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} />
                   </div>
                   <div>
-                    <Label>תאריך אירוע *</Label>
-                    <Input type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block">שם הכלה</Label>
+                    <Input variant="form" value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} />
                   </div>
                   <div>
-                    <Label>אולם</Label>
+                    <Label className="text-muted-foreground text-sm mb-2 block">תאריך אירוע</Label>
+                    <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} />
+                  </div>
+                </div>
+
+                {/* Row 3: Venue and Cost */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">אולם</Label>
                     <Select value={newEventVenueId} onValueChange={setNewEventVenueId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="בחר אולם (אופציונלי)" />
+                      <SelectTrigger className="h-12 rounded-xl bg-muted border-0">
+                        <SelectValue placeholder="בחר אולם" />
                       </SelectTrigger>
                       <SelectContent>
                         {venues?.map((venue: any) => (
@@ -492,13 +473,21 @@ export default function Customers() {
                     </Select>
                   </div>
                   <div>
-                    <Label>עלות השכרת מכשיר (₪)</Label>
-                    <Input type="number" value={newEventRentalCost} onChange={(e) => setNewEventRentalCost(e.target.value)} placeholder="500" />
+                    <Label className="text-muted-foreground text-sm mb-2 block">סיסמה</Label>
+                    <Input variant="form" type="password" value={newEventOwnerPassword} onChange={(e) => setNewEventOwnerPassword(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block">עלות השכרה (₪)</Label>
+                    <Input variant="form" type="number" value={newEventRentalCost} onChange={(e) => setNewEventRentalCost(e.target.value)} />
                   </div>
                 </div>
 
-                <Button onClick={() => createEventWithOwner.mutate()} disabled={!isEventFormValid || createEventWithOwner.isPending} className="w-full">
-                  {createEventWithOwner.isPending ? "יוצר..." : "צור בעל אירוע ואירוע"}
+                <Button 
+                  onClick={() => createEventWithOwner.mutate()} 
+                  disabled={!isEventFormValid || createEventWithOwner.isPending} 
+                  className="rounded-full bg-secondary hover:bg-secondary/90 px-8"
+                >
+                  {createEventWithOwner.isPending ? "יוצר..." : "הוספת בעל אירוע חדש ←"}
                 </Button>
               </div>
             )}
@@ -524,35 +513,41 @@ export default function Customers() {
 
       {/* Edit Venue Dialog */}
       <Dialog open={isEditVenueOpen} onOpenChange={setIsEditVenueOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>עריכת אולם</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>שם האולם *</Label>
-              <Input value={newVenueName} onChange={(e) => setNewVenueName(e.target.value)} placeholder="שם האולם" />
-            </div>
-            <div>
-              <Label>כתובת *</Label>
-              <Input value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} placeholder="כתובת האולם" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label>טלפון</Label>
-                <Input value={newVenuePhone} onChange={(e) => setNewVenuePhone(e.target.value)} placeholder="03-1234567" />
+                <Label className="text-muted-foreground text-sm mb-2 block">שם האולם</Label>
+                <Input variant="form" value={newVenueName} onChange={(e) => setNewVenueName(e.target.value)} />
               </div>
               <div>
-                <Label>מייל</Label>
-                <Input type="email" value={newVenueEmail} onChange={(e) => setNewVenueEmail(e.target.value)} placeholder="email@example.com" />
+                <Label className="text-muted-foreground text-sm mb-2 block">כתובת</Label>
+                <Input variant="form" value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block">טלפון</Label>
+                <Input variant="form" value={newVenuePhone} onChange={(e) => setNewVenuePhone(e.target.value)} />
               </div>
             </div>
-            <div>
-              <Label>עלות מנוי חודשי (₪)</Label>
-              <Input type="number" value={newVenueSubscription} onChange={(e) => setNewVenueSubscription(e.target.value)} placeholder="2500" />
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block">מייל</Label>
+                <Input variant="form" type="email" value={newVenueEmail} onChange={(e) => setNewVenueEmail(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block">עלות מנוי (₪)</Label>
+                <Input variant="form" type="number" value={newVenueSubscription} onChange={(e) => setNewVenueSubscription(e.target.value)} />
+              </div>
             </div>
-            <Button onClick={() => updateVenue.mutate()} disabled={!newVenueName || !newVenueAddress || updateVenue.isPending} className="w-full">
-              {updateVenue.isPending ? "שומר..." : "שמור שינויים"}
+            <Button 
+              onClick={() => updateVenue.mutate()} 
+              disabled={!newVenueName || !newVenueAddress || updateVenue.isPending} 
+              className="rounded-full bg-secondary hover:bg-secondary/90 px-8"
+            >
+              {updateVenue.isPending ? "שומר..." : "שמור שינויים ←"}
             </Button>
           </div>
         </DialogContent>
@@ -560,61 +555,67 @@ export default function Customers() {
 
       {/* Edit Event Dialog */}
       <Dialog open={isEditEventOpen} onOpenChange={setIsEditEventOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>עריכת אירוע</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>סוג אירוע</Label>
-              <Select value={newEventType} onValueChange={setNewEventType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="חתונה">חתונה</SelectItem>
-                  <SelectItem value="בר מצווה">בר מצווה</SelectItem>
-                  <SelectItem value="בת מצווה">בת מצווה</SelectItem>
-                  <SelectItem value="ברית">ברית</SelectItem>
-                  <SelectItem value="אירוע אחר">אירוע אחר</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label>שם החתן / הילד</Label>
-                <Input value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} placeholder="שם" />
+                <Label className="text-muted-foreground text-sm mb-2 block">שם החתן</Label>
+                <Input variant="form" value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} />
               </div>
               <div>
-                <Label>שם הכלה (אם רלוונטי)</Label>
-                <Input value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} placeholder="שם" />
+                <Label className="text-muted-foreground text-sm mb-2 block">שם הכלה</Label>
+                <Input variant="form" value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block">תאריך אירוע</Label>
+                <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} />
               </div>
             </div>
-            <div>
-              <Label>תאריך אירוע *</Label>
-              <Input type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} />
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block">סוג אירוע</Label>
+                <Select value={newEventType} onValueChange={setNewEventType}>
+                  <SelectTrigger className="h-12 rounded-xl bg-muted border-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="חתונה">חתונה</SelectItem>
+                    <SelectItem value="בר מצווה">בר מצווה</SelectItem>
+                    <SelectItem value="בת מצווה">בת מצווה</SelectItem>
+                    <SelectItem value="ברית">ברית</SelectItem>
+                    <SelectItem value="אירוע אחר">אירוע אחר</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block">אולם</Label>
+                <Select value={newEventVenueId} onValueChange={setNewEventVenueId}>
+                  <SelectTrigger className="h-12 rounded-xl bg-muted border-0">
+                    <SelectValue placeholder="בחר אולם" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {venues?.map((venue: any) => (
+                      <SelectItem key={venue.id} value={venue.id}>
+                        {venue.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block">עלות השכרה (₪)</Label>
+                <Input variant="form" type="number" value={newEventRentalCost} onChange={(e) => setNewEventRentalCost(e.target.value)} />
+              </div>
             </div>
-            <div>
-              <Label>אולם</Label>
-              <Select value={newEventVenueId} onValueChange={setNewEventVenueId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="בחר אולם (אופציונלי)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {venues?.map((venue: any) => (
-                    <SelectItem key={venue.id} value={venue.id}>
-                      {venue.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>עלות השכרת מכשיר (₪)</Label>
-              <Input type="number" value={newEventRentalCost} onChange={(e) => setNewEventRentalCost(e.target.value)} placeholder="500" />
-            </div>
-            <Button onClick={() => updateEvent.mutate()} disabled={!newEventDate || updateEvent.isPending} className="w-full">
-              {updateEvent.isPending ? "שומר..." : "שמור שינויים"}
+            <Button 
+              onClick={() => updateEvent.mutate()} 
+              disabled={!newEventDate || updateEvent.isPending} 
+              className="rounded-full bg-secondary hover:bg-secondary/90 px-8"
+            >
+              {updateEvent.isPending ? "שומר..." : "שמור שינויים ←"}
             </Button>
           </div>
         </DialogContent>
