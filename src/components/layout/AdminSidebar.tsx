@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { ChevronRight, LogOut, Menu } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -41,9 +41,9 @@ const menuItems = [
     path: "/admin/leads",
   },
   {
-    title: "פניות ותקלות",
-    icon: ToolsIcon,
-    path: "/admin/support",
+    title: "הגדרות",
+    icon: SettingsIcon,
+    path: "/admin/settings",
   },
   {
     title: "דוחות",
@@ -51,9 +51,9 @@ const menuItems = [
     path: "/admin/reports",
   },
   {
-    title: "הגדרות",
-    icon: SettingsIcon,
-    path: "/admin/settings",
+    title: "פניות ותקלות",
+    icon: ToolsIcon,
+    path: "/admin/support",
   },
 ];
 
@@ -69,19 +69,11 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
     <aside
       className={cn(
         "fixed right-0 top-0 h-screen bg-sidebar text-sidebar-foreground transition-all duration-300 z-50 flex flex-col",
-        collapsed ? "w-16" : "w-64"
+        collapsed ? "w-20" : "w-56"
       )}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-gold flex items-center justify-center">
-              <img src={EventOwnersIcon} alt="Logo" className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-lg">מתנות</span>
-          </div>
-        )}
+      {/* Toggle Button */}
+      <div className="flex items-center justify-center p-3">
         <Button
           variant="ghost"
           size="icon"
@@ -93,7 +85,7 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -101,25 +93,22 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                "flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-lg"
+                  : "bg-secondary/30 text-sidebar-foreground hover:bg-secondary/50"
               )}
             >
               <img 
                 src={item.icon} 
                 alt={item.title} 
                 className={cn(
-                  "w-5 h-5 shrink-0",
-                  isActive && "brightness-125"
+                  "w-6 h-6 shrink-0",
+                  isActive ? "brightness-0 invert" : ""
                 )} 
               />
               {!collapsed && (
-                <>
-                  <span className="flex-1">{item.title}</span>
-                  {isActive && <ChevronRight className="w-4 h-4 rotate-180" />}
-                </>
+                <span className="flex-1 text-sm">{item.title}</span>
               )}
             </NavLink>
           );
@@ -127,13 +116,13 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="p-2 border-t border-sidebar-border">
+      <div className="p-3 border-t border-sidebar-border">
         <Button
           variant="ghost"
           onClick={onLogout}
           className={cn(
-            "w-full text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-destructive",
-            collapsed ? "justify-center" : "justify-start gap-3"
+            "w-full text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-destructive rounded-full",
+            collapsed ? "justify-center" : "justify-start gap-3 px-4"
           )}
         >
           <LogOut className="w-5 h-5" />
