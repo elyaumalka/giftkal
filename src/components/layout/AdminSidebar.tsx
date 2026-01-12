@@ -95,8 +95,8 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200",
                 isActive
-                  ? "bg-primary text-primary-foreground font-semibold shadow-lg"
-                  : "bg-secondary/30 text-sidebar-foreground hover:bg-secondary/50"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-lg"
+                  : "bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80"
               )}
             >
               <img 
