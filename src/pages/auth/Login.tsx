@@ -4,18 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import logo from "@/assets/logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState("login");
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -87,167 +88,158 @@ export default function Login() {
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setResetLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            full_name: fullName,
-          },
-        },
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
 
       toast({
-        title: "נרשמת בהצלחה!",
-        description: "ברוך הבא למערכת",
+        title: "נשלח בהצלחה!",
+        description: "קישור לאיפוס סיסמה נשלח למייל שלך",
       });
+      setShowResetDialog(false);
+      setResetEmail("");
     } catch (error: any) {
       toast({
-        title: "שגיאה בהרשמה",
+        title: "שגיאה",
         description: error.message,
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setResetLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-gold shadow-gold mb-4">
-            <Gift className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold">מערכת מתנות</h1>
-          <p className="text-muted-foreground mt-1">מערכת לגביית מתנות באירועים</p>
+          <img src={logo} alt="Giftkal Logo" className="h-20 mx-auto mb-4" />
+          <p className="text-[#051839] mt-1">מערכת לגביית מתנות באירועים</p>
         </div>
 
-        <Card className="shadow-lg">
-          <CardHeader className="text-center">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">התחברות</TabsTrigger>
-                <TabsTrigger value="signup">הרשמה</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">כתובת מייל</Label>
-                    <div className="relative">
-                      <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="example@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pr-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">סיסמה</Label>
-                    <div className="relative">
-                      <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pr-10 pl-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <Button type="submit" variant="gold" size="xl" className="w-full" disabled={loading}>
-                    {loading ? "מתחבר..." : "התחבר"}
-                  </Button>
-                </form>
-              </TabsContent>
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          {/* Header */}
+          <div className="bg-[#051839] text-white p-4 text-center">
+            <h2 className="text-xl font-semibold">התחברות למערכת</h2>
+          </div>
+          
+          {/* Form */}
+          <div className="p-6">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-[#051839] font-medium">כתובת מייל</Label>
+                <div className="relative">
+                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="example@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pr-10 border-gray-200 rounded-xl text-center"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-[#051839] font-medium">סיסמה</Label>
+                <div className="relative">
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pr-10 pl-10 border-gray-200 rounded-xl text-center"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">שם מלא</Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="ישראל ישראלי"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signupEmail">כתובת מייל</Label>
-                    <div className="relative">
-                      <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signupEmail"
-                        type="email"
-                        placeholder="example@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pr-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signupPassword">סיסמה</Label>
-                    <div className="relative">
-                      <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signupPassword"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pr-10 pl-10"
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <Button type="submit" variant="gold" size="xl" className="w-full" disabled={loading}>
-                    {loading ? "נרשם..." : "הירשם"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+              <Button 
+                type="submit" 
+                className="w-full bg-[#051839] hover:bg-[#051839]/90 text-white rounded-xl py-3 flex items-center justify-center gap-2" 
+                disabled={loading}
+              >
+                <span>{loading ? "מתחבר..." : "התחבר"}</span>
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </form>
+
+            {/* Forgot Password Link */}
+            <div className="mt-4 text-center">
+              <button 
+                type="button"
+                onClick={() => setShowResetDialog(true)}
+                className="text-[#95742F] hover:underline text-sm font-medium"
+              >
+                שכחתי סיסמה
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent className="p-0 overflow-hidden rounded-2xl border-0 max-w-md">
+          <DialogHeader className="bg-[#051839] text-white p-4 flex flex-row items-center justify-between">
+            <DialogTitle className="text-lg font-semibold">איפוס סיסמה</DialogTitle>
+            <button 
+              onClick={() => setShowResetDialog(false)}
+              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </DialogHeader>
+          
+          <form onSubmit={handleResetPassword} className="p-6 space-y-4">
+            <p className="text-gray-600 text-center text-sm">
+              הזן את כתובת המייל שלך ונשלח לך קישור לאיפוס הסיסמה
+            </p>
+            
+            <div className="space-y-2">
+              <Label htmlFor="resetEmail" className="text-[#051839] font-medium">כתובת מייל</Label>
+              <Input
+                id="resetEmail"
+                type="email"
+                placeholder="example@email.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="border-gray-200 rounded-xl text-center"
+                required
+              />
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full bg-[#051839] hover:bg-[#051839]/90 text-white rounded-xl py-3 flex items-center justify-center gap-2" 
+              disabled={resetLoading}
+            >
+              <span>{resetLoading ? "שולח..." : "שלח קישור לאיפוס"}</span>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
