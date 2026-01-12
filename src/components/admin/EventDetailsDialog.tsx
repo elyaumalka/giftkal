@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -11,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, User, Eye, Trash2, X } from "lucide-react";
+import { Plus, User, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface EventDetailsDialogProps {
@@ -146,24 +145,11 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const uploadedDocTypes = uploadedDocs?.map((d: any) => d.document_type) || [];
 
   return (
-    <div className="flex flex-col max-h-[85vh]">
-      {/* Custom Header with buttons */}
+    <div className="flex flex-col max-h-[85vh]" dir="rtl">
+      {/* Header - Title on RIGHT, buttons on LEFT */}
       <div className="bg-secondary text-white p-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">פרטי לקוח</h2>
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/20"
-            onClick={onClose}
-          >
-            <X className="w-5 h-5" />
-          </Button>
-          <Button
-            onClick={() => {}}
-            className="bg-secondary border border-white text-white hover:bg-white/10 rounded-full px-6"
-          >
-            הוספת מכשיר
-          </Button>
           {!event.payment_completed && (
             <Button
               onClick={() => markAsPaid.mutate()}
@@ -173,157 +159,191 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
               סמן כשולם
             </Button>
           )}
+          <Button
+            onClick={() => {}}
+            className="bg-secondary border border-white text-white hover:bg-white/10 rounded-full px-6"
+          >
+            הוספת מכשיר
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-white/20"
+            onClick={onClose}
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
-        <h2 className="text-lg font-semibold">פרטי לקוח</h2>
       </div>
 
       {/* Content */}
-      <div className="p-6 overflow-y-auto">
-        {/* Customer Info Row */}
-        <div className="bg-muted rounded-2xl p-4 flex items-center gap-4 mb-6 flex-row-reverse flex-wrap">
-          <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center shrink-0">
+      <div className="p-6 overflow-y-auto bg-background">
+        {/* Customer Info Row - gray background */}
+        <div className="bg-muted rounded-2xl p-4 flex items-center gap-6 mb-6">
+          {/* Avatar */}
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shrink-0 border">
             <User className="w-6 h-6 text-secondary" />
           </div>
-          <div className="text-right min-w-[100px]">
+          
+          {/* Info fields from right to left */}
+          <div className="text-right">
             <p className="text-xs text-muted-foreground">שם הלקוח</p>
             <p className="font-semibold text-secondary text-sm">{ownerProfile?.full_name || event.ownerName || "—"}</p>
           </div>
-          <div className="text-right min-w-[100px]">
+          
+          <div className="text-right">
             <p className="text-xs text-muted-foreground">טלפון</p>
             <p className="font-medium text-secondary text-sm">{ownerProfile?.phone || "—"}</p>
           </div>
-          <div className="text-right min-w-[140px]">
+          
+          <div className="text-right">
             <p className="text-xs text-muted-foreground">כתובת מייל</p>
             <p className="font-medium text-secondary text-sm">{ownerProfile?.email || "—"}</p>
           </div>
-          <div className="text-right min-w-[100px]">
+          
+          <div className="text-right">
             <p className="text-xs text-muted-foreground">שם האולם</p>
             <p className="font-medium text-secondary text-sm">{event.venues?.name || "—"}</p>
           </div>
-          <div className="text-right min-w-[120px]">
+          
+          <div className="text-right">
             <p className="text-xs text-muted-foreground">כתובת האולם</p>
             <p className="font-medium text-secondary text-sm">{event.venues?.address || "—"}</p>
           </div>
-          <div className="text-right min-w-[80px]">
+          
+          <div className="text-right">
             <p className="text-xs text-muted-foreground">תאריך אירוע</p>
             <p className="font-medium text-secondary text-sm">{new Date(event.event_date).toLocaleDateString("he-IL")}</p>
           </div>
         </div>
 
-        {/* Main Content Grid */}
+        {/* Main Content Grid - RIGHT: devices, LEFT: documents */}
         <div className="grid grid-cols-2 gap-6">
-        {/* Left side - Documents */}
-        <div className="space-y-4">
-          {/* Add Document Row */}
-          <div className="flex items-center gap-3 flex-row-reverse">
-            <Button
-              size="icon"
-              className="rounded-full bg-muted hover:bg-muted/80 text-secondary shrink-0"
-              onClick={() => newDocName && addRequiredDoc.mutate()}
-              disabled={!newDocName || addRequiredDoc.isPending}
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
-            <Select value={newDocRequired} onValueChange={setNewDocRequired}>
-              <SelectTrigger className="w-32 h-10 rounded-xl bg-white border text-right">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">חובה</SelectItem>
-                <SelectItem value="false">לא חובה</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="שם המסמך"
-              value={newDocName}
-              onChange={(e) => setNewDocName(e.target.value)}
-              className="h-10 rounded-xl bg-white border text-right flex-1"
-            />
-          </div>
+          {/* RIGHT Column - Devices */}
+          <div className="space-y-4">
+            {/* Devices Header */}
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-secondary">{devices?.length || 0}</span>
+              <h3 className="text-lg font-semibold text-secondary">מכשירים מקושרים</h3>
+            </div>
 
-          {/* Required Documents Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            {requiredDocs?.map((doc: any) => {
-              const isUploaded = uploadedDocTypes.includes(doc.document_type);
-              const uploadedDoc = uploadedDocs?.find((d: any) => d.document_type === doc.document_type);
-              
-              return (
+            {/* Device Cards */}
+            <div className="grid grid-cols-2 gap-3">
+              {devices?.map((device: any) => (
                 <div
-                  key={doc.id}
+                  key={device.id}
                   className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 border shadow-sm"
                 >
-                  <p className="text-sm font-medium text-secondary text-center">{doc.document_type}</p>
-                  {isUploaded ? (
-                    <>
-                      <Button
-                        size="sm"
-                        className="w-full bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs"
-                        onClick={() => uploadedDoc?.file_url && window.open(uploadedDoc.file_url, '_blank')}
-                      >
-                        צפייה במסמך
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="w-full rounded-lg text-xs"
-                        onClick={() => deleteRequiredDoc.mutate(doc.id)}
-                      >
-                        מחיקה
-                      </Button>
-                    </>
-                  ) : (
-                    <div className="w-full h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
-                      <Plus className="w-6 h-6 text-muted-foreground/50" />
-                    </div>
-                  )}
+                  <p className="text-sm font-semibold text-secondary">{device.name}</p>
+                  <p className="text-xs text-muted-foreground">סריאלי: {device.serial_number}</p>
+                  <Button
+                    size="sm"
+                    className={`w-full rounded-lg text-xs ${
+                      event.device_returned
+                        ? "bg-yellow-500 hover:bg-yellow-600"
+                        : "bg-green-500 hover:bg-green-600"
+                    } text-white`}
+                    onClick={() => toggleDeviceReturned.mutate()}
+                  >
+                    {event.device_returned ? "הוחזר" : "סמן כהוחזר"}
+                  </Button>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              ))}
+              {!devices?.length && (
+                <div className="col-span-2 text-center text-muted-foreground py-4">
+                  אין מכשירים מקושרים
+                </div>
+              )}
+            </div>
 
-        {/* Right side - Devices & Cost */}
-        <div className="space-y-4">
-          {/* Devices Section */}
-          <div className="flex items-center justify-between flex-row-reverse">
-            <h3 className="text-lg font-semibold text-secondary">מכשירים מקושרים</h3>
-            <span className="text-2xl font-bold text-secondary">{devices?.length || 0}</span>
+            {/* Rental Cost Card - dark blue */}
+            <div className="bg-secondary rounded-2xl p-6 flex items-center justify-between mt-4">
+              <p className="text-2xl font-bold text-white">₪ {event.device_rental_cost?.toLocaleString() || 0}</p>
+              <h3 className="text-lg font-semibold text-white">עלות השכרה</h3>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {devices?.map((device: any) => (
-              <div
-                key={device.id}
-                className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 border shadow-sm"
+          {/* LEFT Column - Documents */}
+          <div className="space-y-4">
+            {/* Add Document Row */}
+            <div className="flex items-center gap-3">
+              <Button
+                size="icon"
+                className="rounded-full bg-white hover:bg-muted text-secondary shrink-0 border shadow-sm"
+                onClick={() => newDocName && addRequiredDoc.mutate()}
+                disabled={!newDocName || addRequiredDoc.isPending}
               >
-                <p className="text-sm font-semibold text-secondary">{device.name}</p>
-                <p className="text-xs text-muted-foreground">סריאלי: {device.serial_number}</p>
-                <Button
-                  size="sm"
-                  className={`w-full rounded-lg text-xs ${
-                    event.device_returned
-                      ? "bg-yellow-500 hover:bg-yellow-600"
-                      : "bg-green-500 hover:bg-green-600"
-                  } text-white`}
-                  onClick={() => toggleDeviceReturned.mutate()}
-                >
-                  {event.device_returned ? "הוחזר" : "סמן כהוחזר"}
-                </Button>
-              </div>
-            ))}
-            {!devices?.length && (
-              <div className="col-span-2 text-center text-muted-foreground py-4">
-                אין מכשירים מקושרים
-              </div>
-            )}
-          </div>
+                <Plus className="w-5 h-5" />
+              </Button>
+              <Select value={newDocRequired} onValueChange={setNewDocRequired}>
+                <SelectTrigger className="w-32 h-10 rounded-xl bg-white border text-right">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">חובה</SelectItem>
+                  <SelectItem value="false">לא חובה</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="שם המסמך"
+                value={newDocName}
+                onChange={(e) => setNewDocName(e.target.value)}
+                className="h-10 rounded-xl bg-white border text-right flex-1"
+              />
+            </div>
 
-          {/* Rental Cost Card */}
-          <div className="bg-secondary rounded-2xl p-6 flex items-center justify-between flex-row-reverse mt-4">
-            <h3 className="text-lg font-semibold text-white">עלות השכרה</h3>
-            <p className="text-2xl font-bold text-white">₪ {event.device_rental_cost?.toLocaleString() || 0}</p>
+            {/* Required Documents Grid - 3 columns */}
+            <div className="grid grid-cols-3 gap-3">
+              {requiredDocs?.map((doc: any) => {
+                const isUploaded = uploadedDocTypes.includes(doc.document_type);
+                const uploadedDoc = uploadedDocs?.find((d: any) => d.document_type === doc.document_type);
+                
+                return (
+                  <div
+                    key={doc.id}
+                    className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 border shadow-sm min-h-[120px]"
+                  >
+                    <p className="text-sm font-medium text-secondary text-center">{doc.document_type}</p>
+                    {isUploaded ? (
+                      <>
+                        <Button
+                          size="sm"
+                          className="w-full bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs"
+                          onClick={() => uploadedDoc?.file_url && window.open(uploadedDoc.file_url, '_blank')}
+                        >
+                          צפייה במסמך
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="w-full rounded-lg text-xs bg-red-500 hover:bg-red-600"
+                          onClick={() => deleteRequiredDoc.mutate(doc.id)}
+                        >
+                          מחיקה
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="w-full flex-1 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center min-h-[60px]">
+                        <Plus className="w-6 h-6 text-muted-foreground/50" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {/* Empty placeholder cards if less than 6 docs */}
+              {Array.from({ length: Math.max(0, 6 - (requiredDocs?.length || 0)) }).map((_, i) => (
+                <div
+                  key={`empty-${i}`}
+                  className="bg-white rounded-xl p-4 flex flex-col items-center justify-center gap-2 border shadow-sm min-h-[120px]"
+                >
+                  <div className="w-full flex-1 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
+                    <Plus className="w-6 h-6 text-muted-foreground/50" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
         </div>
       </div>
     </div>
