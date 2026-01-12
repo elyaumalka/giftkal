@@ -551,14 +551,12 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
 
   return (
     <div className="bg-[#e5e5e5] min-h-[500px]">
-      {/* Dark Header - Title on right, buttons on left */}
+      {/* Dark Header - Title on right, buttons + X on left */}
       <div className="bg-[#1a2942] text-white px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={onClose} className="hover:opacity-80">
             <X className="w-6 h-6" />
           </button>
-        </div>
-        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             size="sm"
@@ -575,42 +573,38 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
           >
             הוספת משימה
           </Button>
-          <span className="text-xl font-bold">פרטי ליד</span>
         </div>
+        <span className="text-xl font-bold">פרטי ליד</span>
       </div>
 
-      {/* Lead Info Row - RTL: Avatar + Name on right, other fields to left */}
-      <div className="bg-white mx-6 mt-6 rounded-2xl px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">כמות אולמות</p>
-            <p className="font-bold">{lead.venue_count || 1}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">כתובת האולם</p>
-            <p className="font-bold">{lead.venue_address || "—"}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">שם האולם</p>
-            <p className="font-bold text-[#c9a54e]">{lead.venue_name || "—"}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">כתובת מייל</p>
-            <p className="font-bold">{lead.email || "—"}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">טלפון</p>
-            <p className="font-bold">{lead.phone || "—"}</p>
-          </div>
+      {/* Lead Info Row - RTL order: Avatar, Name, Phone, Email, Venue Name, Venue Address, Venue Count */}
+      <div className="bg-white mx-6 mt-6 rounded-2xl px-6 py-4 flex items-center gap-8 justify-end">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">כמות אולמות</p>
+          <p className="font-bold">{lead.venue_count || 1}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground">שם הליד</p>
-            <p className="font-bold text-lg">{lead.full_name}</p>
-          </div>
-          <div className="w-12 h-12 rounded-full bg-[#e5e5e5] flex items-center justify-center">
-            <User className="w-6 h-6 text-muted-foreground" />
-          </div>
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">כתובת האולם</p>
+          <p className="font-bold">{lead.venue_address || "—"}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">שם האולם</p>
+          <p className="font-bold text-[#c9a54e]">{lead.venue_name || "—"}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">כתובת מייל</p>
+          <p className="font-bold">{lead.email || "—"}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">טלפון</p>
+          <p className="font-bold">{lead.phone || "—"}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">שם הליד</p>
+          <p className="font-bold text-lg">{lead.full_name}</p>
+        </div>
+        <div className="w-12 h-12 rounded-full bg-[#e5e5e5] flex items-center justify-center">
+          <User className="w-6 h-6 text-muted-foreground" />
         </div>
       </div>
 
