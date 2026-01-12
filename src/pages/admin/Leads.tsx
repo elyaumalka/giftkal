@@ -20,6 +20,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Plus,
   Search,
   Eye,
@@ -40,6 +47,18 @@ export default function Leads() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [newTask, setNewTask] = useState("");
   const [newNote, setNewNote] = useState("");
+  const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
+  const [isEditLeadOpen, setIsEditLeadOpen] = useState(false);
+  
+  // New lead form state
+  const [newLeadFullName, setNewLeadFullName] = useState("");
+  const [newLeadPhone, setNewLeadPhone] = useState("");
+  const [newLeadEmail, setNewLeadEmail] = useState("");
+  const [newLeadVenueName, setNewLeadVenueName] = useState("");
+  const [newLeadVenueAddress, setNewLeadVenueAddress] = useState("");
+  const [newLeadVenueCount, setNewLeadVenueCount] = useState("1");
+  const [newLeadStatus, setNewLeadStatus] = useState("new");
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -65,6 +84,93 @@ export default function Leads() {
     lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     lead.venue_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const resetLeadForm = () => {
+    setNewLeadFullName("");
+    setNewLeadPhone("");
+    setNewLeadEmail("");
+    setNewLeadVenueName("");
+    setNewLeadVenueAddress("");
+    setNewLeadVenueCount("1");
+    setNewLeadStatus("new");
+    setSelectedLead(null);
+  };
+
+  const openEditLead = (lead: any) => {
+    setSelectedLead(lead);
+    setNewLeadFullName(lead.full_name);
+    setNewLeadPhone(lead.phone || "");
+    setNewLeadEmail(lead.email || "");
+    setNewLeadVenueName(lead.venue_name || "");
+    setNewLeadVenueAddress(lead.venue_address || "");
+    setNewLeadVenueCount(lead.venue_count?.toString() || "1");
+    setNewLeadStatus(lead.status || "new");
+    setIsEditLeadOpen(true);
+  };
+
+  const addLead = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("leads").insert({
+        full_name: newLeadFullName,
+        phone: newLeadPhone || null,
+        email: newLeadEmail || null,
+        lead_type: activeTab,
+        venue_name: activeTab === "venue_owner" ? newLeadVenueName : null,
+        venue_address: activeTab === "venue_owner" ? newLeadVenueAddress : null,
+        venue_count: activeTab === "venue_owner" ? parseInt(newLeadVenueCount) : null,
+        status: newLeadStatus,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      setIsAddLeadOpen(false);
+      resetLeadForm();
+      toast({ title: "הליד נוסף בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה בהוספת ליד", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateLead = useMutation({
+    mutationFn: async () => {
+      if (!selectedLead) return;
+      const { error } = await supabase.from("leads").update({
+        full_name: newLeadFullName,
+        phone: newLeadPhone || null,
+        email: newLeadEmail || null,
+        venue_name: activeTab === "venue_owner" ? newLeadVenueName : null,
+        venue_address: activeTab === "venue_owner" ? newLeadVenueAddress : null,
+        venue_count: activeTab === "venue_owner" ? parseInt(newLeadVenueCount) : null,
+        status: newLeadStatus,
+      }).eq("id", selectedLead.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      setIsEditLeadOpen(false);
+      resetLeadForm();
+      toast({ title: "הליד עודכן בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה בעדכון ליד", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteLead = useMutation({
+    mutationFn: async (leadId: string) => {
+      const { error } = await supabase.from("leads").delete().eq("id", leadId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      toast({ title: "הליד נמחק" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה במחיקת ליד", description: error.message, variant: "destructive" });
+    },
+  });
 
   const addTask = useMutation({
     mutationFn: async ({ leadId, description }: { leadId: string; description: string }) => {
@@ -142,6 +248,28 @@ export default function Leads() {
     },
   });
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "new": return "חדש";
+      case "contacted": return "נוצר קשר";
+      case "qualified": return "מתאים";
+      case "converted": return "הומר ללקוח";
+      case "lost": return "אבוד";
+      default: return status;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "new": return "bg-blue-100 text-blue-800";
+      case "contacted": return "bg-yellow-100 text-yellow-800";
+      case "qualified": return "bg-green-100 text-green-800";
+      case "converted": return "bg-purple-100 text-purple-800";
+      case "lost": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -149,11 +277,129 @@ export default function Leads() {
           <h1 className="text-3xl font-bold">לידים</h1>
           <p className="text-muted-foreground mt-1">ניהול לידים פוטנציאליים</p>
         </div>
-        <Button variant="gold">
-          <Plus className="w-4 h-4 ml-2" />
-          הוספת ליד
-        </Button>
+        <Dialog open={isAddLeadOpen} onOpenChange={setIsAddLeadOpen}>
+          <DialogTrigger asChild>
+            <Button variant="gold">
+              <Plus className="w-4 h-4 ml-2" />
+              הוספת ליד
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>הוספת ליד חדש</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>שם מלא *</Label>
+                <Input value={newLeadFullName} onChange={(e) => setNewLeadFullName(e.target.value)} placeholder="שם הליד" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>טלפון</Label>
+                  <Input value={newLeadPhone} onChange={(e) => setNewLeadPhone(e.target.value)} placeholder="050-1234567" />
+                </div>
+                <div>
+                  <Label>מייל</Label>
+                  <Input type="email" value={newLeadEmail} onChange={(e) => setNewLeadEmail(e.target.value)} placeholder="email@example.com" />
+                </div>
+              </div>
+              {activeTab === "venue_owner" && (
+                <>
+                  <div>
+                    <Label>שם האולם</Label>
+                    <Input value={newLeadVenueName} onChange={(e) => setNewLeadVenueName(e.target.value)} placeholder="שם האולם" />
+                  </div>
+                  <div>
+                    <Label>כתובת האולם</Label>
+                    <Input value={newLeadVenueAddress} onChange={(e) => setNewLeadVenueAddress(e.target.value)} placeholder="כתובת" />
+                  </div>
+                  <div>
+                    <Label>מספר אולמות</Label>
+                    <Input type="number" value={newLeadVenueCount} onChange={(e) => setNewLeadVenueCount(e.target.value)} placeholder="1" />
+                  </div>
+                </>
+              )}
+              <div>
+                <Label>סטטוס</Label>
+                <Select value={newLeadStatus} onValueChange={setNewLeadStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">חדש</SelectItem>
+                    <SelectItem value="contacted">נוצר קשר</SelectItem>
+                    <SelectItem value="qualified">מתאים</SelectItem>
+                    <SelectItem value="converted">הומר ללקוח</SelectItem>
+                    <SelectItem value="lost">אבוד</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={() => addLead.mutate()} disabled={!newLeadFullName || addLead.isPending} className="w-full">
+                {addLead.isPending ? "מוסיף..." : "הוסף ליד"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {/* Edit Lead Dialog */}
+      <Dialog open={isEditLeadOpen} onOpenChange={setIsEditLeadOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>עריכת ליד</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>שם מלא *</Label>
+              <Input value={newLeadFullName} onChange={(e) => setNewLeadFullName(e.target.value)} placeholder="שם הליד" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>טלפון</Label>
+                <Input value={newLeadPhone} onChange={(e) => setNewLeadPhone(e.target.value)} placeholder="050-1234567" />
+              </div>
+              <div>
+                <Label>מייל</Label>
+                <Input type="email" value={newLeadEmail} onChange={(e) => setNewLeadEmail(e.target.value)} placeholder="email@example.com" />
+              </div>
+            </div>
+            {selectedLead?.lead_type === "venue_owner" && (
+              <>
+                <div>
+                  <Label>שם האולם</Label>
+                  <Input value={newLeadVenueName} onChange={(e) => setNewLeadVenueName(e.target.value)} placeholder="שם האולם" />
+                </div>
+                <div>
+                  <Label>כתובת האולם</Label>
+                  <Input value={newLeadVenueAddress} onChange={(e) => setNewLeadVenueAddress(e.target.value)} placeholder="כתובת" />
+                </div>
+                <div>
+                  <Label>מספר אולמות</Label>
+                  <Input type="number" value={newLeadVenueCount} onChange={(e) => setNewLeadVenueCount(e.target.value)} placeholder="1" />
+                </div>
+              </>
+            )}
+            <div>
+              <Label>סטטוס</Label>
+              <Select value={newLeadStatus} onValueChange={setNewLeadStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">חדש</SelectItem>
+                  <SelectItem value="contacted">נוצר קשר</SelectItem>
+                  <SelectItem value="qualified">מתאים</SelectItem>
+                  <SelectItem value="converted">הומר ללקוח</SelectItem>
+                  <SelectItem value="lost">אבוד</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={() => updateLead.mutate()} disabled={!newLeadFullName || updateLead.isPending} className="w-full">
+              {updateLead.isPending ? "שומר..." : "שמור שינויים"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Search and Filters */}
       <div className="flex items-center gap-4">
@@ -189,74 +435,80 @@ export default function Leads() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>פעולות</TableHead>
                   <TableHead>שם הליד</TableHead>
                   <TableHead>טלפון</TableHead>
                   <TableHead>מייל</TableHead>
-                  <TableHead>שם האולם</TableHead>
+                  {activeTab === "venue_owner" && <TableHead>שם האולם</TableHead>}
                   {activeTab === "venue_owner" && <TableHead>כתובת</TableHead>}
-                  {activeTab === "venue_owner" && <TableHead>מס' אולמות</TableHead>}
+                  <TableHead>סטטוס</TableHead>
                   <TableHead>משימות</TableHead>
                   <TableHead>הערות</TableHead>
-                  <TableHead>צפייה</TableHead>
+                  <TableHead>פעולות</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLeads?.map((lead) => (
                   <TableRow key={lead.id}>
-                    <TableCell>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
                     <TableCell className="font-medium">{lead.full_name}</TableCell>
                     <TableCell>{lead.phone || "—"}</TableCell>
                     <TableCell>{lead.email || "—"}</TableCell>
-                    <TableCell>{lead.venue_name || "—"}</TableCell>
+                    {activeTab === "venue_owner" && (
+                      <TableCell>{lead.venue_name || "—"}</TableCell>
+                    )}
                     {activeTab === "venue_owner" && (
                       <TableCell>{lead.venue_address || "—"}</TableCell>
                     )}
-                    {activeTab === "venue_owner" && (
-                      <TableCell>{lead.venue_count || 1}</TableCell>
-                    )}
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded text-xs ${getStatusBadge(lead.status)}`}>
+                        {getStatusLabel(lead.status)}
+                      </span>
+                    </TableCell>
                     <TableCell>{lead.tasks?.filter((t: any) => !t.is_completed).length || 0}</TableCell>
                     <TableCell>{lead.notes?.filter((n: any) => !n.is_completed).length || 0}</TableCell>
                     <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSelectedLead(lead)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>פרטי ליד - {lead.full_name}</DialogTitle>
-                          </DialogHeader>
-                          <LeadDetails
-                            lead={lead}
-                            newTask={newTask}
-                            setNewTask={setNewTask}
-                            newNote={newNote}
-                            setNewNote={setNewNote}
-                            onAddTask={() => addTask.mutate({ leadId: lead.id, description: newTask })}
-                            onAddNote={() => addNote.mutate({ leadId: lead.id, content: newNote })}
-                            onCompleteTask={(id) => completeTask.mutate(id)}
-                            onDeleteTask={(id) => deleteTask.mutate(id)}
-                            onCompleteNote={(id) => completeNote.mutate(id)}
-                            onDeleteNote={(id) => deleteNote.mutate(id)}
-                          />
-                        </DialogContent>
-                      </Dialog>
+                      <div className="flex items-center gap-1">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setSelectedLead(lead)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>פרטי ליד - {lead.full_name}</DialogTitle>
+                            </DialogHeader>
+                            <LeadDetails
+                              lead={lead}
+                              newTask={newTask}
+                              setNewTask={setNewTask}
+                              newNote={newNote}
+                              setNewNote={setNewNote}
+                              onAddTask={() => addTask.mutate({ leadId: lead.id, description: newTask })}
+                              onAddNote={() => addNote.mutate({ leadId: lead.id, content: newNote })}
+                              onCompleteTask={(id) => completeTask.mutate(id)}
+                              onDeleteTask={(id) => deleteTask.mutate(id)}
+                              onCompleteNote={(id) => completeNote.mutate(id)}
+                              onDeleteNote={(id) => deleteNote.mutate(id)}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                        <Button variant="ghost" size="icon" onClick={() => openEditLead(lead)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteLead.mutate(lead.id)}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
                 {!filteredLeads?.length && (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={activeTab === "venue_owner" ? 9 : 7} className="text-center py-8 text-muted-foreground">
                       לא נמצאו לידים
                     </TableCell>
                   </TableRow>
