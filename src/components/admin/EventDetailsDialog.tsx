@@ -307,10 +307,10 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
         <div className="grid grid-cols-2 gap-6">
           {/* RIGHT Column - Devices */}
           <div className="space-y-4">
-            {/* Devices Header */}
+            {/* Devices Header - title RIGHT, count LEFT */}
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-secondary">{devices?.length || 0}</span>
               <h3 className="text-lg font-semibold text-secondary">מכשירים מקושרים</h3>
+              <span className="text-2xl font-bold text-secondary">{devices?.length || 0}</span>
             </div>
 
             {/* Device Cards */}
@@ -351,16 +351,14 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
 
           {/* LEFT Column - Documents */}
           <div className="space-y-4">
-            {/* Add Document Row */}
+            {/* Add Document Row - name first, then required/not, then + button */}
             <div className="flex items-center gap-3">
-              <Button
-                size="icon"
-                className="rounded-full bg-white hover:bg-muted text-secondary shrink-0 border shadow-sm"
-                onClick={() => newDocName && addRequiredDoc.mutate()}
-                disabled={!newDocName || addRequiredDoc.isPending}
-              >
-                <Plus className="w-5 h-5" />
-              </Button>
+              <Input
+                placeholder="שם המסמך"
+                value={newDocName}
+                onChange={(e) => setNewDocName(e.target.value)}
+                className="h-10 rounded-xl bg-white border text-right flex-1"
+              />
               <Select value={newDocRequired} onValueChange={setNewDocRequired}>
                 <SelectTrigger className="w-32 h-10 rounded-xl bg-white border text-right">
                   <SelectValue />
@@ -370,12 +368,14 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                   <SelectItem value="false">לא חובה</SelectItem>
                 </SelectContent>
               </Select>
-              <Input
-                placeholder="שם המסמך"
-                value={newDocName}
-                onChange={(e) => setNewDocName(e.target.value)}
-                className="h-10 rounded-xl bg-white border text-right flex-1"
-              />
+              <Button
+                size="icon"
+                className="rounded-full bg-white hover:bg-muted text-secondary shrink-0 border shadow-sm"
+                onClick={() => newDocName && addRequiredDoc.mutate()}
+                disabled={!newDocName || addRequiredDoc.isPending}
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
             </div>
 
             {/* Required Documents Grid - 3 columns */}
