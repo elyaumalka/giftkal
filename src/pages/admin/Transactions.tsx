@@ -82,16 +82,16 @@ export default function Transactions() {
     <div className="space-y-6 animate-fade-in">
       {/* Search and Filters - Right aligned */}
       <div className="flex justify-start">
-        <div className="flex items-center gap-2 bg-white rounded-full px-5 py-3 shadow-sm">
+        <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
           <Input
             placeholder="חיפוש חופשי"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-40 p-0"
+            className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
           />
-          <Search className="w-5 h-5 text-muted-foreground" />
-          <div className="w-px h-5 bg-gray-300" />
-          <Filter className="w-5 h-5 text-muted-foreground" />
+          <Search className="w-4 h-4 text-muted-foreground" />
+          <div className="w-px h-4 bg-gray-300" />
+          <Filter className="w-4 h-4 text-muted-foreground" />
         </div>
       </div>
 
@@ -220,18 +220,18 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
         </div>
 
         {/* Right - Search field and Filter separately */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-white rounded-full px-5 py-3 shadow-sm">
-            <Search className="w-5 h-5 text-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
+            <Search className="w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="חיפוש חופשי"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-40 p-0"
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
             />
           </div>
-          <button className="bg-white rounded-full p-3 shadow-sm">
-            <Filter className="w-5 h-5 text-muted-foreground" />
+          <button className="bg-white rounded-full p-2 shadow-sm">
+            <Filter className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
       </div>
