@@ -401,104 +401,110 @@ export default function Customers() {
               <Plus className="w-5 h-5" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{activeTab === "venues" ? "הוספת לקוח חדש" : "הוספת בעל אירוע חדש"}</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+            <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+              <button onClick={() => { activeTab === "venues" ? setIsAddVenueOpen(false) : setIsAddEventOpen(false); }} className="hover:opacity-80">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+              <h2 className="text-lg font-semibold">{activeTab === "venues" ? "הוספת לקוח חדש" : "הוספת בעל אירוע חדש"}</h2>
+              <Plus className="w-5 h-5" />
+            </div>
             {activeTab === "venues" ? (
-              <div className="p-6 space-y-6">
+              <div className="bg-white p-6 space-y-6">
                 {/* Row 1: Name, Phone, Email */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">שם הלקוח</Label>
-                    <Input variant="form" value={newOwnerFullName} onChange={(e) => setNewOwnerFullName(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הלקוח</Label>
+                    <Input variant="form" value={newOwnerFullName} onChange={(e) => setNewOwnerFullName(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">טלפון</Label>
-                    <Input variant="form" value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                    <Input variant="form" value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">כתובת מייל</Label>
-                    <Input variant="form" type="email" value={newOwnerEmail} onChange={(e) => setNewOwnerEmail(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת מייל</Label>
+                    <Input variant="form" type="email" value={newOwnerEmail} onChange={(e) => setNewOwnerEmail(e.target.value)} className="text-center" />
                   </div>
                 </div>
 
                 {/* Row 2: Venue Name, Address, Venue Count */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">שם האולם</Label>
-                    <Input variant="form" value={newVenueName} onChange={(e) => setNewVenueName(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">שם האולם</Label>
+                    <Input variant="form" value={newVenueName} onChange={(e) => setNewVenueName(e.target.value)} className="text-center text-[#c9a54e] font-bold" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">כתובת האולם</Label>
-                    <Input variant="form" value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת האולם</Label>
+                    <Input variant="form" value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">כמות אולמות</Label>
-                    <Input variant="form" type="number" defaultValue="1" disabled />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">כמות אולמות</Label>
+                    <Input variant="form" type="number" defaultValue="1" disabled className="text-center" />
                   </div>
                 </div>
 
                 {/* Row 3: Password and Subscription */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">סיסמה</Label>
-                    <Input variant="form" type="password" value={newOwnerPassword} onChange={(e) => setNewOwnerPassword(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">סיסמה</Label>
+                    <Input variant="form" type="password" value={newOwnerPassword} onChange={(e) => setNewOwnerPassword(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">עלות מנוי (₪)</Label>
-                    <Input variant="form" type="number" value={newVenueSubscription} onChange={(e) => setNewVenueSubscription(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">עלות מנוי (₪)</Label>
+                    <Input variant="form" type="number" value={newVenueSubscription} onChange={(e) => setNewVenueSubscription(e.target.value)} className="text-center" />
                   </div>
                 </div>
 
-                <Button 
-                  onClick={() => createVenueWithOwner.mutate()} 
-                  disabled={!isVenueFormValid || createVenueWithOwner.isPending} 
-                  className="rounded-full bg-secondary hover:bg-secondary/90 px-8"
-                >
-                  {createVenueWithOwner.isPending ? "יוצר..." : "הוספת לקוח חדש ←"}
-                </Button>
+                <div className="flex justify-start">
+                  <Button 
+                    onClick={() => createVenueWithOwner.mutate()} 
+                    disabled={!isVenueFormValid || createVenueWithOwner.isPending} 
+                    className="rounded-full bg-[#1a2942] hover:bg-[#243a56] px-8"
+                  >
+                    {createVenueWithOwner.isPending ? "יוצר..." : "הוספת לקוח חדש ←"}
+                  </Button>
+                </div>
               </div>
             ) : (
-              <div className="p-6 space-y-6">
+              <div className="bg-white p-6 space-y-6">
                 {/* Row 1: Name, Phone, Email */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">שם מלא</Label>
-                    <Input variant="form" value={newEventOwnerFullName} onChange={(e) => setNewEventOwnerFullName(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">שם מלא</Label>
+                    <Input variant="form" value={newEventOwnerFullName} onChange={(e) => setNewEventOwnerFullName(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">טלפון</Label>
-                    <Input variant="form" value={newEventOwnerPhone} onChange={(e) => setNewEventOwnerPhone(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                    <Input variant="form" value={newEventOwnerPhone} onChange={(e) => setNewEventOwnerPhone(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">כתובת מייל</Label>
-                    <Input variant="form" type="email" value={newEventOwnerEmail} onChange={(e) => setNewEventOwnerEmail(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת מייל</Label>
+                    <Input variant="form" type="email" value={newEventOwnerEmail} onChange={(e) => setNewEventOwnerEmail(e.target.value)} className="text-center" />
                   </div>
                 </div>
 
                 {/* Row 2: Event Details */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">שם החתן</Label>
-                    <Input variant="form" value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">שם החתן</Label>
+                    <Input variant="form" value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">שם הכלה</Label>
-                    <Input variant="form" value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הכלה</Label>
+                    <Input variant="form" value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">תאריך אירוע</Label>
-                    <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">תאריך אירוע</Label>
+                    <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} className="text-center" />
                   </div>
                 </div>
 
                 {/* Row 3: Venue and Cost */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">אולם</Label>
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">אולם</Label>
                     <Select value={newEventVenueId} onValueChange={setNewEventVenueId}>
-                      <SelectTrigger className="h-12 rounded-xl bg-muted border-0">
+                      <SelectTrigger className="h-12 rounded-xl bg-muted border-0 text-center">
                         <SelectValue placeholder="בחר אולם" />
                       </SelectTrigger>
                       <SelectContent>
@@ -511,22 +517,24 @@ export default function Customers() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">סיסמה</Label>
-                    <Input variant="form" type="password" value={newEventOwnerPassword} onChange={(e) => setNewEventOwnerPassword(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">סיסמה</Label>
+                    <Input variant="form" type="password" value={newEventOwnerPassword} onChange={(e) => setNewEventOwnerPassword(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">עלות השכרה (₪)</Label>
-                    <Input variant="form" type="number" value={newEventRentalCost} onChange={(e) => setNewEventRentalCost(e.target.value)} />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">עלות השכרה (₪)</Label>
+                    <Input variant="form" type="number" value={newEventRentalCost} onChange={(e) => setNewEventRentalCost(e.target.value)} className="text-center" />
                   </div>
                 </div>
 
-                <Button 
-                  onClick={() => createEventWithOwner.mutate()} 
-                  disabled={!isEventFormValid || createEventWithOwner.isPending} 
-                  className="rounded-full bg-secondary hover:bg-secondary/90 px-8"
-                >
-                  {createEventWithOwner.isPending ? "יוצר..." : "הוספת בעל אירוע חדש ←"}
-                </Button>
+                <div className="flex justify-start">
+                  <Button 
+                    onClick={() => createEventWithOwner.mutate()} 
+                    disabled={!isEventFormValid || createEventWithOwner.isPending} 
+                    className="rounded-full bg-[#1a2942] hover:bg-[#243a56] px-8"
+                  >
+                    {createEventWithOwner.isPending ? "יוצר..." : "הוספת בעל אירוע חדש ←"}
+                  </Button>
+                </div>
               </div>
             )}
           </DialogContent>
@@ -551,72 +559,87 @@ export default function Customers() {
 
       {/* Edit Venue Dialog */}
       <Dialog open={isEditVenueOpen} onOpenChange={setIsEditVenueOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>עריכת אולם</DialogTitle>
-          </DialogHeader>
-          <div className="p-6 space-y-6">
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setIsEditVenueOpen(false)} className="hover:opacity-80">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+            <h2 className="text-lg font-semibold">עריכת אולם</h2>
+            <Pencil className="w-5 h-5" />
+          </div>
+          <div className="bg-white p-6 space-y-6">
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">שם האולם</Label>
-                <Input variant="form" value={newVenueName} onChange={(e) => setNewVenueName(e.target.value)} />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם האולם</Label>
+                <Input 
+                  variant="form" 
+                  value={newVenueName} 
+                  onChange={(e) => setNewVenueName(e.target.value)} 
+                  className="text-center text-[#c9a54e] font-bold focus:ring-2 focus:ring-[#c9a54e] focus:border-[#c9a54e]"
+                />
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">כתובת</Label>
-                <Input variant="form" value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת</Label>
+                <Input variant="form" value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} className="text-center" />
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">טלפון</Label>
-                <Input variant="form" value={newVenuePhone} onChange={(e) => setNewVenuePhone(e.target.value)} />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                <Input variant="form" value={newVenuePhone} onChange={(e) => setNewVenuePhone(e.target.value)} className="text-center" />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">מייל</Label>
-                <Input variant="form" type="email" value={newVenueEmail} onChange={(e) => setNewVenueEmail(e.target.value)} />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">מייל</Label>
+                <Input variant="form" type="email" value={newVenueEmail} onChange={(e) => setNewVenueEmail(e.target.value)} className="text-center" />
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">עלות מנוי (₪)</Label>
-                <Input variant="form" type="number" value={newVenueSubscription} onChange={(e) => setNewVenueSubscription(e.target.value)} />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">עלות מנוי (₪)</Label>
+                <Input variant="form" type="number" value={newVenueSubscription} onChange={(e) => setNewVenueSubscription(e.target.value)} className="text-center" />
               </div>
             </div>
-            <Button 
-              onClick={() => updateVenue.mutate()} 
-              disabled={!newVenueName || !newVenueAddress || updateVenue.isPending} 
-              className="rounded-full bg-secondary hover:bg-secondary/90 px-8"
-            >
-              {updateVenue.isPending ? "שומר..." : "שמור שינויים ←"}
-            </Button>
+            <div className="flex justify-start">
+              <Button 
+                onClick={() => updateVenue.mutate()} 
+                disabled={!newVenueName || !newVenueAddress || updateVenue.isPending} 
+                className="rounded-full bg-[#1a2942] hover:bg-[#243a56] px-8"
+              >
+                {updateVenue.isPending ? "שומר..." : "שמור שינויים ←"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Event Dialog */}
       <Dialog open={isEditEventOpen} onOpenChange={setIsEditEventOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>עריכת אירוע</DialogTitle>
-          </DialogHeader>
-          <div className="p-6 space-y-6">
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setIsEditEventOpen(false)} className="hover:opacity-80">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+            <h2 className="text-lg font-semibold">עריכת אירוע</h2>
+            <Pencil className="w-5 h-5" />
+          </div>
+          <div className="bg-white p-6 space-y-6">
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">שם החתן</Label>
-                <Input variant="form" value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם החתן</Label>
+                <Input variant="form" value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} className="text-center" />
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">שם הכלה</Label>
-                <Input variant="form" value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הכלה</Label>
+                <Input variant="form" value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} className="text-center" />
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">תאריך אירוע</Label>
-                <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תאריך אירוע</Label>
+                <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} className="text-center" />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">סוג אירוע</Label>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">סוג אירוע</Label>
                 <Select value={newEventType} onValueChange={setNewEventType}>
-                  <SelectTrigger className="h-12 rounded-xl bg-muted border-0">
+                  <SelectTrigger className="h-12 rounded-xl bg-muted border-0 text-center">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -629,9 +652,9 @@ export default function Customers() {
                 </Select>
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">אולם</Label>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">אולם</Label>
                 <Select value={newEventVenueId} onValueChange={setNewEventVenueId}>
-                  <SelectTrigger className="h-12 rounded-xl bg-muted border-0">
+                  <SelectTrigger className="h-12 rounded-xl bg-muted border-0 text-center">
                     <SelectValue placeholder="בחר אולם" />
                   </SelectTrigger>
                   <SelectContent>
@@ -644,17 +667,19 @@ export default function Customers() {
                 </Select>
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">עלות השכרה (₪)</Label>
-                <Input variant="form" type="number" value={newEventRentalCost} onChange={(e) => setNewEventRentalCost(e.target.value)} />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">עלות השכרה (₪)</Label>
+                <Input variant="form" type="number" value={newEventRentalCost} onChange={(e) => setNewEventRentalCost(e.target.value)} className="text-center" />
               </div>
             </div>
-            <Button 
-              onClick={() => updateEvent.mutate()} 
-              disabled={!newEventDate || updateEvent.isPending} 
-              className="rounded-full bg-secondary hover:bg-secondary/90 px-8"
-            >
-              {updateEvent.isPending ? "שומר..." : "שמור שינויים ←"}
-            </Button>
+            <div className="flex justify-start">
+              <Button 
+                onClick={() => updateEvent.mutate()} 
+                disabled={!newEventDate || updateEvent.isPending} 
+                className="rounded-full bg-[#1a2942] hover:bg-[#243a56] px-8"
+              >
+                {updateEvent.isPending ? "שומר..." : "שמור שינויים ←"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
