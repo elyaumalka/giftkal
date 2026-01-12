@@ -60,7 +60,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       const { data } = await supabase
         .from("required_documents")
         .select("*")
-        .eq("for_type", "event")
+        .eq("for_type", "event_owner")
         .order("created_at", { ascending: true });
       return data || [];
     },
@@ -97,7 +97,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
     mutationFn: async () => {
       const { error } = await supabase.from("required_documents").insert({
         document_type: newDocName,
-        for_type: "event",
+        for_type: "event_owner",
         is_required: newDocRequired === "true",
       });
       if (error) throw error;
