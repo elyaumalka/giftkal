@@ -81,8 +81,9 @@ export default function Customers() {
   );
 
   const filteredEvents = events?.filter((e) =>
-    e.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    (e.groom_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.bride_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleExportExcel = () => {
@@ -248,7 +249,7 @@ export default function Customers() {
                 {filteredEvents?.map((event) => (
                   <TableRow key={event.id}>
                     <TableCell className="font-medium">
-                      {event.profiles?.full_name || "—"}
+                      {event.groom_name && event.bride_name ? `${event.groom_name} & ${event.bride_name}` : "—"}
                     </TableCell>
                     <TableCell>{event.venues?.name || "—"}</TableCell>
                     <TableCell>
@@ -385,15 +386,13 @@ function EventDetails({ event }: { event: any }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label className="text-muted-foreground">שם הלקוח</Label>
-          <p className="font-medium">{event.profiles?.full_name || "—"}</p>
+          <p className="font-medium">
+            {event.groom_name && event.bride_name ? `${event.groom_name} & ${event.bride_name}` : "—"}
+          </p>
         </div>
         <div>
-          <Label className="text-muted-foreground">טלפון</Label>
-          <p className="font-medium">{event.profiles?.phone || "—"}</p>
-        </div>
-        <div>
-          <Label className="text-muted-foreground">מייל</Label>
-          <p className="font-medium">{event.profiles?.email || "—"}</p>
+          <Label className="text-muted-foreground">סוג אירוע</Label>
+          <p className="font-medium">{event.event_type || "חתונה"}</p>
         </div>
         <div>
           <Label className="text-muted-foreground">תאריך אירוע</Label>
