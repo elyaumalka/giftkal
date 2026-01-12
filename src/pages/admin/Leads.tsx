@@ -169,61 +169,79 @@ export default function Leads() {
                 <Plus className="w-5 h-5" />
               </button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg p-0 overflow-hidden" hideCloseButton>
+            <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
               <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold">הוספת ליד חדש</h2>
                 <button onClick={() => setIsAddLeadOpen(false)} className="hover:opacity-80">
                   <X className="w-5 h-5" />
                 </button>
+                <h2 className="text-lg font-semibold">הוספת ליד חדש</h2>
+                <Plus className="w-5 h-5" />
               </div>
-              <div className="bg-[#e5e5e5] p-6 space-y-4">
-                <div>
-                  <Label className="text-muted-foreground text-sm mb-2 block">שם מלא *</Label>
-                  <Input variant="form" value={newLeadFullName} onChange={(e) => setNewLeadFullName(e.target.value)} placeholder="שם הליד" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white p-6 space-y-6">
+                {/* Row 1: Name, Phone, Email */}
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">טלפון</Label>
-                    <Input variant="form" value={newLeadPhone} onChange={(e) => setNewLeadPhone(e.target.value)} placeholder="050-1234567" />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הליד</Label>
+                    <Input variant="form" value={newLeadFullName} onChange={(e) => setNewLeadFullName(e.target.value)} className="text-center" />
                   </div>
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block">מייל</Label>
-                    <Input variant="form" type="email" value={newLeadEmail} onChange={(e) => setNewLeadEmail(e.target.value)} placeholder="email@example.com" />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                    <Input variant="form" value={newLeadPhone} onChange={(e) => setNewLeadPhone(e.target.value)} className="text-center" />
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת מייל</Label>
+                    <Input variant="form" type="email" value={newLeadEmail} onChange={(e) => setNewLeadEmail(e.target.value)} className="text-center" />
                   </div>
                 </div>
+
                 {activeTab === "venue_owner" && (
                   <>
-                    <div>
-                      <Label className="text-muted-foreground text-sm mb-2 block">שם האולם</Label>
-                      <Input variant="form" value={newLeadVenueName} onChange={(e) => setNewLeadVenueName(e.target.value)} placeholder="שם האולם" />
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-sm mb-2 block">כתובת האולם</Label>
-                      <Input variant="form" value={newLeadVenueAddress} onChange={(e) => setNewLeadVenueAddress(e.target.value)} placeholder="כתובת" />
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-sm mb-2 block">מספר אולמות</Label>
-                      <Input variant="form" type="number" value={newLeadVenueCount} onChange={(e) => setNewLeadVenueCount(e.target.value)} placeholder="1" />
+                    {/* Row 2: Venue Name, Address, Count */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">שם האולם</Label>
+                        <Input variant="form" value={newLeadVenueName} onChange={(e) => setNewLeadVenueName(e.target.value)} className="text-center text-[#c9a54e] font-bold" />
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת האולם</Label>
+                        <Input variant="form" value={newLeadVenueAddress} onChange={(e) => setNewLeadVenueAddress(e.target.value)} className="text-center" />
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">כמות אולמות</Label>
+                        <Input variant="form" type="number" value={newLeadVenueCount} onChange={(e) => setNewLeadVenueCount(e.target.value)} className="text-center" />
+                      </div>
                     </div>
                   </>
                 )}
-                <div>
-                  <Label className="text-muted-foreground text-sm mb-2 block">סטטוס</Label>
-                  <Select value={newLeadStatus} onValueChange={setNewLeadStatus}>
-                    <SelectTrigger className="bg-white border-0 rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new">חדש</SelectItem>
-                      <SelectItem value="contacted">נוצר קשר</SelectItem>
-                      <SelectItem value="qualified">מתאים</SelectItem>
-                      <SelectItem value="converted">הומר ללקוח</SelectItem>
-                      <SelectItem value="lost">אבוד</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                {/* Row 3: Status */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">סטטוס</Label>
+                    <Select value={newLeadStatus} onValueChange={setNewLeadStatus}>
+                      <SelectTrigger className="bg-[#f5f5f5] border-0 rounded-xl text-center">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">חדש</SelectItem>
+                        <SelectItem value="contacted">נוצר קשר</SelectItem>
+                        <SelectItem value="qualified">מתאים</SelectItem>
+                        <SelectItem value="converted">הומר ללקוח</SelectItem>
+                        <SelectItem value="lost">אבוד</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div></div>
+                  <div></div>
                 </div>
-                <Button onClick={() => addLead.mutate()} disabled={!newLeadFullName || addLead.isPending} className="w-full rounded-full">
-                  {addLead.isPending ? "מוסיף..." : "הוסף ליד"}
+
+                <Button 
+                  onClick={() => addLead.mutate()} 
+                  disabled={!newLeadFullName || addLead.isPending} 
+                  className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
+                >
+                  <span>←</span>
+                  {addLead.isPending ? "מוסיף..." : "הוספת ליד חדש"}
                 </Button>
               </div>
             </DialogContent>
@@ -257,60 +275,78 @@ export default function Leads() {
 
       {/* Edit Lead Dialog */}
       <Dialog open={isEditLeadOpen} onOpenChange={setIsEditLeadOpen}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden" hideCloseButton>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
           <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">עריכת ליד</h2>
             <button onClick={() => setIsEditLeadOpen(false)} className="hover:opacity-80">
               <X className="w-5 h-5" />
             </button>
+            <h2 className="text-lg font-semibold">עריכת ליד</h2>
+            <Pencil className="w-5 h-5" />
           </div>
-          <div className="bg-[#e5e5e5] p-6 space-y-4">
-            <div>
-              <Label className="text-muted-foreground text-sm mb-2 block">שם מלא *</Label>
-              <Input variant="form" value={newLeadFullName} onChange={(e) => setNewLeadFullName(e.target.value)} placeholder="שם הליד" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white p-6 space-y-6">
+            {/* Row 1: Name, Phone, Email */}
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">טלפון</Label>
-                <Input variant="form" value={newLeadPhone} onChange={(e) => setNewLeadPhone(e.target.value)} placeholder="050-1234567" />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הליד</Label>
+                <Input variant="form" value={newLeadFullName} onChange={(e) => setNewLeadFullName(e.target.value)} className="text-center" />
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block">מייל</Label>
-                <Input variant="form" type="email" value={newLeadEmail} onChange={(e) => setNewLeadEmail(e.target.value)} placeholder="email@example.com" />
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                <Input variant="form" value={newLeadPhone} onChange={(e) => setNewLeadPhone(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת מייל</Label>
+                <Input variant="form" type="email" value={newLeadEmail} onChange={(e) => setNewLeadEmail(e.target.value)} className="text-center" />
               </div>
             </div>
+
             {selectedLead?.lead_type === "venue_owner" && (
               <>
-                <div>
-                  <Label className="text-muted-foreground text-sm mb-2 block">שם האולם</Label>
-                  <Input variant="form" value={newLeadVenueName} onChange={(e) => setNewLeadVenueName(e.target.value)} placeholder="שם האולם" />
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-sm mb-2 block">כתובת האולם</Label>
-                  <Input variant="form" value={newLeadVenueAddress} onChange={(e) => setNewLeadVenueAddress(e.target.value)} placeholder="כתובת" />
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-sm mb-2 block">מספר אולמות</Label>
-                  <Input variant="form" type="number" value={newLeadVenueCount} onChange={(e) => setNewLeadVenueCount(e.target.value)} placeholder="1" />
+                {/* Row 2: Venue Name, Address, Count */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">שם האולם</Label>
+                    <Input variant="form" value={newLeadVenueName} onChange={(e) => setNewLeadVenueName(e.target.value)} className="text-center text-[#c9a54e] font-bold" />
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת האולם</Label>
+                    <Input variant="form" value={newLeadVenueAddress} onChange={(e) => setNewLeadVenueAddress(e.target.value)} className="text-center" />
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">כמות אולמות</Label>
+                    <Input variant="form" type="number" value={newLeadVenueCount} onChange={(e) => setNewLeadVenueCount(e.target.value)} className="text-center" />
+                  </div>
                 </div>
               </>
             )}
-            <div>
-              <Label className="text-muted-foreground text-sm mb-2 block">סטטוס</Label>
-              <Select value={newLeadStatus} onValueChange={setNewLeadStatus}>
-                <SelectTrigger className="bg-white border-0 rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="new">חדש</SelectItem>
-                  <SelectItem value="contacted">נוצר קשר</SelectItem>
-                  <SelectItem value="qualified">מתאים</SelectItem>
-                  <SelectItem value="converted">הומר ללקוח</SelectItem>
-                  <SelectItem value="lost">אבוד</SelectItem>
-                </SelectContent>
-              </Select>
+
+            {/* Row 3: Status */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">סטטוס</Label>
+                <Select value={newLeadStatus} onValueChange={setNewLeadStatus}>
+                  <SelectTrigger className="bg-[#f5f5f5] border-0 rounded-xl text-center">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">חדש</SelectItem>
+                    <SelectItem value="contacted">נוצר קשר</SelectItem>
+                    <SelectItem value="qualified">מתאים</SelectItem>
+                    <SelectItem value="converted">הומר ללקוח</SelectItem>
+                    <SelectItem value="lost">אבוד</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div></div>
+              <div></div>
             </div>
-            <Button onClick={() => updateLead.mutate()} disabled={!newLeadFullName || updateLead.isPending} className="w-full rounded-full">
+
+            <Button 
+              onClick={() => updateLead.mutate()} 
+              disabled={!newLeadFullName || updateLead.isPending} 
+              className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
+            >
+              <span>←</span>
               {updateLead.isPending ? "שומר..." : "שמור שינויים"}
             </Button>
           </div>
@@ -663,22 +699,29 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
       <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
         <DialogContent className="max-w-md p-0 overflow-hidden" hideCloseButton>
           <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">הוספת משימה</h2>
             <button onClick={() => setIsAddTaskOpen(false)} className="hover:opacity-80">
               <X className="w-5 h-5" />
             </button>
+            <h2 className="text-lg font-semibold">הוספת משימה</h2>
+            <Plus className="w-5 h-5" />
           </div>
-          <div className="bg-[#e5e5e5] p-6 space-y-4">
+          <div className="bg-white p-6 space-y-4">
             <div>
-              <Label className="text-muted-foreground text-sm mb-2 block">תיאור המשימה</Label>
+              <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור המשימה</Label>
               <Input
                 variant="form"
                 placeholder="תיאור המשימה..."
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
+                className="text-center"
               />
             </div>
-            <Button onClick={() => addTask.mutate()} disabled={!newTask.trim()} className="w-full rounded-full">
+            <Button 
+              onClick={() => addTask.mutate()} 
+              disabled={!newTask.trim()} 
+              className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
+            >
+              <span>←</span>
               הוסף משימה
             </Button>
           </div>
@@ -689,22 +732,29 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
       <Dialog open={isAddNoteOpen} onOpenChange={setIsAddNoteOpen}>
         <DialogContent className="max-w-md p-0 overflow-hidden" hideCloseButton>
           <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">הוספת הערה</h2>
             <button onClick={() => setIsAddNoteOpen(false)} className="hover:opacity-80">
               <X className="w-5 h-5" />
             </button>
+            <h2 className="text-lg font-semibold">הוספת הערה</h2>
+            <Plus className="w-5 h-5" />
           </div>
-          <div className="bg-[#e5e5e5] p-6 space-y-4">
+          <div className="bg-white p-6 space-y-4">
             <div>
-              <Label className="text-muted-foreground text-sm mb-2 block">תוכן ההערה</Label>
+              <Label className="text-muted-foreground text-sm mb-2 block text-center">תוכן ההערה</Label>
               <Input
                 variant="form"
                 placeholder="תוכן ההערה..."
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
+                className="text-center"
               />
             </div>
-            <Button onClick={() => addNote.mutate()} disabled={!newNote.trim()} className="w-full rounded-full">
+            <Button 
+              onClick={() => addNote.mutate()} 
+              disabled={!newNote.trim()} 
+              className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
+            >
+              <span>←</span>
               הוסף הערה
             </Button>
           </div>
