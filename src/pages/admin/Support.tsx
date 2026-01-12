@@ -3,29 +3,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Search,
   Eye,
-  MessageSquare,
-  AlertTriangle,
-  CheckCircle,
-  Trash2,
+  Filter,
+  X,
   Send,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -33,14 +19,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 export default function Support() {
-  const [activeTab, setActiveTab] = useState("issues");
+  const [activeTab, setActiveTab] = useState<"inquiries" | "issues">("inquiries");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isRespondOpen, setIsRespondOpen] = useState(false);
   const [response, setResponse] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch tickets
+  // Fetch tickets with user profiles
   const { data: tickets } = useQuery({
     queryKey: ["support-tickets", activeTab],
     queryFn: async () => {
@@ -52,13 +40,27 @@ export default function Support() {
         `)
         .eq("ticket_type", activeTab === "issues" ? "issue" : "inquiry")
         .order("created_at", { ascending: false });
-      return data || [];
+      
+      if (!data) return [];
+
+      // Get user profiles for each ticket
+      const userIds = data.map(t => t.user_id).filter(Boolean);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, phone, email")
+        .in("user_id", userIds);
+
+      return data.map(ticket => ({
+        ...ticket,
+        profile: profiles?.find(p => p.user_id === ticket.user_id)
+      }));
     },
   });
 
   const filteredTickets = tickets?.filter((ticket) =>
     ticket.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    ticket.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ticket.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const respondToTicket = useMutation({
@@ -72,6 +74,7 @@ export default function Support() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
       setResponse("");
+      setIsRespondOpen(false);
       toast({ title: "התשובה נשלחה בהצלחה" });
     },
   });
@@ -90,216 +93,265 @@ export default function Support() {
     },
   });
 
-  const deleteTicket = useMutation({
-    mutationFn: async (ticketId: string) => {
-      const { error } = await supabase
-        .from("support_tickets")
-        .delete()
-        .eq("id", ticketId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
-      toast({ title: "הפנייה נמחקה" });
-    },
-  });
+  const openViewTicket = (ticket: any) => {
+    setSelectedTicket(ticket);
+    setIsViewOpen(true);
+  };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "open":
-        return <span className="badge-warning px-2 py-1 rounded text-xs">פתוח</span>;
-      case "in_progress":
-        return <span className="badge-success px-2 py-1 rounded text-xs bg-blue-100 text-blue-700 border border-blue-200">בטיפול</span>;
-      case "closed":
-        return <span className="badge-success px-2 py-1 rounded text-xs">סגור</span>;
-      default:
-        return null;
-    }
+  const openRespondTicket = (ticket: any) => {
+    setSelectedTicket(ticket);
+    setResponse(ticket.response || "");
+    setIsRespondOpen(true);
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Top Bar - Tabs on right, search/filter on left */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">פניות ותקלות</h1>
-          <p className="text-muted-foreground mt-1">ניהול פניות ותקלות לקוחות</p>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="חיפוש פנייה..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-10"
-          />
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="issues" className="gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            תקלות
-          </TabsTrigger>
-          <TabsTrigger value="inquiries" className="gap-2">
-            <MessageSquare className="w-4 h-4" />
-            פניות
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab} className="mt-6">
-          <div className="bg-card rounded-xl shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>שם הלקוח</TableHead>
-                  {activeTab === "issues" && <TableHead>שם האולם</TableHead>}
-                  {activeTab === "issues" && <TableHead>כתובת</TableHead>}
-                  {activeTab === "inquiries" && <TableHead>טלפון</TableHead>}
-                  {activeTab === "inquiries" && <TableHead>מייל</TableHead>}
-                  <TableHead>מהות הפנייה</TableHead>
-                  <TableHead>סטטוס</TableHead>
-                  <TableHead>פעולות</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTickets?.map((ticket) => (
-                  <TableRow key={ticket.id}>
-                    <TableCell className="font-medium">
-                      {ticket.venues?.name || "לקוח"}
-                    </TableCell>
-                    {activeTab === "issues" && (
-                      <>
-                        <TableCell>{ticket.venues?.name || "—"}</TableCell>
-                        <TableCell>{ticket.venues?.address || "—"}</TableCell>
-                      </>
-                    )}
-                    {activeTab === "inquiries" && (
-                      <>
-                        <TableCell>—</TableCell>
-                        <TableCell>—</TableCell>
-                      </>
-                    )}
-                    <TableCell className="max-w-xs truncate">{ticket.subject}</TableCell>
-                    <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setSelectedTicket(ticket)}
-                            >
-                              <Send className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>מענה לפנייה</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label className="text-muted-foreground">נושא</Label>
-                                <p className="font-medium">{ticket.subject}</p>
-                              </div>
-                              <div>
-                                <Label className="text-muted-foreground">תיאור</Label>
-                                <p>{ticket.description}</p>
-                              </div>
-                              {ticket.response && (
-                                <div className="p-4 bg-muted rounded-lg">
-                                  <Label className="text-muted-foreground">תשובה קודמת</Label>
-                                  <p>{ticket.response}</p>
-                                </div>
-                              )}
-                              <div>
-                                <Label>תשובה</Label>
-                                <Textarea
-                                  value={response}
-                                  onChange={(e) => setResponse(e.target.value)}
-                                  placeholder="הקלד תשובה..."
-                                  rows={4}
-                                />
-                              </div>
-                              <Button
-                                onClick={() => respondToTicket.mutate({ ticketId: ticket.id, responseText: response })}
-                                disabled={!response.trim()}
-                              >
-                                <Send className="w-4 h-4 ml-2" />
-                                שלח תשובה
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => closeTicket.mutate(ticket.id)}
-                        >
-                          <CheckCircle className="w-4 h-4 text-success" />
-                        </Button>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>פרטי הפנייה</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label className="text-muted-foreground">נושא</Label>
-                                <p className="font-medium">{ticket.subject}</p>
-                              </div>
-                              <div>
-                                <Label className="text-muted-foreground">תיאור</Label>
-                                <p>{ticket.description}</p>
-                              </div>
-                              <div>
-                                <Label className="text-muted-foreground">סטטוס</Label>
-                                <p>{getStatusBadge(ticket.status)}</p>
-                              </div>
-                              {ticket.response && (
-                                <div className="p-4 bg-muted rounded-lg">
-                                  <Label className="text-muted-foreground">תשובה</Label>
-                                  <p>{ticket.response}</p>
-                                </div>
-                              )}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        {activeTab === "inquiries" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteTicket.mutate(ticket.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!filteredTickets?.length && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      לא נמצאו פניות
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+        {/* Left - Search and Filter */}
+        <div className="flex items-center gap-2">
+          <button className="bg-white rounded-full p-2 shadow-sm">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
+            <Search className="w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="חיפוש חופשי"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
+            />
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+
+        {/* Right - Tabs */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setActiveTab("issues")}
+            className={`px-6 py-2 rounded-full font-medium transition-colors ${
+              activeTab === "issues"
+                ? "bg-[#1a2942] text-white"
+                : "bg-white text-foreground hover:bg-gray-100"
+            }`}
+          >
+            תקלות
+          </button>
+          <button
+            onClick={() => setActiveTab("inquiries")}
+            className={`px-6 py-2 rounded-full font-medium transition-colors ${
+              activeTab === "inquiries"
+                ? "bg-[#1a2942] text-white"
+                : "bg-white text-foreground hover:bg-gray-100"
+            }`}
+          >
+            פניות
+          </button>
+        </div>
+      </div>
+
+      {/* View Ticket Dialog */}
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setIsViewOpen(false)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">פרטי הפנייה</h2>
+            <Eye className="w-5 h-5" />
+          </div>
+          {selectedTicket && (
+            <div className="bg-white p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הפונה</Label>
+                  <p className="text-center font-bold">{selectedTicket.profile?.full_name || "לא ידוע"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">נושא</Label>
+                  <p className="text-center font-bold">{selectedTicket.subject}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור הפנייה</Label>
+                <div className="bg-[#f5f5f5] rounded-xl p-4 text-center">
+                  {selectedTicket.description}
+                </div>
+              </div>
+              {selectedTicket.response && (
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">תשובה</Label>
+                  <div className="bg-[#dbeafe] rounded-xl p-4 text-center">
+                    {selectedTicket.response}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Respond Dialog */}
+      <Dialog open={isRespondOpen} onOpenChange={setIsRespondOpen}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setIsRespondOpen(false)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">מענה לפנייה</h2>
+            <Send className="w-5 h-5" />
+          </div>
+          {selectedTicket && (
+            <div className="bg-white p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הפונה</Label>
+                  <p className="text-center font-bold">{selectedTicket.profile?.full_name || "לא ידוע"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">נושא</Label>
+                  <p className="text-center font-bold">{selectedTicket.subject}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור הפנייה</Label>
+                <div className="bg-[#f5f5f5] rounded-xl p-4 text-center">
+                  {selectedTicket.description}
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תשובה</Label>
+                <Textarea
+                  value={response}
+                  onChange={(e) => setResponse(e.target.value)}
+                  placeholder="הקלד תשובה..."
+                  rows={4}
+                  className="bg-[#f5f5f5] border-0 rounded-xl text-center"
+                />
+              </div>
+              <Button 
+                onClick={() => respondToTicket.mutate({ ticketId: selectedTicket.id, responseText: response })}
+                disabled={!response.trim() || respondToTicket.isPending}
+                className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
+              >
+                <span>←</span>
+                {respondToTicket.isPending ? "שולח..." : "שלח תשובה"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Inquiries Tab Content */}
+      {activeTab === "inquiries" && (
+        <>
+          {/* Table Header */}
+          <div className="grid grid-cols-[1fr_1fr_1.5fr_2fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+            <span>שם הפונה</span>
+            <span>טלפון</span>
+            <span>כתובת מייל</span>
+            <span>מהות הפנייה</span>
+            <span className="w-10"></span>
+          </div>
+
+          {/* Inquiry Rows */}
+          <div className="space-y-3">
+            {filteredTickets?.map((ticket) => (
+              <div
+                key={ticket.id}
+                className="grid grid-cols-[1fr_1fr_1.5fr_2fr_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+              >
+                <span className="text-center font-bold">
+                  {ticket.profile?.full_name || "לא ידוע"}
+                </span>
+                <span className="text-center font-bold">
+                  {ticket.profile?.phone || "—"}
+                </span>
+                <span className="text-center font-bold">
+                  {ticket.profile?.email || "—"}
+                </span>
+                <span className="text-center text-muted-foreground truncate">
+                  {ticket.subject}
+                </span>
+                <button
+                  onClick={() => openViewTicket(ticket)}
+                  className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+
+            {!filteredTickets?.length && (
+              <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+                לא נמצאו פניות
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Issues Tab Content */}
+      {activeTab === "issues" && (
+        <>
+          {/* Table Header */}
+          <div className="grid grid-cols-[1fr_1fr_1fr_1.5fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+            <span>שם הלקוח</span>
+            <span>שם האולם</span>
+            <span>שם האולם</span>
+            <span>מהות התקלה</span>
+            <span className="w-20"></span>
+            <span className="w-24"></span>
+            <span className="w-10"></span>
+          </div>
+
+          {/* Issue Rows */}
+          <div className="space-y-3">
+            {filteredTickets?.map((ticket) => (
+              <div
+                key={ticket.id}
+                className="grid grid-cols-[1fr_1fr_1fr_1.5fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+              >
+                <span className="text-center font-bold">
+                  {ticket.profile?.full_name || "לא ידוע"}
+                </span>
+                <span className="text-center font-bold">
+                  {ticket.venues?.address || "—"}
+                </span>
+                <span className="text-center font-bold text-[#c9a54e]">
+                  {ticket.venues?.name || "—"}
+                </span>
+                <span className="text-center text-muted-foreground truncate">
+                  {ticket.subject}
+                </span>
+                <button
+                  onClick={() => openRespondTicket(ticket)}
+                  className="px-4 py-2 rounded-full bg-[#c9a54e] text-white font-medium hover:bg-[#b8943d] transition-colors"
+                >
+                  מענה
+                </button>
+                <button
+                  onClick={() => closeTicket.mutate(ticket.id)}
+                  className="px-4 py-2 rounded-full bg-[#1a2942] text-white font-medium hover:bg-[#243a56] transition-colors"
+                >
+                  סגירת הפנייה
+                </button>
+                <button
+                  onClick={() => openViewTicket(ticket)}
+                  className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+
+            {!filteredTickets?.length && (
+              <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+                לא נמצאו תקלות
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
