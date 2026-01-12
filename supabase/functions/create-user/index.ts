@@ -65,16 +65,27 @@ Deno.serve(async (req) => {
 
     const userId = newUser.user.id
 
-    // Create profile
-    const { error: profileError } = await supabase.from('profiles').insert({
-      user_id: userId,
-      full_name: fullName,
-      email: email,
-      phone: phone || null
-    })
+    // Wait a bit for the trigger to create the profile
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // Update profile with additional info (profile is created by trigger)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        full_name: fullName,
+        phone: phone || null
+      })
+      .eq('user_id', userId)
 
     if (profileError) {
-      console.error('Error creating profile:', profileError)
+      console.error('Error updating profile:', profileError)
+      // If update fails, try upsert as fallback
+      await supabase.from('profiles').upsert({
+        user_id: userId,
+        full_name: fullName,
+        email: email,
+        phone: phone || null
+      }, { onConflict: 'user_id' })
     }
 
     // Assign role

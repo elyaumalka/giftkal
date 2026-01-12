@@ -207,15 +207,22 @@ export default function Customers() {
       if (!data.success) throw new Error(data.error);
       return data;
     },
-    onSuccess: (data) => {
-      // Set the new user as selected owner
+    onSuccess: async (data) => {
+      // Refetch the owners lists first
       if (createUserFor === "venue") {
-        setNewVenueOwnerId(data.user.id);
-        refetchVenueOwners();
+        await refetchVenueOwners();
       } else {
-        setNewEventOwnerId(data.user.id);
-        refetchEventOwners();
+        await refetchEventOwners();
       }
+      
+      // Set the new user as selected owner after refetch
+      setTimeout(() => {
+        if (createUserFor === "venue") {
+          setNewVenueOwnerId(data.user.id);
+        } else {
+          setNewEventOwnerId(data.user.id);
+        }
+      }, 100);
       
       setIsCreateUserOpen(false);
       resetUserForm();
