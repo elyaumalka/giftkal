@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { LogOut, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.png";
 
 // Custom icons
 import DashboardIcon from "@/assets/icons/Dashboard.svg";
@@ -66,69 +67,75 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
   const location = useLocation();
 
   return (
-    <aside
-      className={cn(
-        "fixed right-0 top-0 h-screen bg-sidebar text-sidebar-foreground transition-all duration-300 z-50 flex flex-col",
-        collapsed ? "w-20" : "w-56"
-      )}
-    >
-      {/* Toggle Button */}
-      <div className="flex items-center justify-center p-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className="text-sidebar-foreground hover:bg-sidebar-accent"
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 space-y-2 overflow-y-auto">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200",
-                isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-lg"
-                  : "bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80"
-              )}
-            >
-              <img 
-                src={item.icon} 
-                alt={item.title} 
-                className={cn(
-                  "w-6 h-6 shrink-0",
-                  isActive ? "brightness-0 invert" : ""
-                )} 
-              />
-              {!collapsed && (
-                <span className="flex-1 text-sm">{item.title}</span>
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* Footer */}
-      <div className="p-3 border-t border-sidebar-border">
+    <>
+      {/* Top Header */}
+      <header className="fixed top-0 right-0 left-0 h-16 bg-[#1a2942] z-50 flex items-center justify-between px-6">
+        {/* Logo on the right */}
+        <div className="flex items-center">
+          <img src={logo} alt="Giftkal Logo" className="h-10" />
+        </div>
+        
+        {/* Logout button on the left */}
         <Button
           variant="ghost"
           onClick={onLogout}
-          className={cn(
-            "w-full text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-destructive rounded-full",
-            collapsed ? "justify-center" : "justify-start gap-3 px-4"
-          )}
+          className="text-white hover:bg-white/10 hover:text-white gap-2"
         >
           <LogOut className="w-5 h-5" />
-          {!collapsed && <span>התנתק</span>}
+          <span>התנתק</span>
         </Button>
-      </div>
-    </aside>
+      </header>
+
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed right-0 top-16 h-[calc(100vh-4rem)] bg-sidebar text-sidebar-foreground transition-all duration-300 z-40 flex flex-col",
+          collapsed ? "w-20" : "w-56"
+        )}
+      >
+        {/* Toggle Button */}
+        <div className="flex items-center justify-center p-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-sidebar-foreground hover:bg-sidebar-accent"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-3 space-y-2 overflow-y-auto">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200",
+                  isActive
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-lg"
+                    : "bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80"
+                )}
+              >
+                <img 
+                  src={item.icon} 
+                  alt={item.title} 
+                  className={cn(
+                    "w-6 h-6 shrink-0",
+                    isActive ? "brightness-0 invert" : ""
+                  )} 
+                />
+                {!collapsed && (
+                  <span className="flex-1 text-sm">{item.title}</span>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }

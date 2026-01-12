@@ -19,7 +19,7 @@ export function AdminLayout() {
   return (
     <div className="min-h-screen bg-background">
       <AdminSidebar onLogout={handleLogout} />
-      <main className="mr-64 p-6 transition-all duration-300">
+      <main className="mr-56 mt-16 p-6 transition-all duration-300">
         <Outlet />
       </main>
     </div>
