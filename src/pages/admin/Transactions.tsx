@@ -80,31 +80,29 @@ export default function Transactions() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Search and Filters */}
-      <div className="flex items-center gap-3 bg-white rounded-full px-4 py-2 shadow-sm max-w-md">
-        <Filter className="w-5 h-5 text-muted-foreground" />
-        <Search className="w-5 h-5 text-muted-foreground" />
-        <Input
-          placeholder="חיפוש חופשי"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right"
-        />
+      {/* Search and Filters - Right aligned */}
+      <div className="flex justify-start">
+        <div className="flex items-center gap-2 bg-white rounded-full px-5 py-3 shadow-sm">
+          <Input
+            placeholder="חיפוש חופשי"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-40 p-0"
+          />
+          <Search className="w-5 h-5 text-muted-foreground" />
+          <div className="w-px h-5 bg-gray-300" />
+          <Filter className="w-5 h-5 text-muted-foreground" />
+        </div>
       </div>
 
-      {/* Table Header */}
-      <div className="flex items-center justify-between px-6 py-3 text-sm font-medium text-muted-foreground">
-        <div className="flex items-center gap-4 flex-1">
-          <div className="w-32"></div>
-          <div className="w-32"></div>
-        </div>
-        <div className="flex items-center gap-8 flex-1 justify-end">
-          <span className="w-28 text-center">סך כל העסקאות</span>
-          <span className="w-24 text-center">כמות עסקאות</span>
-          <span className="w-28 text-center">שם האולם</span>
-          <span className="w-24 text-center">בעל האירוע</span>
-          <span className="w-24 text-center">תאריך</span>
-        </div>
+      {/* Table Header - Right to Left */}
+      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+        <span>תאריך</span>
+        <span>בעל האירוע</span>
+        <span>שם האולם</span>
+        <span>כמות עסקאות</span>
+        <span>סך כל העסקאות</span>
+        <span className="w-64"></span>
       </div>
 
       {/* Event Rows */}
@@ -112,33 +110,48 @@ export default function Transactions() {
         {filteredEvents?.map((event) => (
           <div
             key={event.id}
-            className="flex items-center justify-between bg-white rounded-2xl px-6 py-4 shadow-sm"
+            className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
           >
-            {/* Left - Action Buttons */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportExcel}
-                className="rounded-lg border-[#1a2942] text-[#1a2942] hover:bg-[#1a2942] hover:text-white gap-2"
-              >
-                <FileText className="w-4 h-4" />
-                ייצוא לאקסל
-              </Button>
-              
+            {/* תאריך */}
+            <span className="text-center font-medium">
+              {new Date(event.event_date).toLocaleDateString("he-IL")}
+            </span>
+            
+            {/* בעל האירוע */}
+            <span className="text-center font-medium">
+              {event.ownerName}
+            </span>
+            
+            {/* שם האולם */}
+            <span className="text-center font-medium">
+              {event.venues?.name || "—"}
+            </span>
+            
+            {/* כמות עסקאות */}
+            <span className="text-center font-bold">
+              {event.transactionCount}
+            </span>
+            
+            {/* סך כל העסקאות */}
+            <span className="text-center font-bold text-[#c9a54e]">
+              ₪ {event.totalAmount.toLocaleString()}
+            </span>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 justify-end w-64">
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setSelectedEvent(event)}
-                    className="rounded-lg border-[#1a2942] text-[#1a2942] hover:bg-[#1a2942] hover:text-white gap-2"
+                    className="rounded-lg border-[#1a2942] text-[#1a2942] hover:bg-[#1a2942] hover:text-white gap-2 px-4"
                   >
                     <FileText className="w-4 h-4" />
                     צפייה בעסקאות
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-5xl p-0 overflow-hidden" hideCloseButton>
+                <DialogContent className="max-w-6xl p-0 overflow-hidden" hideCloseButton>
                   <TransactionsPopup 
                     event={event} 
                     transactions={eventDetails || []} 
@@ -146,25 +159,16 @@ export default function Transactions() {
                   />
                 </DialogContent>
               </Dialog>
-            </div>
 
-            {/* Right - Event Data */}
-            <div className="flex items-center gap-8">
-              <span className="w-28 text-center font-bold text-[#c9a54e]">
-                ₪ {event.totalAmount.toLocaleString()}
-              </span>
-              <span className="w-24 text-center font-medium">
-                {event.transactionCount}
-              </span>
-              <span className="w-28 text-center font-medium">
-                {event.venues?.name || "—"}
-              </span>
-              <span className="w-24 text-center font-medium">
-                {event.ownerName}
-              </span>
-              <span className="w-24 text-center font-medium">
-                {new Date(event.event_date).toLocaleDateString("he-IL")}
-              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportExcel}
+                className="rounded-lg border-[#1a2942] text-[#1a2942] hover:bg-[#1a2942] hover:text-white gap-2 px-4"
+              >
+                <FileText className="w-4 h-4" />
+                ייצוא לאקסל
+              </Button>
             </div>
           </div>
         ))}
@@ -196,52 +200,49 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
   );
 
   return (
-    <div className="bg-[#e8e8e8] min-h-[500px] max-h-[80vh] overflow-y-auto">
-      {/* Header with event info */}
+    <div className="bg-[#e5e5e5] min-h-[500px] max-h-[80vh] overflow-y-auto">
+      {/* Header Row */}
       <div className="flex items-center justify-between px-8 py-6">
-        {/* Search */}
-        <div className="flex items-center gap-3 bg-white rounded-full px-4 py-2 shadow-sm w-72">
-          <Filter className="w-5 h-5 text-muted-foreground" />
-          <Search className="w-5 h-5 text-muted-foreground" />
+        {/* Left - Search */}
+        <div className="flex items-center gap-2 bg-white rounded-full px-5 py-3 shadow-sm">
           <Input
             placeholder="חיפוש חופשי"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right"
+            className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-40 p-0"
           />
+          <Search className="w-5 h-5 text-muted-foreground" />
+          <div className="w-px h-5 bg-gray-300" />
+          <Filter className="w-5 h-5 text-muted-foreground" />
         </div>
 
-        {/* Event Info */}
-        <div className="flex items-center gap-12 text-right">
-          <div>
-            <p className="text-sm text-muted-foreground">שם האולם</p>
-            <p className="font-bold text-[#c9a54e] text-lg">{event.venues?.name || "—"}</p>
+        {/* Right - Event Info */}
+        <div className="flex items-center gap-16">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-1">שם האולם</p>
+            <p className="font-bold text-[#c9a54e] text-xl">{event.venues?.name || "—"}</p>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">בעל האירוע</p>
-            <p className="font-bold text-lg">{event.ownerName}</p>
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-1">בעל האירוע</p>
+            <p className="font-bold text-xl">{event.ownerName}</p>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">תאריך</p>
-            <p className="font-bold text-lg">{new Date(event.event_date).toLocaleDateString("he-IL")}</p>
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-1">תאריך</p>
+            <p className="font-bold text-xl">{new Date(event.event_date).toLocaleDateString("he-IL")}</p>
           </div>
         </div>
       </div>
 
-      {/* Table Header */}
-      <div className="flex items-center justify-between px-8 py-3 text-sm font-medium text-muted-foreground">
-        <div className="flex items-center gap-4">
-          <span className="w-28"></span>
-          <span className="w-28"></span>
-        </div>
-        <div className="flex items-center gap-6 flex-1 justify-end">
-          <span className="w-20 text-center">סכום</span>
-          <span className="w-24 text-center">בעל האירוע</span>
-          <span className="w-28 text-center">שם האולם</span>
-          <span className="w-44 text-center">כתובת מייל</span>
-          <span className="w-28 text-center">שם הלקוח</span>
-          <span className="w-24 text-center">תאריך</span>
-        </div>
+      {/* Table Header - Right to Left */}
+      <div className="grid grid-cols-[1fr_1fr_1.5fr_1fr_1fr_0.8fr_auto_auto] gap-4 px-8 py-3 text-sm font-medium text-muted-foreground text-center">
+        <span>תאריך</span>
+        <span>שם הלקוח</span>
+        <span>כתובת מייל</span>
+        <span>שם האולם</span>
+        <span>בעל האירוע</span>
+        <span>סכום</span>
+        <span className="w-28"></span>
+        <span className="w-28"></span>
       </div>
 
       {/* Transaction Rows */}
@@ -249,57 +250,65 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
         {filteredTransactions.map((transaction) => (
           <div
             key={transaction.id}
-            className="flex items-center justify-between bg-white rounded-2xl px-6 py-4 shadow-sm"
+            className="grid grid-cols-[1fr_1fr_1.5fr_1fr_1fr_0.8fr_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
           >
-            {/* Left - Action Buttons */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
+            {/* תאריך */}
+            <span className="text-center font-bold">
+              {new Date(transaction.transaction_date).toLocaleDateString("he-IL")}
+            </span>
+            
+            {/* שם הלקוח */}
+            <span className="text-center font-bold">
+              {transaction.payer_name}
+            </span>
+            
+            {/* כתובת מייל */}
+            <span className="text-center text-muted-foreground">
+              {transaction.payer_email || "—"}
+            </span>
+            
+            {/* שם האולם */}
+            <span className="text-center font-medium">
+              {event.venues?.name || "—"}
+            </span>
+            
+            {/* בעל האירוע */}
+            <span className="text-center font-medium">
+              {event.ownerName?.split(' ')[0] || "—"}
+            </span>
+            
+            {/* סכום */}
+            <span className="text-center font-bold">
+              ₪{Number(transaction.amount).toLocaleString()}
+            </span>
+
+            {/* צפייה בקבלה */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!transaction.receipt_url}
+              onClick={() => transaction.receipt_url && window.open(transaction.receipt_url, '_blank')}
+              className="rounded-lg border-[#1a2942] text-[#1a2942] hover:bg-[#1a2942] hover:text-white gap-2 w-28"
+            >
+              <FileText className="w-4 h-4" />
+              צפייה בקבלה
+            </Button>
+
+            {/* צפייה בברכה */}
+            <Button
+              size="sm"
+              onClick={() => {
+                if (transaction.blessing_text) {
                   setBlessingText(transaction.blessing_text);
                   setBlessingFrom(transaction.payer_name);
-                }}
-                disabled={!transaction.blessing_text}
-                className="rounded-full bg-[#d64550] hover:bg-[#c13a44] text-white gap-2 px-4"
-              >
-                <MessageCircle className="w-4 h-4" />
-                צפייה בברכה
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!transaction.receipt_url}
-                onClick={() => transaction.receipt_url && window.open(transaction.receipt_url, '_blank')}
-                className="rounded-lg border-[#1a2942] text-[#1a2942] hover:bg-[#1a2942] hover:text-white gap-2"
-              >
-                <FileText className="w-4 h-4" />
-                צפייה בקבלה
-              </Button>
-            </div>
-
-            {/* Right - Transaction Data */}
-            <div className="flex items-center gap-6">
-              <span className="w-20 text-center font-bold">
-                ₪{Number(transaction.amount).toLocaleString()}
-              </span>
-              <span className="w-24 text-center font-medium">
-                {event.ownerName?.split(' ')[0] || "—"}
-              </span>
-              <span className="w-28 text-center font-medium">
-                {event.venues?.name || "—"}
-              </span>
-              <span className="w-44 text-center text-sm text-muted-foreground">
-                {transaction.payer_email || "—"}
-              </span>
-              <span className="w-28 text-center font-bold">
-                {transaction.payer_name}
-              </span>
-              <span className="w-24 text-center font-medium">
-                {new Date(transaction.transaction_date).toLocaleDateString("he-IL")}
-              </span>
-            </div>
+                }
+              }}
+              disabled={!transaction.blessing_text}
+              className="rounded-full bg-[#d64550] hover:bg-[#c13a44] text-white gap-2 w-28 disabled:opacity-50"
+            >
+              <MessageCircle className="w-4 h-4" />
+              צפייה בברכה
+            </Button>
           </div>
         ))}
 
