@@ -1,61 +1,58 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Users,
-  CreditCard,
-  UserPlus,
-  Settings,
-  MessageSquare,
-  FileText,
-  Gift,
-  Building2,
-  ChevronRight,
-  LogOut,
-  Menu,
-} from "lucide-react";
+import { ChevronRight, LogOut, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+
+// Custom icons
+import DashboardIcon from "@/assets/icons/Dashboard.svg";
+import CustomersIcon from "@/assets/icons/Customers.svg";
+import TransactionsIcon from "@/assets/icons/Transactions.svg";
+import EventOwnersIcon from "@/assets/icons/EventOwners.svg";
+import LeadsIcon from "@/assets/icons/Leads.svg";
+import ToolsIcon from "@/assets/icons/Tools.svg";
+import ReportsIcon from "@/assets/icons/Reports.svg";
+import SettingsIcon from "@/assets/icons/Settings.svg";
 
 const menuItems = [
   {
     title: "דשבורד",
-    icon: LayoutDashboard,
+    icon: DashboardIcon,
     path: "/admin",
   },
   {
     title: "לקוחות",
-    icon: Users,
+    icon: CustomersIcon,
     path: "/admin/customers",
   },
   {
     title: "עסקאות",
-    icon: CreditCard,
+    icon: TransactionsIcon,
     path: "/admin/transactions",
   },
   {
     title: "בעלי אירועים",
-    icon: Gift,
+    icon: EventOwnersIcon,
     path: "/admin/event-owners",
   },
   {
     title: "לידים",
-    icon: UserPlus,
+    icon: LeadsIcon,
     path: "/admin/leads",
   },
   {
     title: "פניות ותקלות",
-    icon: MessageSquare,
+    icon: ToolsIcon,
     path: "/admin/support",
   },
   {
     title: "דוחות",
-    icon: FileText,
+    icon: ReportsIcon,
     path: "/admin/reports",
   },
   {
     title: "הגדרות",
-    icon: Settings,
+    icon: SettingsIcon,
     path: "/admin/settings",
   },
 ];
@@ -80,7 +77,7 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-gold flex items-center justify-center">
-              <Gift className="w-5 h-5 text-white" />
+              <img src={EventOwnersIcon} alt="Logo" className="w-5 h-5" />
             </div>
             <span className="font-bold text-lg">מתנות</span>
           </div>
@@ -110,7 +107,14 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50"
               )}
             >
-              <item.icon className={cn("w-5 h-5 shrink-0", isActive && "text-sidebar-primary")} />
+              <img 
+                src={item.icon} 
+                alt={item.title} 
+                className={cn(
+                  "w-5 h-5 shrink-0",
+                  isActive && "brightness-125"
+                )} 
+              />
               {!collapsed && (
                 <>
                   <span className="flex-1">{item.title}</span>
