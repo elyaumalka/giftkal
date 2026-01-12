@@ -52,6 +52,7 @@ export default function Settings() {
   const [editUserName, setEditUserName] = useState("");
   const [editUserPhone, setEditUserPhone] = useState("");
   const [editUserRole, setEditUserRole] = useState<UserRole | "">("");
+  const [editUserPassword, setEditUserPassword] = useState("");
 
   // Add document state
   const [isAddDocOpen, setIsAddDocOpen] = useState(false);
@@ -181,13 +182,15 @@ export default function Settings() {
 
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
-      await supabase.from("user_roles").delete().eq("user_id", userId);
-      const { error } = await supabase.from("profiles").delete().eq("user_id", userId);
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete', userId }
+      });
       if (error) throw error;
+      if (!data.success) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-with-roles"] });
-      toast({ title: "המשתמש נמחק" });
+      toast({ title: "המשתמש נמחק לגמרי" });
     },
     onError: (error: any) => {
       toast({ title: "שגיאה במחיקת משתמש", description: error.message, variant: "destructive" });
@@ -198,6 +201,7 @@ export default function Settings() {
     mutationFn: async () => {
       if (!selectedUser) return;
       
+      // Update profile
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -208,6 +212,7 @@ export default function Settings() {
       
       if (profileError) throw profileError;
 
+      // Update role if changed
       if (editUserRole) {
         await supabase.from("user_roles").delete().eq("user_id", selectedUser.user_id);
         
@@ -218,11 +223,21 @@ export default function Settings() {
         
         if (roleError) throw roleError;
       }
+
+      // Update password if provided
+      if (editUserPassword && editUserPassword.length >= 6) {
+        const { data, error } = await supabase.functions.invoke('manage-user', {
+          body: { action: 'updatePassword', userId: selectedUser.user_id, newPassword: editUserPassword }
+        });
+        if (error) throw error;
+        if (!data.success) throw new Error(data.error);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-with-roles"] });
       setIsEditUserOpen(false);
       setSelectedUser(null);
+      setEditUserPassword("");
       toast({ title: "המשתמש עודכן בהצלחה" });
     },
     onError: (error: any) => {
@@ -266,6 +281,7 @@ export default function Settings() {
     setEditUserName(user.full_name);
     setEditUserPhone(user.phone || "");
     setEditUserRole(user.roles?.[0]?.role || "");
+    setEditUserPassword("");
     setIsEditUserOpen(true);
   };
 
@@ -355,6 +371,21 @@ export default function Settings() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">סיסמה חדשה (לא חובה)</Label>
+                <Input 
+                  variant="form" 
+                  type="password" 
+                  value={editUserPassword} 
+                  onChange={(e) => setEditUserPassword(e.target.value)} 
+                  placeholder="השאר ריק לשמירת הסיסמה הנוכחית"
+                  className="text-center" 
+                />
+              </div>
+              <div></div>
+              <div></div>
             </div>
             <Button 
               onClick={() => updateUser.mutate()} 
