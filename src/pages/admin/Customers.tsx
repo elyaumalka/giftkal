@@ -826,7 +826,7 @@ export default function Customers() {
                     <Eye className="w-5 h-5 text-muted-foreground" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl p-0 overflow-hidden">
+                <DialogContent className="max-w-4xl p-0 overflow-hidden" hideCloseButton>
                   <EventDetailsDialog event={event} onClose={() => setSelectedEvent(null)} />
                 </DialogContent>
               </Dialog>

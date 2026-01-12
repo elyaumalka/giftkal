@@ -10,8 +10,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Plus, User, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 interface EventDetailsDialogProps {
   event: any;
@@ -24,6 +33,11 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   
   const [newDocName, setNewDocName] = useState("");
   const [newDocRequired, setNewDocRequired] = useState("true");
+  const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
+  const [newDeviceName, setNewDeviceName] = useState("");
+  const [newDeviceSerial, setNewDeviceSerial] = useState("");
+  const [localPaymentCompleted, setLocalPaymentCompleted] = useState(event.payment_completed);
+  const [localDeviceReturned, setLocalDeviceReturned] = useState(event.device_returned);
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
@@ -40,7 +54,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   });
 
   // Fetch required documents for this event
-  const { data: requiredDocs } = useQuery({
+  const { data: requiredDocs, refetch: refetchDocs } = useQuery({
     queryKey: ["required-documents-event"],
     queryFn: async () => {
       const { data } = await supabase
@@ -65,7 +79,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   });
 
   // Fetch devices linked to the venue
-  const { data: devices } = useQuery({
+  const { data: devices, refetch: refetchDevices } = useQuery({
     queryKey: ["venue-devices", event.venue_id],
     queryFn: async () => {
       if (!event.venue_id) return [];
@@ -89,7 +103,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["required-documents-event"] });
+      refetchDocs();
       queryClient.invalidateQueries({ queryKey: ["events-list"] });
       setNewDocName("");
       toast({ title: "מסמך נדרש נוסף בהצלחה" });
@@ -106,39 +120,68 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["required-documents-event"] });
+      refetchDocs();
       queryClient.invalidateQueries({ queryKey: ["events-list"] });
       toast({ title: "מסמך נדרש נמחק" });
     },
   });
 
-  // Mark as paid
-  const markAsPaid = useMutation({
+  // Add device
+  const addDevice = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("events")
-        .update({ payment_completed: true })
-        .eq("id", event.id);
+      if (!event.venue_id) throw new Error("אין אולם מקושר לאירוע");
+      const { error } = await supabase.from("devices").insert({
+        name: newDeviceName,
+        serial_number: newDeviceSerial,
+        venue_id: event.venue_id,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
+      refetchDevices();
+      setNewDeviceName("");
+      setNewDeviceSerial("");
+      setIsAddDeviceOpen(false);
+      toast({ title: "מכשיר נוסף בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה בהוספת מכשיר", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Toggle payment status
+  const togglePayment = useMutation({
+    mutationFn: async () => {
+      const newStatus = !localPaymentCompleted;
+      const { error } = await supabase
+        .from("events")
+        .update({ payment_completed: newStatus })
+        .eq("id", event.id);
+      if (error) throw error;
+      return newStatus;
+    },
+    onSuccess: (newStatus) => {
+      setLocalPaymentCompleted(newStatus);
       queryClient.invalidateQueries({ queryKey: ["events-list"] });
-      toast({ title: "סומן כשולם" });
+      toast({ title: newStatus ? "סומן כשולם" : "סומן כלא שולם" });
     },
   });
 
   // Toggle device returned
   const toggleDeviceReturned = useMutation({
     mutationFn: async () => {
+      const newStatus = !localDeviceReturned;
       const { error } = await supabase
         .from("events")
-        .update({ device_returned: !event.device_returned })
+        .update({ device_returned: newStatus })
         .eq("id", event.id);
       if (error) throw error;
+      return newStatus;
     },
-    onSuccess: () => {
+    onSuccess: (newStatus) => {
+      setLocalDeviceReturned(newStatus);
       queryClient.invalidateQueries({ queryKey: ["events-list"] });
-      toast({ title: event.device_returned ? "סומן כלא הוחזר" : "סומן כהוחזר" });
+      toast({ title: newStatus ? "סומן כהוחזר" : "סומן כלא הוחזר" });
     },
   });
 
@@ -150,29 +193,72 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       <div className="bg-secondary text-white p-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">פרטי לקוח</h2>
         <div className="flex items-center gap-3">
-          {!event.payment_completed && (
+          {/* Payment Toggle Button */}
+          <Button
+            onClick={() => togglePayment.mutate()}
+            className={`${
+              localPaymentCompleted 
+                ? "bg-blue-500 hover:bg-blue-600" 
+                : "bg-green-500 hover:bg-green-600"
+            } text-white rounded-full px-6`}
+            disabled={togglePayment.isPending}
+          >
+            {localPaymentCompleted ? "שולם" : "סמן כשולם"}
+          </Button>
+          
+          {/* Add Device Button */}
+          <Dialog open={isAddDeviceOpen} onOpenChange={setIsAddDeviceOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="bg-secondary border border-white text-white hover:bg-white/10 rounded-full px-6"
+              >
+                הוספת מכשיר
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>הוספת מכשיר חדש</DialogTitle>
+              </DialogHeader>
+              <div className="p-6 space-y-4">
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block">שם המכשיר</Label>
+                  <Input 
+                    variant="form" 
+                    value={newDeviceName} 
+                    onChange={(e) => setNewDeviceName(e.target.value)}
+                    placeholder="טאבלט גלאקסי S10"
+                  />
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block">מספר סריאלי</Label>
+                  <Input 
+                    variant="form" 
+                    value={newDeviceSerial} 
+                    onChange={(e) => setNewDeviceSerial(e.target.value)}
+                    placeholder="1234567890"
+                  />
+                </div>
+                <Button 
+                  onClick={() => addDevice.mutate()} 
+                  disabled={!newDeviceName || !newDeviceSerial || addDevice.isPending}
+                  className="w-full rounded-full bg-secondary hover:bg-secondary/90"
+                >
+                  {addDevice.isPending ? "מוסיף..." : "הוסף מכשיר"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          <DialogClose asChild>
             <Button
-              onClick={() => markAsPaid.mutate()}
-              className="bg-green-500 hover:bg-green-600 text-white rounded-full px-6"
-              disabled={markAsPaid.isPending}
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20"
+              onClick={onClose}
             >
-              סמן כשולם
+              <X className="w-5 h-5" />
             </Button>
-          )}
-          <Button
-            onClick={() => {}}
-            className="bg-secondary border border-white text-white hover:bg-white/10 rounded-full px-6"
-          >
-            הוספת מכשיר
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/20"
-            onClick={onClose}
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          </DialogClose>
         </div>
       </div>
 
@@ -239,13 +325,13 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                   <Button
                     size="sm"
                     className={`w-full rounded-lg text-xs ${
-                      event.device_returned
+                      localDeviceReturned
                         ? "bg-yellow-500 hover:bg-yellow-600"
                         : "bg-green-500 hover:bg-green-600"
                     } text-white`}
                     onClick={() => toggleDeviceReturned.mutate()}
                   >
-                    {event.device_returned ? "הוחזר" : "סמן כהוחזר"}
+                    {localDeviceReturned ? "הוחזר" : "סמן כהוחזר"}
                   </Button>
                 </div>
               ))}
