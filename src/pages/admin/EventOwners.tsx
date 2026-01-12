@@ -4,25 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Eye, Download, Copy, Filter } from "lucide-react";
+import { Search, Eye, FileText, Copy, Filter, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EventOwners() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const { toast } = useToast();
 
   const { data: eventOwners } = useQuery({
@@ -37,185 +28,322 @@ export default function EventOwners() {
         `)
         .order("event_date", { ascending: false });
 
-      return events?.map((event) => ({
-        ...event,
-        transactionCount: event.transactions?.length || 0,
-        totalAmount: event.transactions?.reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0,
-      })) || [];
+      // Fetch profiles for owner info
+      const ownerIds = [...new Set(events?.map(e => e.owner_id) || [])];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, phone, email")
+        .in("user_id", ownerIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
+
+      return events?.map((event) => {
+        const profile = profileMap.get(event.owner_id);
+        return {
+          ...event,
+          ownerName: profile?.full_name || (event.groom_name && event.bride_name ? `${event.groom_name} & ${event.bride_name}` : "—"),
+          ownerPhone: profile?.phone || "—",
+          ownerEmail: profile?.email || "",
+          transactionCount: event.transactions?.length || 0,
+          totalAmount: event.transactions?.reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0,
+        };
+      }) || [];
     },
   });
 
+  // Fetch transactions for selected event
+  const { data: eventDetails } = useQuery({
+    queryKey: ["event-details", selectedEvent?.id],
+    queryFn: async () => {
+      if (!selectedEvent?.id) return null;
+      const { data } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("event_id", selectedEvent.id)
+        .order("transaction_date", { ascending: false });
+      return data;
+    },
+    enabled: !!selectedEvent?.id,
+  });
+
   const filteredEvents = eventOwners?.filter((e) =>
-    e.groom_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.bride_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.ownerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleExportExcel = () => {
-    toast({
-      title: "מייצא לאקסל...",
-      description: "הקובץ יורד בקרוב",
-    });
-  };
-
   const copyEmail = (email: string) => {
-    navigator.clipboard.writeText(email);
-    toast({ title: "הכתובת הועתקה" });
+    if (email) {
+      navigator.clipboard.writeText(email);
+      toast({ title: "הכתובת הועתקה" });
+    }
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">בעלי אירועים</h1>
-          <p className="text-muted-foreground mt-1">צפייה בכל בעלי האירועים והעסקאות שלהם</p>
+      {/* Search and Filters */}
+      <div className="flex justify-start">
+        <div className="flex items-center gap-2">
+          <button className="bg-white rounded-full p-2 shadow-sm">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
+            <Search className="w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="חיפוש חופשי"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
+            />
+          </div>
         </div>
-        <Button variant="outline" onClick={handleExportExcel}>
-          <Download className="w-4 h-4 ml-2" />
-          ייצוא לאקסל
-        </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="חיפוש..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-10"
-          />
-        </div>
-        <Button variant="outline">
-          <Filter className="w-4 h-4 ml-2" />
-          פילטרים
-        </Button>
+      {/* Table Header - Right to Left */}
+      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+        <span>תאריך אירוע</span>
+        <span>בעל האירוע</span>
+        <span>טלפון</span>
+        <span>שם האולם</span>
+        <span>כמות עסקאות</span>
+        <span>סך כל העסקאות</span>
+        <span className="w-28"></span>
+        <span className="w-10"></span>
+        <span className="w-10"></span>
       </div>
 
-      <div className="bg-card rounded-xl shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>תאריך אירוע</TableHead>
-              <TableHead>בעל האירוע</TableHead>
-              <TableHead>טלפון</TableHead>
-              <TableHead>שם האולם</TableHead>
-              <TableHead>כמות עסקאות</TableHead>
-              <TableHead>סך העסקאות</TableHead>
-              <TableHead>מייל</TableHead>
-              <TableHead>פעולות</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredEvents?.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell>
-                  {new Date(event.event_date).toLocaleDateString("he-IL")}
-                </TableCell>
-                <TableCell className="font-medium">
-                  {event.groom_name && event.bride_name
-                    ? `${event.groom_name} & ${event.bride_name}`
-                    : "—"}
-                </TableCell>
-                <TableCell>—</TableCell>
-                <TableCell>{event.venues?.name || "—"}</TableCell>
-                <TableCell>{event.transactionCount}</TableCell>
-                <TableCell className="font-semibold text-success">
-                  ₪{event.totalAmount.toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copyEmail("example@email.com")}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl">
-                        <DialogHeader>
-                          <DialogTitle>
-                            עסקאות - {event.groom_name} & {event.bride_name}
-                          </DialogTitle>
-                        </DialogHeader>
-                        <TransactionsList eventId={event.id} />
-                      </DialogContent>
-                    </Dialog>
-                    <Button variant="ghost" size="icon" onClick={handleExportExcel}>
-                      <Download className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {!filteredEvents?.length && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  לא נמצאו בעלי אירועים
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      {/* Event Rows */}
+      <div className="space-y-3">
+        {filteredEvents?.map((event) => (
+          <div
+            key={event.id}
+            className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+          >
+            {/* תאריך אירוע */}
+            <span className="text-center font-bold">
+              {new Date(event.event_date).toLocaleDateString("he-IL")}
+            </span>
+            
+            {/* בעל האירוע */}
+            <span className="text-center font-bold">
+              {event.ownerName}
+            </span>
+            
+            {/* טלפון */}
+            <span className="text-center font-medium">
+              {event.ownerPhone}
+            </span>
+            
+            {/* שם האולם */}
+            <span className="text-center font-bold text-[#c9a54e]">
+              {event.venues?.name || "—"}
+            </span>
+            
+            {/* כמות עסקאות */}
+            <span className="text-center font-bold">
+              {event.transactionCount}
+            </span>
+            
+            {/* סך כל העסקאות */}
+            <span className="text-center font-bold text-[#c9a54e]">
+              ₪ {event.totalAmount.toLocaleString()}
+            </span>
+
+            {/* העתקת כתובת מייל */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => copyEmail(event.ownerEmail)}
+              className="text-muted-foreground hover:text-foreground w-28"
+            >
+              העתקת כתובת מייל
+            </Button>
+
+            {/* צפייה - Eye icon */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  onClick={() => setSelectedEvent(event)}
+                  className="w-10 h-10 rounded-full border-2 border-[#1a2942] flex items-center justify-center hover:bg-[#1a2942] hover:text-white transition-colors"
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl p-0 overflow-hidden" hideCloseButton>
+                <EventTransactionsPopup 
+                  event={event} 
+                  transactions={eventDetails || []} 
+                />
+              </DialogContent>
+            </Dialog>
+
+            {/* פרטים - Document icon */}
+            <button
+              className="w-10 h-10 rounded-full border-2 border-[#1a2942] flex items-center justify-center hover:bg-[#1a2942] hover:text-white transition-colors"
+            >
+              <FileText className="w-5 h-5" />
+            </button>
+          </div>
+        ))}
+
+        {!filteredEvents?.length && (
+          <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+            לא נמצאו בעלי אירועים
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function TransactionsList({ eventId }: { eventId: string }) {
-  const { data: transactions } = useQuery({
-    queryKey: ["event-transactions-detail", eventId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("event_id", eventId)
-        .order("transaction_date", { ascending: false });
-      return data || [];
-    },
-  });
+interface EventTransactionsPopupProps {
+  event: any;
+  transactions: any[];
+}
+
+function EventTransactionsPopup({ event, transactions }: EventTransactionsPopupProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [blessingText, setBlessingText] = useState<string | null>(null);
+  const [blessingFrom, setBlessingFrom] = useState<string>("");
+
+  const filteredTransactions = transactions.filter((t) =>
+    t.payer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.payer_email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>תאריך</TableHead>
-          <TableHead>שם המשלם</TableHead>
-          <TableHead>מייל</TableHead>
-          <TableHead>קירבה</TableHead>
-          <TableHead>סכום</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {transactions?.map((t: any) => (
-          <TableRow key={t.id}>
-            <TableCell>
-              {new Date(t.transaction_date).toLocaleDateString("he-IL")}
-            </TableCell>
-            <TableCell className="font-medium">{t.payer_name}</TableCell>
-            <TableCell>{t.payer_email || "—"}</TableCell>
-            <TableCell>{t.relationship || "—"}</TableCell>
-            <TableCell className="font-semibold text-success">
-              ₪{Number(t.amount).toLocaleString()}
-            </TableCell>
-          </TableRow>
+    <div className="bg-[#e5e5e5] min-h-[500px] max-h-[80vh] overflow-y-auto">
+      {/* Header Row */}
+      <div className="flex items-center justify-between px-8 py-6">
+        {/* Left - Event Info */}
+        <div className="flex items-center gap-16">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-1">שם האולם</p>
+            <p className="font-bold text-[#c9a54e] text-xl">{event.venues?.name || "—"}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-1">בעל האירוע</p>
+            <p className="font-bold text-xl">{event.ownerName}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-1">תאריך</p>
+            <p className="font-bold text-xl">{new Date(event.event_date).toLocaleDateString("he-IL")}</p>
+          </div>
+        </div>
+
+        {/* Right - Search field and Filter separately */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
+            <Search className="w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="חיפוש חופשי"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
+            />
+          </div>
+          <button className="bg-white rounded-full p-2 shadow-sm">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+      </div>
+
+      {/* Table Header - Right to Left */}
+      <div className="grid grid-cols-[1fr_1fr_1.5fr_1fr_1fr_0.8fr_auto_auto] gap-4 px-8 py-3 text-sm font-medium text-muted-foreground text-center">
+        <span>תאריך</span>
+        <span>שם הלקוח</span>
+        <span>כתובת מייל</span>
+        <span>שם האולם</span>
+        <span>בעל האירוע</span>
+        <span>סכום</span>
+        <span className="w-28"></span>
+        <span className="w-28"></span>
+      </div>
+
+      {/* Transaction Rows */}
+      <div className="space-y-3 px-8 pb-8">
+        {filteredTransactions.map((transaction) => (
+          <div
+            key={transaction.id}
+            className="grid grid-cols-[1fr_1fr_1.5fr_1fr_1fr_0.8fr_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+          >
+            {/* תאריך */}
+            <span className="text-center font-bold">
+              {new Date(transaction.transaction_date).toLocaleDateString("he-IL")}
+            </span>
+            
+            {/* שם הלקוח */}
+            <span className="text-center font-bold">
+              {transaction.payer_name}
+            </span>
+            
+            {/* כתובת מייל */}
+            <span className="text-center text-muted-foreground">
+              {transaction.payer_email || "—"}
+            </span>
+            
+            {/* שם האולם */}
+            <span className="text-center font-medium">
+              {event.venues?.name || "—"}
+            </span>
+            
+            {/* בעל האירוע */}
+            <span className="text-center font-medium">
+              {event.ownerName?.split(' ')[0] || "—"}
+            </span>
+            
+            {/* סכום */}
+            <span className="text-center font-bold">
+              ₪{Number(transaction.amount).toLocaleString()}
+            </span>
+
+            {/* צפייה בקבלה */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!transaction.receipt_url}
+              onClick={() => transaction.receipt_url && window.open(transaction.receipt_url, '_blank')}
+              className="rounded-lg border-[#1a2942] text-[#1a2942] hover:bg-[#1a2942] hover:text-white gap-2 w-28"
+            >
+              <FileText className="w-4 h-4" />
+              צפייה בקבלה
+            </Button>
+
+            {/* צפייה בברכה */}
+            <Button
+              size="sm"
+              onClick={() => {
+                if (transaction.blessing_text) {
+                  setBlessingText(transaction.blessing_text);
+                  setBlessingFrom(transaction.payer_name);
+                }
+              }}
+              disabled={!transaction.blessing_text}
+              className="rounded-full bg-[#d64550] hover:bg-[#c13a44] text-white gap-2 w-28 disabled:opacity-50"
+            >
+              <MessageCircle className="w-4 h-4" />
+              צפייה בברכה
+            </Button>
+          </div>
         ))}
-        {!transactions?.length && (
-          <TableRow>
-            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-              אין עסקאות
-            </TableCell>
-          </TableRow>
+
+        {!filteredTransactions.length && (
+          <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+            אין עסקאות לאירוע זה
+          </div>
         )}
-      </TableBody>
-    </Table>
+      </div>
+
+      {/* Blessing Dialog */}
+      {blessingText && (
+        <Dialog open={!!blessingText} onOpenChange={() => setBlessingText(null)}>
+          <DialogContent>
+            <div className="text-center space-y-4">
+              <h3 className="text-xl font-bold">ברכה מ{blessingFrom}</h3>
+              <p className="text-lg leading-relaxed">{blessingText}</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
   );
 }
