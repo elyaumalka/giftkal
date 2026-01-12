@@ -60,15 +60,15 @@
 
     --radius: 0.75rem;
 
-    /* Sidebar */
-    --sidebar-background: 222 47% 11%;
+    /* Sidebar - Custom colors */
+    --sidebar-background: 220 68% 12%; /* #051839 */
     --sidebar-foreground: 220 20% 95%;
-    --sidebar-primary: 38 92% 50%;
+    --sidebar-primary: 35 54% 38%; /* #95742F */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 18%;
+    --sidebar-accent: 220 80% 20%; /* #08275E */
     --sidebar-accent-foreground: 220 20% 95%;
-    --sidebar-border: 222 47% 18%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-border: 220 80% 20%;
+    --sidebar-ring: 35 54% 38%;
 
     /* Custom gradients */
     --gradient-gold: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(45 93% 47%) 100%);
