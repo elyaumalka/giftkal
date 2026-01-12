@@ -79,63 +79,53 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
         <Button
           variant="ghost"
           onClick={onLogout}
-          className="text-white hover:bg-white/10 hover:text-white gap-2"
+          className="text-white hover:bg-white/10 hover:text-white gap-2 border border-white/30 rounded-full px-4"
         >
+          <span>יציאה מהמערכת</span>
           <LogOut className="w-5 h-5" />
-          <span>התנתק</span>
         </Button>
       </header>
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed right-0 top-16 h-[calc(100vh-4rem)] bg-sidebar text-sidebar-foreground transition-all duration-300 z-40 flex flex-col",
-          collapsed ? "w-20" : "w-56"
-        )}
-      >
-        {/* Toggle Button */}
-        <div className="flex items-center justify-center p-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCollapsed(!collapsed)}
-            className="text-sidebar-foreground hover:bg-sidebar-accent"
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200",
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-lg"
-                    : "bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80"
-                )}
-              >
-                <img 
-                  src={item.icon} 
-                  alt={item.title} 
+      {/* Sidebar Container - with gap from header */}
+      <div className="fixed right-4 top-24 z-40">
+        <aside
+          className={cn(
+            "bg-white rounded-3xl shadow-lg transition-all duration-300 flex flex-col overflow-hidden",
+            collapsed ? "w-20" : "w-52"
+          )}
+        >
+          {/* Navigation */}
+          <nav className="flex-1 p-3 space-y-2">
+            {menuItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
                   className={cn(
-                    "w-6 h-6 shrink-0",
-                    isActive ? "brightness-0 invert" : ""
-                  )} 
-                />
-                {!collapsed && (
-                  <span className="flex-1 text-sm">{item.title}</span>
-                )}
-              </NavLink>
-            );
-          })}
-        </nav>
-      </aside>
+                    "flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200",
+                    isActive
+                      ? "bg-[#051839] text-white font-semibold shadow-lg"
+                      : "bg-gray-100 text-[#051839] hover:bg-gray-200"
+                  )}
+                >
+                  <img 
+                    src={item.icon} 
+                    alt={item.title} 
+                    className={cn(
+                      "w-6 h-6 shrink-0",
+                      isActive ? "brightness-0 invert" : ""
+                    )} 
+                  />
+                  {!collapsed && (
+                    <span className="flex-1 text-sm">{item.title}</span>
+                  )}
+                </NavLink>
+              );
+            })}
+          </nav>
+        </aside>
+      </div>
     </>
   );
 }
