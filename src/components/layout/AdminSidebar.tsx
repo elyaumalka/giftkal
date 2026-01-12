@@ -90,7 +90,7 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
       <div className="fixed right-4 top-24 z-40">
         <aside
           className={cn(
-            "bg-white rounded-3xl shadow-lg transition-all duration-300 flex flex-col overflow-hidden",
+            "bg-[#051839] rounded-3xl shadow-lg transition-all duration-300 flex flex-col overflow-hidden",
             collapsed ? "w-20" : "w-52"
           )}
         >
@@ -105,8 +105,8 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200",
                     isActive
-                      ? "bg-[#051839] text-white font-semibold shadow-lg"
-                      : "bg-gray-100 text-[#051839] hover:bg-gray-200"
+                      ? "bg-white text-[#051839] font-semibold shadow-lg"
+                      : "bg-white/10 text-white hover:bg-white/20"
                   )}
                 >
                   <img 
@@ -114,7 +114,7 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
                     alt={item.title} 
                     className={cn(
                       "w-6 h-6 shrink-0",
-                      isActive ? "brightness-0 invert" : ""
+                      isActive ? "" : "brightness-0 invert"
                     )} 
                   />
                   {!collapsed && (
