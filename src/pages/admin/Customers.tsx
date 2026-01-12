@@ -30,7 +30,6 @@ import {
   Filter,
   CheckCircle,
   XCircle,
-  UserPlus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
@@ -51,64 +50,32 @@ export default function Customers() {
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isEditVenueOpen, setIsEditVenueOpen] = useState(false);
   const [isEditEventOpen, setIsEditEventOpen] = useState(false);
-  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
-  const [createUserFor, setCreateUserFor] = useState<"venue" | "event">("venue");
   
-  // New venue form state
+  // Combined form state - User + Venue
+  const [newOwnerFullName, setNewOwnerFullName] = useState("");
+  const [newOwnerEmail, setNewOwnerEmail] = useState("");
+  const [newOwnerPassword, setNewOwnerPassword] = useState("");
+  const [newOwnerPhone, setNewOwnerPhone] = useState("");
   const [newVenueName, setNewVenueName] = useState("");
   const [newVenueAddress, setNewVenueAddress] = useState("");
   const [newVenuePhone, setNewVenuePhone] = useState("");
   const [newVenueEmail, setNewVenueEmail] = useState("");
   const [newVenueSubscription, setNewVenueSubscription] = useState("");
-  const [newVenueOwnerId, setNewVenueOwnerId] = useState("");
   
-  // New event form state
+  // Combined form state - User + Event
+  const [newEventOwnerFullName, setNewEventOwnerFullName] = useState("");
+  const [newEventOwnerEmail, setNewEventOwnerEmail] = useState("");
+  const [newEventOwnerPassword, setNewEventOwnerPassword] = useState("");
+  const [newEventOwnerPhone, setNewEventOwnerPhone] = useState("");
   const [newEventGroomName, setNewEventGroomName] = useState("");
   const [newEventBrideName, setNewEventBrideName] = useState("");
   const [newEventDate, setNewEventDate] = useState("");
   const [newEventType, setNewEventType] = useState("חתונה");
   const [newEventVenueId, setNewEventVenueId] = useState("");
-  const [newEventOwnerId, setNewEventOwnerId] = useState("");
   const [newEventRentalCost, setNewEventRentalCost] = useState("");
-
-  // New user form state
-  const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserFullName, setNewUserFullName] = useState("");
-  const [newUserPhone, setNewUserPhone] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Fetch venue owners (users with venue_owner role)
-  const { data: venueOwners, refetch: refetchVenueOwners } = useQuery({
-    queryKey: ["venue-owners"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select(`
-          user_id,
-          profiles!inner(user_id, full_name, email)
-        `)
-        .eq("role", "venue_owner");
-      return data || [];
-    },
-  });
-
-  // Fetch event owners (users with event_owner role)
-  const { data: eventOwners, refetch: refetchEventOwners } = useQuery({
-    queryKey: ["event-owners"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select(`
-          user_id,
-          profiles!inner(user_id, full_name, email)
-        `)
-        .eq("role", "event_owner");
-      return data || [];
-    },
-  });
 
   // Fetch venues
   const { data: venues } = useQuery({
@@ -189,17 +156,26 @@ export default function Customers() {
     },
   });
 
-  // Create new user mutation
-  const createUser = useMutation({
+  // Create venue owner + venue
+  const createVenueWithOwner = useMutation({
     mutationFn: async () => {
-      const role = createUserFor === "venue" ? "venue_owner" : "event_owner";
-      const { data, error } = await supabase.functions.invoke('create-user', {
+      // Call edge function to create user + venue
+      const { data, error } = await supabase.functions.invoke('create-customer', {
         body: {
-          email: newUserEmail,
-          password: newUserPassword,
-          fullName: newUserFullName,
-          phone: newUserPhone,
-          role
+          type: 'venue',
+          user: {
+            email: newOwnerEmail,
+            password: newOwnerPassword,
+            fullName: newOwnerFullName,
+            phone: newOwnerPhone,
+          },
+          venue: {
+            name: newVenueName,
+            address: newVenueAddress,
+            phone: newVenuePhone,
+            email: newVenueEmail,
+            monthlySubscription: parseFloat(newVenueSubscription) || 0,
+          }
         }
       });
       
@@ -207,54 +183,52 @@ export default function Customers() {
       if (!data.success) throw new Error(data.error);
       return data;
     },
-    onSuccess: async (data) => {
-      // Refetch the owners lists first
-      if (createUserFor === "venue") {
-        await refetchVenueOwners();
-      } else {
-        await refetchEventOwners();
-      }
-      
-      // Set the new user as selected owner after refetch
-      setTimeout(() => {
-        if (createUserFor === "venue") {
-          setNewVenueOwnerId(data.user.id);
-        } else {
-          setNewEventOwnerId(data.user.id);
-        }
-      }, 100);
-      
-      setIsCreateUserOpen(false);
-      resetUserForm();
-      toast({ title: "המשתמש נוצר בהצלחה", description: `${data.user.email} נוסף כ${createUserFor === "venue" ? "בעל אולם" : "בעל אירוע"}` });
-    },
-    onError: (error: any) => {
-      toast({ title: "שגיאה ביצירת משתמש", description: error.message, variant: "destructive" });
-    },
-  });
-
-  // Add venue mutation
-  const addVenue = useMutation({
-    mutationFn: async () => {
-      if (!newVenueOwnerId) throw new Error("יש לבחור בעל אולם");
-      const { error } = await supabase.from("venues").insert({
-        name: newVenueName,
-        address: newVenueAddress,
-        phone: newVenuePhone || null,
-        email: newVenueEmail || null,
-        monthly_subscription: parseFloat(newVenueSubscription) || 0,
-        owner_id: newVenueOwnerId,
-      });
-      if (error) throw error;
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["venues"] });
       setIsAddVenueOpen(false);
       resetVenueForm();
-      toast({ title: "האולם נוסף בהצלחה" });
+      toast({ title: "בעל האולם והאולם נוצרו בהצלחה!" });
     },
     onError: (error: any) => {
-      toast({ title: "שגיאה בהוספת אולם", description: error.message, variant: "destructive" });
+      toast({ title: "שגיאה ביצירה", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Create event owner + event
+  const createEventWithOwner = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('create-customer', {
+        body: {
+          type: 'event',
+          user: {
+            email: newEventOwnerEmail,
+            password: newEventOwnerPassword,
+            fullName: newEventOwnerFullName,
+            phone: newEventOwnerPhone,
+          },
+          event: {
+            groomName: newEventGroomName,
+            brideName: newEventBrideName,
+            eventDate: newEventDate,
+            eventType: newEventType,
+            venueId: newEventVenueId || null,
+            deviceRentalCost: parseFloat(newEventRentalCost) || 0,
+          }
+        }
+      });
+      
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      setIsAddEventOpen(false);
+      resetEventForm();
+      toast({ title: "בעל האירוע והאירוע נוצרו בהצלחה!" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה ביצירה", description: error.message, variant: "destructive" });
     },
   });
 
@@ -279,32 +253,6 @@ export default function Customers() {
     },
     onError: (error: any) => {
       toast({ title: "שגיאה בעדכון אולם", description: error.message, variant: "destructive" });
-    },
-  });
-
-  // Add event mutation
-  const addEvent = useMutation({
-    mutationFn: async () => {
-      if (!newEventOwnerId) throw new Error("יש לבחור בעל אירוע");
-      const { error } = await supabase.from("events").insert({
-        groom_name: newEventGroomName || null,
-        bride_name: newEventBrideName || null,
-        event_date: newEventDate,
-        event_type: newEventType,
-        venue_id: newEventVenueId || null,
-        owner_id: newEventOwnerId,
-        device_rental_cost: parseFloat(newEventRentalCost) || 0,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events-list"] });
-      setIsAddEventOpen(false);
-      resetEventForm();
-      toast({ title: "האירוע נוסף בהצלחה" });
-    },
-    onError: (error: any) => {
-      toast({ title: "שגיאה בהוספת אירוע", description: error.message, variant: "destructive" });
     },
   });
 
@@ -334,31 +282,30 @@ export default function Customers() {
   });
 
   const resetVenueForm = () => {
+    setNewOwnerFullName("");
+    setNewOwnerEmail("");
+    setNewOwnerPassword("");
+    setNewOwnerPhone("");
     setNewVenueName("");
     setNewVenueAddress("");
     setNewVenuePhone("");
     setNewVenueEmail("");
     setNewVenueSubscription("");
-    setNewVenueOwnerId("");
     setSelectedVenue(null);
   };
 
   const resetEventForm = () => {
+    setNewEventOwnerFullName("");
+    setNewEventOwnerEmail("");
+    setNewEventOwnerPassword("");
+    setNewEventOwnerPhone("");
     setNewEventGroomName("");
     setNewEventBrideName("");
     setNewEventDate("");
     setNewEventType("חתונה");
     setNewEventVenueId("");
-    setNewEventOwnerId("");
     setNewEventRentalCost("");
     setSelectedEvent(null);
-  };
-
-  const resetUserForm = () => {
-    setNewUserEmail("");
-    setNewUserPassword("");
-    setNewUserFullName("");
-    setNewUserPhone("");
   };
 
   const openEditVenue = (venue: any) => {
@@ -382,11 +329,8 @@ export default function Customers() {
     setIsEditEventOpen(true);
   };
 
-  const openCreateUser = (forType: "venue" | "event") => {
-    setCreateUserFor(forType);
-    resetUserForm();
-    setIsCreateUserOpen(true);
-  };
+  const isVenueFormValid = newOwnerFullName && newOwnerEmail && newOwnerPassword && newOwnerPassword.length >= 6 && newVenueName && newVenueAddress;
+  const isEventFormValid = newEventOwnerFullName && newEventOwnerEmail && newEventOwnerPassword && newEventOwnerPassword.length >= 6 && newEventDate;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -400,42 +344,46 @@ export default function Customers() {
             <Download className="w-4 h-4 ml-2" />
             ייצוא לאקסל
           </Button>
-          <Dialog open={activeTab === "venues" ? isAddVenueOpen : isAddEventOpen} onOpenChange={activeTab === "venues" ? setIsAddVenueOpen : setIsAddEventOpen}>
+          
+          {/* Add Venue Dialog */}
+          <Dialog open={isAddVenueOpen} onOpenChange={(open) => { setIsAddVenueOpen(open); if (!open) resetVenueForm(); }}>
             <DialogTrigger asChild>
-              <Button variant="gold">
+              <Button variant="gold" className={activeTab !== "venues" ? "hidden" : ""}>
                 <Plus className="w-4 h-4 ml-2" />
-                הוספת {activeTab === "venues" ? "אולם" : "אירוע"}
+                הוספת בעל אולם
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>{activeTab === "venues" ? "הוספת אולם חדש" : "הוספת אירוע חדש"}</DialogTitle>
+                <DialogTitle>הוספת בעל אולם חדש</DialogTitle>
               </DialogHeader>
-              {activeTab === "venues" ? (
+              <div className="space-y-6">
+                {/* Owner Details Section */}
                 <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">פרטי בעל האולם</h3>
                   <div>
-                    <Label>בעל אולם *</Label>
-                    <div className="flex gap-2">
-                      <Select value={newVenueOwnerId} onValueChange={setNewVenueOwnerId}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="בחר בעל אולם" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {venueOwners?.map((owner: any) => (
-                            <SelectItem key={owner.user_id} value={owner.user_id}>
-                              {owner.profiles?.full_name} ({owner.profiles?.email})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button type="button" variant="outline" size="icon" onClick={() => openCreateUser("venue")} title="צור משתמש חדש">
-                        <UserPlus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    {!venueOwners?.length && (
-                      <p className="text-sm text-muted-foreground mt-1">אין בעלי אולמות במערכת. לחץ על + ליצירת משתמש חדש.</p>
-                    )}
+                    <Label>שם מלא *</Label>
+                    <Input value={newOwnerFullName} onChange={(e) => setNewOwnerFullName(e.target.value)} placeholder="שם מלא" />
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>מייל *</Label>
+                      <Input type="email" value={newOwnerEmail} onChange={(e) => setNewOwnerEmail(e.target.value)} placeholder="email@example.com" />
+                    </div>
+                    <div>
+                      <Label>סיסמה *</Label>
+                      <Input type="password" value={newOwnerPassword} onChange={(e) => setNewOwnerPassword(e.target.value)} placeholder="לפחות 6 תווים" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>טלפון</Label>
+                    <Input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} placeholder="050-1234567" />
+                  </div>
+                </div>
+
+                {/* Venue Details Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">פרטי האולם</h3>
                   <div>
                     <Label>שם האולם *</Label>
                     <Input value={newVenueName} onChange={(e) => setNewVenueName(e.target.value)} placeholder="שם האולם" />
@@ -446,47 +394,66 @@ export default function Customers() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>טלפון</Label>
+                      <Label>טלפון האולם</Label>
                       <Input value={newVenuePhone} onChange={(e) => setNewVenuePhone(e.target.value)} placeholder="03-1234567" />
                     </div>
                     <div>
-                      <Label>מייל</Label>
-                      <Input type="email" value={newVenueEmail} onChange={(e) => setNewVenueEmail(e.target.value)} placeholder="email@example.com" />
+                      <Label>מייל האולם</Label>
+                      <Input type="email" value={newVenueEmail} onChange={(e) => setNewVenueEmail(e.target.value)} placeholder="venue@example.com" />
                     </div>
                   </div>
                   <div>
                     <Label>עלות מנוי חודשי (₪)</Label>
                     <Input type="number" value={newVenueSubscription} onChange={(e) => setNewVenueSubscription(e.target.value)} placeholder="2500" />
                   </div>
-                  <Button onClick={() => addVenue.mutate()} disabled={!newVenueName || !newVenueAddress || !newVenueOwnerId || addVenue.isPending} className="w-full">
-                    {addVenue.isPending ? "מוסיף..." : "הוסף אולם"}
-                  </Button>
                 </div>
-              ) : (
+
+                <Button onClick={() => createVenueWithOwner.mutate()} disabled={!isVenueFormValid || createVenueWithOwner.isPending} className="w-full">
+                  {createVenueWithOwner.isPending ? "יוצר..." : "צור בעל אולם ואולם"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Event Dialog */}
+          <Dialog open={isAddEventOpen} onOpenChange={(open) => { setIsAddEventOpen(open); if (!open) resetEventForm(); }}>
+            <DialogTrigger asChild>
+              <Button variant="gold" className={activeTab !== "events" ? "hidden" : ""}>
+                <Plus className="w-4 h-4 ml-2" />
+                הוספת בעל אירוע
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>הוספת בעל אירוע חדש</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6">
+                {/* Owner Details Section */}
                 <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">פרטי בעל האירוע</h3>
                   <div>
-                    <Label>בעל אירוע *</Label>
-                    <div className="flex gap-2">
-                      <Select value={newEventOwnerId} onValueChange={setNewEventOwnerId}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="בחר בעל אירוע" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {eventOwners?.map((owner: any) => (
-                            <SelectItem key={owner.user_id} value={owner.user_id}>
-                              {owner.profiles?.full_name} ({owner.profiles?.email})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button type="button" variant="outline" size="icon" onClick={() => openCreateUser("event")} title="צור משתמש חדש">
-                        <UserPlus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    {!eventOwners?.length && (
-                      <p className="text-sm text-muted-foreground mt-1">אין בעלי אירועים במערכת. לחץ על + ליצירת משתמש חדש.</p>
-                    )}
+                    <Label>שם מלא *</Label>
+                    <Input value={newEventOwnerFullName} onChange={(e) => setNewEventOwnerFullName(e.target.value)} placeholder="שם מלא" />
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>מייל *</Label>
+                      <Input type="email" value={newEventOwnerEmail} onChange={(e) => setNewEventOwnerEmail(e.target.value)} placeholder="email@example.com" />
+                    </div>
+                    <div>
+                      <Label>סיסמה *</Label>
+                      <Input type="password" value={newEventOwnerPassword} onChange={(e) => setNewEventOwnerPassword(e.target.value)} placeholder="לפחות 6 תווים" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>טלפון</Label>
+                    <Input value={newEventOwnerPhone} onChange={(e) => setNewEventOwnerPhone(e.target.value)} placeholder="050-1234567" />
+                  </div>
+                </div>
+
+                {/* Event Details Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2">פרטי האירוע</h3>
                   <div>
                     <Label>סוג אירוע</Label>
                     <Select value={newEventType} onValueChange={setNewEventType}>
@@ -535,49 +502,16 @@ export default function Customers() {
                     <Label>עלות השכרת מכשיר (₪)</Label>
                     <Input type="number" value={newEventRentalCost} onChange={(e) => setNewEventRentalCost(e.target.value)} placeholder="500" />
                   </div>
-                  <Button onClick={() => addEvent.mutate()} disabled={!newEventDate || !newEventOwnerId || addEvent.isPending} className="w-full">
-                    {addEvent.isPending ? "מוסיף..." : "הוסף אירוע"}
-                  </Button>
                 </div>
-              )}
+
+                <Button onClick={() => createEventWithOwner.mutate()} disabled={!isEventFormValid || createEventWithOwner.isPending} className="w-full">
+                  {createEventWithOwner.isPending ? "יוצר..." : "צור בעל אירוע ואירוע"}
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
       </div>
-
-      {/* Create User Dialog */}
-      <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>יצירת {createUserFor === "venue" ? "בעל אולם" : "בעל אירוע"} חדש</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>שם מלא *</Label>
-              <Input value={newUserFullName} onChange={(e) => setNewUserFullName(e.target.value)} placeholder="שם מלא" />
-            </div>
-            <div>
-              <Label>מייל *</Label>
-              <Input type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} placeholder="email@example.com" />
-            </div>
-            <div>
-              <Label>סיסמה *</Label>
-              <Input type="password" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} placeholder="לפחות 6 תווים" />
-            </div>
-            <div>
-              <Label>טלפון</Label>
-              <Input value={newUserPhone} onChange={(e) => setNewUserPhone(e.target.value)} placeholder="050-1234567" />
-            </div>
-            <Button 
-              onClick={() => createUser.mutate()} 
-              disabled={!newUserFullName || !newUserEmail || !newUserPassword || newUserPassword.length < 6 || createUser.isPending} 
-              className="w-full"
-            >
-              {createUser.isPending ? "יוצר משתמש..." : "צור משתמש"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Edit Venue Dialog */}
       <Dialog open={isEditVenueOpen} onOpenChange={setIsEditVenueOpen}>
