@@ -7,7 +7,14 @@
    Gold accents for celebrations, clean and professional
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Assistant:wght@300;400;500;600;700&display=swap');
+/* Custom Discovery Font */
+@font-face {
+  font-family: 'Discovery';
+  src: url('/fonts/Discovery_Fs-VF.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 @layer base {
   :root {
@@ -125,11 +132,11 @@
   }
 
   body {
-    @apply bg-background text-foreground font-heebo antialiased;
+    @apply bg-background text-foreground font-discovery antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heebo font-bold;
+    @apply font-discovery font-bold;
   }
 }
 
