@@ -3,15 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -24,12 +15,7 @@ import {
   Search,
   Eye,
   Pencil,
-  Download,
-  Building2,
-  Users,
   Filter,
-  CheckCircle,
-  XCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
@@ -40,9 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export default function Customers() {
-  const [activeTab, setActiveTab] = useState("venues");
+  const [activeTab, setActiveTab] = useState<"venues" | "events">("venues");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVenue, setSelectedVenue] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -77,19 +64,52 @@ export default function Customers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch venues
+  // Fetch venues with owner profiles
   const { data: venues } = useQuery({
-    queryKey: ["venues"],
+    queryKey: ["venues-with-stats"],
     queryFn: async () => {
       const { data } = await supabase
         .from("venues")
         .select(`
           *,
-          devices (id, serial_number, name),
+          devices (id),
           events (id)
         `)
         .order("created_at", { ascending: false });
-      return data || [];
+      
+      if (!data) return [];
+      
+      // Get owner profiles
+      const ownerIds = data.map(v => v.owner_id).filter(Boolean);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", ownerIds);
+      
+      // Get transaction totals per venue
+      const venueIds = data.map(v => v.id);
+      const { data: transactions } = await supabase
+        .from("transactions")
+        .select("event_id, amount");
+      
+      const { data: venueEvents } = await supabase
+        .from("events")
+        .select("id, venue_id")
+        .in("venue_id", venueIds);
+      
+      return data.map(venue => {
+        const venueEventIds = venueEvents?.filter(e => e.venue_id === venue.id).map(e => e.id) || [];
+        const venueTransactions = transactions?.filter(t => venueEventIds.includes(t.event_id)) || [];
+        const totalTransactions = venueTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+        
+        return {
+          ...venue,
+          ownerName: profiles?.find(p => p.id === venue.owner_id)?.full_name || "לא ידוע",
+          deviceCount: venue.devices?.length || 0,
+          venueCount: 1,
+          totalTransactions,
+        };
+      });
     },
   });
 
@@ -101,8 +121,7 @@ export default function Customers() {
         .from("events")
         .select(`
           *,
-          venues (id, name, address),
-          documents (id)
+          venues (id, name, address)
         `)
         .order("event_date", { ascending: false });
       return data || [];
@@ -112,7 +131,8 @@ export default function Customers() {
   // Filter data based on search
   const filteredVenues = venues?.filter((v) =>
     v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    v.address.toLowerCase().includes(searchQuery.toLowerCase())
+    v.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    v.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredEvents = events?.filter((e) =>
@@ -121,45 +141,9 @@ export default function Customers() {
     e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handleExportExcel = () => {
-    toast({
-      title: "מייצא לאקסל...",
-      description: "הקובץ יורד בקרוב",
-    });
-  };
-
-  const markDeviceReturned = useMutation({
-    mutationFn: async (eventId: string) => {
-      const { error } = await supabase
-        .from("events")
-        .update({ device_returned: true })
-        .eq("id", eventId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events-list"] });
-      toast({ title: "המכשיר סומן כהוחזר" });
-    },
-  });
-
-  const markPaymentComplete = useMutation({
-    mutationFn: async (eventId: string) => {
-      const { error } = await supabase
-        .from("events")
-        .update({ payment_completed: true })
-        .eq("id", eventId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events-list"] });
-      toast({ title: "התשלום סומן כהושלם" });
-    },
-  });
-
   // Create venue owner + venue
   const createVenueWithOwner = useMutation({
     mutationFn: async () => {
-      // Call edge function to create user + venue
       const { data, error } = await supabase.functions.invoke('create-customer', {
         body: {
           type: 'venue',
@@ -184,7 +168,7 @@ export default function Customers() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["venues"] });
+      queryClient.invalidateQueries({ queryKey: ["venues-with-stats"] });
       setIsAddVenueOpen(false);
       resetVenueForm();
       toast({ title: "בעל האולם והאולם נוצרו בהצלחה!" });
@@ -246,7 +230,7 @@ export default function Customers() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["venues"] });
+      queryClient.invalidateQueries({ queryKey: ["venues-with-stats"] });
       setIsEditVenueOpen(false);
       resetVenueForm();
       toast({ title: "האולם עודכן בהצלחה" });
@@ -334,31 +318,57 @@ export default function Customers() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Tabs */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">לקוחות</h1>
-          <p className="text-muted-foreground mt-1">ניהול בעלי אולמות ובעלי אירועים</p>
+        <div className="flex bg-muted rounded-full p-1">
+          <button
+            onClick={() => setActiveTab("venues")}
+            className={cn(
+              "px-8 py-3 rounded-full text-sm font-medium transition-all",
+              activeTab === "venues"
+                ? "bg-secondary text-white"
+                : "text-muted-foreground hover:text-secondary"
+            )}
+          >
+            בעלי אולמות
+          </button>
+          <button
+            onClick={() => setActiveTab("events")}
+            className={cn(
+              "px-8 py-3 rounded-full text-sm font-medium transition-all",
+              activeTab === "events"
+                ? "bg-secondary text-white"
+                : "text-muted-foreground hover:text-secondary"
+            )}
+          >
+            בעלי אירועים
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExportExcel}>
-            <Download className="w-4 h-4 ml-2" />
-            ייצוא לאקסל
-          </Button>
-          
-          {/* Add Venue Dialog */}
-          <Dialog open={isAddVenueOpen} onOpenChange={(open) => { setIsAddVenueOpen(open); if (!open) resetVenueForm(); }}>
-            <DialogTrigger asChild>
-              <Button variant="gold" className={activeTab !== "venues" ? "hidden" : ""}>
-                <Plus className="w-4 h-4 ml-2" />
-                הוספת בעל אולם
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>הוספת בעל אולם חדש</DialogTitle>
-              </DialogHeader>
+      </div>
+
+      {/* Search and Add */}
+      <div className="flex items-center gap-4">
+        {/* Add Button */}
+        <Dialog open={activeTab === "venues" ? isAddVenueOpen : isAddEventOpen} onOpenChange={(open) => { 
+          if (activeTab === "venues") {
+            setIsAddVenueOpen(open);
+            if (!open) resetVenueForm();
+          } else {
+            setIsAddEventOpen(open);
+            if (!open) resetEventForm();
+          }
+        }}>
+          <DialogTrigger asChild>
+            <Button size="icon" className="rounded-full bg-sidebar-accent hover:bg-sidebar-accent/80 h-10 w-10">
+              <Plus className="w-5 h-5" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{activeTab === "venues" ? "הוספת בעל אולם חדש" : "הוספת בעל אירוע חדש"}</DialogTitle>
+            </DialogHeader>
+            {activeTab === "venues" ? (
               <div className="space-y-6">
-                {/* Owner Details Section */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg border-b pb-2">פרטי בעל האולם</h3>
                   <div>
@@ -381,7 +391,6 @@ export default function Customers() {
                   </div>
                 </div>
 
-                {/* Venue Details Section */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg border-b pb-2">פרטי האולם</h3>
                   <div>
@@ -412,23 +421,8 @@ export default function Customers() {
                   {createVenueWithOwner.isPending ? "יוצר..." : "צור בעל אולם ואולם"}
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Add Event Dialog */}
-          <Dialog open={isAddEventOpen} onOpenChange={(open) => { setIsAddEventOpen(open); if (!open) resetEventForm(); }}>
-            <DialogTrigger asChild>
-              <Button variant="gold" className={activeTab !== "events" ? "hidden" : ""}>
-                <Plus className="w-4 h-4 ml-2" />
-                הוספת בעל אירוע
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>הוספת בעל אירוע חדש</DialogTitle>
-              </DialogHeader>
+            ) : (
               <div className="space-y-6">
-                {/* Owner Details Section */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg border-b pb-2">פרטי בעל האירוע</h3>
                   <div>
@@ -451,7 +445,6 @@ export default function Customers() {
                   </div>
                 </div>
 
-                {/* Event Details Section */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg border-b pb-2">פרטי האירוע</h3>
                   <div>
@@ -508,9 +501,25 @@ export default function Customers() {
                   {createEventWithOwner.isPending ? "יוצר..." : "צור בעל אירוע ואירוע"}
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Search */}
+        <div className="relative flex-1 max-w-sm">
+          <Input
+            placeholder="חיפוש חופשי"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pr-10 rounded-full bg-white border-0 shadow-sm"
+          />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         </div>
+
+        {/* Filter */}
+        <Button variant="ghost" size="icon" className="text-muted-foreground">
+          <Filter className="w-5 h-5" />
+        </Button>
       </div>
 
       {/* Edit Venue Dialog */}
@@ -611,193 +620,156 @@ export default function Customers() {
         </DialogContent>
       </Dialog>
 
-      {/* Search and Filters */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="חיפוש לקוח..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-10"
-          />
+      {/* Table Header */}
+      {activeTab === "venues" && (
+        <div className="flex items-center gap-4 px-4 py-3 text-sm text-muted-foreground font-medium">
+          <div className="w-10"></div>
+          <div className="flex-1 text-right">שם הלקוח</div>
+          <div className="flex-1 text-right">כתובת האולם</div>
+          <div className="w-24 text-center">כמות אולמות</div>
+          <div className="w-24 text-center">כמות מכשירים</div>
+          <div className="w-24 text-center">עלות מנוי</div>
+          <div className="w-32 text-center">סך עסקאות כולל</div>
+          <div className="w-10"></div>
         </div>
-        <Button variant="outline">
-          <Filter className="w-4 h-4 ml-2" />
-          פילטרים
-        </Button>
-      </div>
+      )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="venues" className="gap-2">
-            <Building2 className="w-4 h-4" />
-            בעלי אולמות
-          </TabsTrigger>
-          <TabsTrigger value="events" className="gap-2">
-            <Users className="w-4 h-4" />
-            בעלי אירועים
-          </TabsTrigger>
-        </TabsList>
+      {activeTab === "events" && (
+        <div className="flex items-center gap-4 px-4 py-3 text-sm text-muted-foreground font-medium">
+          <div className="w-10"></div>
+          <div className="flex-1 text-right">שם הלקוח</div>
+          <div className="flex-1 text-right">שם האולם</div>
+          <div className="w-28 text-center">תאריך אירוע</div>
+          <div className="w-24 text-center">עלות השכרה</div>
+          <div className="w-10"></div>
+        </div>
+      )}
 
-        <TabsContent value="venues" className="mt-6">
-          <div className="bg-card rounded-xl shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>שם האולם</TableHead>
-                  <TableHead>כתובת</TableHead>
-                  <TableHead>טלפון</TableHead>
-                  <TableHead>מכשירי סליקה</TableHead>
-                  <TableHead>עלות מנוי</TableHead>
-                  <TableHead>סך אירועים</TableHead>
-                  <TableHead>פעולות</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredVenues?.map((venue) => (
-                  <TableRow key={venue.id}>
-                    <TableCell className="font-medium">{venue.name}</TableCell>
-                    <TableCell>{venue.address}</TableCell>
-                    <TableCell>{venue.phone || "—"}</TableCell>
-                    <TableCell>{venue.devices?.length || 0}</TableCell>
-                    <TableCell>₪{venue.monthly_subscription?.toLocaleString()}</TableCell>
-                    <TableCell>{venue.events?.length || 0}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setSelectedVenue(venue)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>פרטי אולם</DialogTitle>
-                            </DialogHeader>
-                            <VenueDetails venue={venue} />
-                          </DialogContent>
-                        </Dialog>
-                        <Button variant="ghost" size="icon" onClick={() => openEditVenue(venue)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!filteredVenues?.length && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      לא נמצאו אולמות
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
+      {/* Venues List */}
+      {activeTab === "venues" && (
+        <div className="space-y-2">
+          {filteredVenues?.map((venue) => (
+            <div
+              key={venue.id}
+              className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow"
+            >
+              {/* Edit Button */}
+              <Button variant="ghost" size="icon" onClick={() => openEditVenue(venue)} className="shrink-0">
+                <Pencil className="w-5 h-5 text-sidebar-accent" />
+              </Button>
 
-        <TabsContent value="events" className="mt-6">
-          <div className="bg-card rounded-xl shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>שם הלקוח</TableHead>
-                  <TableHead>שם האולם</TableHead>
-                  <TableHead>תאריך אירוע</TableHead>
-                  <TableHead>עלות השכרה</TableHead>
-                  <TableHead>מכשיר</TableHead>
-                  <TableHead>תשלום</TableHead>
-                  <TableHead>מסמכים</TableHead>
-                  <TableHead>פעולות</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEvents?.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell className="font-medium">
-                      {event.groom_name && event.bride_name ? `${event.groom_name} & ${event.bride_name}` : event.groom_name || "—"}
-                    </TableCell>
-                    <TableCell>{event.venues?.name || "—"}</TableCell>
-                    <TableCell>
-                      {new Date(event.event_date).toLocaleDateString("he-IL")}
-                    </TableCell>
-                    <TableCell>₪{event.device_rental_cost?.toLocaleString() || 0}</TableCell>
-                    <TableCell>
-                      {event.device_returned ? (
-                        <span className="badge-success px-2 py-1 rounded text-xs">הוחזר</span>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => markDeviceReturned.mutate(event.id)}
-                        >
-                          סמן כהוחזר
-                        </Button>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {event.payment_completed ? (
-                        <span className="badge-success px-2 py-1 rounded text-xs">שולם</span>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => markPaymentComplete.mutate(event.id)}
-                        >
-                          סמן כשולם
-                        </Button>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {event.documents_complete ? (
-                        <CheckCircle className="w-4 h-4 text-success" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-destructive" />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setSelectedEvent(event)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>פרטי אירוע</DialogTitle>
-                            </DialogHeader>
-                            <EventDetails event={event} />
-                          </DialogContent>
-                        </Dialog>
-                        <Button variant="ghost" size="icon" onClick={() => openEditEvent(event)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!filteredEvents?.length && (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      לא נמצאו אירועים
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-      </Tabs>
+              {/* Customer Name */}
+              <div className="flex-1 font-semibold text-secondary text-right">
+                {venue.ownerName}
+              </div>
+
+              {/* Venue Address */}
+              <div className="flex-1 text-muted-foreground text-right">
+                {venue.address}
+              </div>
+
+              {/* Venue Count */}
+              <div className="w-24 text-center text-secondary">
+                {venue.venueCount}
+              </div>
+
+              {/* Device Count */}
+              <div className="w-24 text-center text-secondary">
+                {venue.deviceCount}
+              </div>
+
+              {/* Subscription Cost */}
+              <div className="w-24 text-center text-secondary">
+                ₪ {venue.monthly_subscription?.toLocaleString() || 0}
+              </div>
+
+              {/* Total Transactions */}
+              <div className="w-32 text-center font-semibold text-secondary">
+                ₪ {venue.totalTransactions?.toLocaleString() || 0}
+              </div>
+
+              {/* View Button */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setSelectedVenue(venue)}>
+                    <Eye className="w-5 h-5 text-muted-foreground" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>פרטי אולם</DialogTitle>
+                  </DialogHeader>
+                  <VenueDetails venue={venue} />
+                </DialogContent>
+              </Dialog>
+            </div>
+          ))}
+          {!filteredVenues?.length && (
+            <div className="text-center py-12 text-muted-foreground">
+              לא נמצאו אולמות
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Events List */}
+      {activeTab === "events" && (
+        <div className="space-y-2">
+          {filteredEvents?.map((event) => (
+            <div
+              key={event.id}
+              className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow"
+            >
+              {/* Edit Button */}
+              <Button variant="ghost" size="icon" onClick={() => openEditEvent(event)} className="shrink-0">
+                <Pencil className="w-5 h-5 text-sidebar-accent" />
+              </Button>
+
+              {/* Customer Name */}
+              <div className="flex-1 font-semibold text-secondary text-right">
+                {event.groom_name && event.bride_name 
+                  ? `${event.groom_name} & ${event.bride_name}` 
+                  : event.groom_name || "—"}
+              </div>
+
+              {/* Venue Name */}
+              <div className="flex-1 text-muted-foreground text-right">
+                {event.venues?.name || "—"}
+              </div>
+
+              {/* Event Date */}
+              <div className="w-28 text-center text-secondary">
+                {new Date(event.event_date).toLocaleDateString("he-IL")}
+              </div>
+
+              {/* Rental Cost */}
+              <div className="w-24 text-center text-secondary">
+                ₪ {event.device_rental_cost?.toLocaleString() || 0}
+              </div>
+
+              {/* View Button */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setSelectedEvent(event)}>
+                    <Eye className="w-5 h-5 text-muted-foreground" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>פרטי אירוע</DialogTitle>
+                  </DialogHeader>
+                  <EventDetails event={event} />
+                </DialogContent>
+              </Dialog>
+            </div>
+          ))}
+          {!filteredEvents?.length && (
+            <div className="text-center py-12 text-muted-foreground">
+              לא נמצאו אירועים
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -806,6 +778,10 @@ function VenueDetails({ venue }: { venue: any }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label className="text-muted-foreground">שם הלקוח</Label>
+          <p className="font-medium">{venue.ownerName}</p>
+        </div>
         <div>
           <Label className="text-muted-foreground">שם האולם</Label>
           <p className="font-medium">{venue.name}</p>
@@ -819,32 +795,16 @@ function VenueDetails({ venue }: { venue: any }) {
           <p className="font-medium">{venue.phone || "—"}</p>
         </div>
         <div>
-          <Label className="text-muted-foreground">מייל</Label>
-          <p className="font-medium">{venue.email || "—"}</p>
-        </div>
-        <div>
           <Label className="text-muted-foreground">עלות מנוי</Label>
           <p className="font-medium">₪{venue.monthly_subscription?.toLocaleString()}</p>
         </div>
         <div>
-          <Label className="text-muted-foreground">סך אירועים</Label>
-          <p className="font-medium">{venue.events?.length || 0}</p>
+          <Label className="text-muted-foreground">כמות מכשירים</Label>
+          <p className="font-medium">{venue.deviceCount}</p>
         </div>
-      </div>
-
-      <div>
-        <Label className="text-muted-foreground">מכשירים מקושרים</Label>
-        <div className="mt-2 space-y-2">
-          {venue.devices?.length ? (
-            venue.devices.map((device: any) => (
-              <div key={device.id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                <span>{device.name}</span>
-                <span className="text-muted-foreground text-sm">{device.serial_number}</span>
-              </div>
-            ))
-          ) : (
-            <p className="text-muted-foreground">אין מכשירים מקושרים</p>
-          )}
+        <div>
+          <Label className="text-muted-foreground">סך עסקאות</Label>
+          <p className="font-medium">₪{venue.totalTransactions?.toLocaleString()}</p>
         </div>
       </div>
     </div>
@@ -882,12 +842,6 @@ function EventDetails({ event }: { event: any }) {
         <div>
           <Label className="text-muted-foreground">עלות השכרה</Label>
           <p className="font-medium">₪{event.device_rental_cost?.toLocaleString() || 0}</p>
-        </div>
-        <div>
-          <Label className="text-muted-foreground">סטטוס תשלום</Label>
-          <p className={event.payment_completed ? "text-success" : "text-warning"}>
-            {event.payment_completed ? "שולם" : "ממתין לתשלום"}
-          </p>
         </div>
       </div>
     </div>
