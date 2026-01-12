@@ -113,7 +113,7 @@ export default function Customers() {
     },
   });
 
-  // Fetch events
+  // Fetch events with owner profiles
   const { data: events } = useQuery({
     queryKey: ["events-list"],
     queryFn: async () => {
@@ -124,7 +124,43 @@ export default function Customers() {
           venues (id, name, address)
         `)
         .order("event_date", { ascending: false });
-      return data || [];
+      
+      if (!data) return [];
+      
+      // Get owner profiles
+      const ownerIds = data.map(e => e.owner_id).filter(Boolean);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", ownerIds);
+      
+      // Get documents for each event to check missing docs
+      const eventIds = data.map(e => e.id);
+      const { data: documents } = await supabase
+        .from("documents")
+        .select("event_id, document_type")
+        .in("event_id", eventIds);
+      
+      // Get required documents
+      const { data: requiredDocs } = await supabase
+        .from("required_documents")
+        .select("document_type")
+        .eq("for_type", "event");
+      
+      const requiredDocTypes = requiredDocs?.map(d => d.document_type) || [];
+      
+      return data.map(event => {
+        const eventDocs = documents?.filter(d => d.event_id === event.id) || [];
+        const uploadedDocTypes = eventDocs.map(d => d.document_type);
+        const missingDocs = requiredDocTypes.filter(type => !uploadedDocTypes.includes(type));
+        
+        return {
+          ...event,
+          ownerName: profiles?.find(p => p.user_id === event.owner_id)?.full_name || "לא ידוע",
+          missingDocsCount: missingDocs.length,
+          allDocsComplete: missingDocs.length === 0,
+        };
+      });
     },
   });
 
@@ -638,10 +674,12 @@ export default function Customers() {
       {activeTab === "events" && (
         <div className="flex items-center gap-4 px-4 py-3 text-sm text-muted-foreground font-medium">
           <div className="w-10"></div>
-          <div className="flex-1 text-right">שם הלקוח</div>
+          <div className="w-32 text-center">מסמכים חסרים</div>
+          <div className="w-28 text-center">הוחזר/לא הוחזר</div>
+          <div className="w-28 text-center">עלות השכרה</div>
+          <div className="w-28 text-center">תאריך האירוע</div>
           <div className="flex-1 text-right">שם האולם</div>
-          <div className="w-28 text-center">תאריך אירוע</div>
-          <div className="w-24 text-center">עלות השכרה</div>
+          <div className="flex-1 text-right">שם הלקוח</div>
           <div className="w-10"></div>
         </div>
       )}
@@ -716,26 +754,63 @@ export default function Customers() {
       {/* Events List */}
       {activeTab === "events" && (
         <div className="space-y-2">
-          {filteredEvents?.map((event) => (
+          {filteredEvents?.map((event: any) => (
             <div
               key={event.id}
               className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow"
             >
-              {/* Edit Button */}
-              <Button variant="ghost" size="icon" onClick={() => openEditEvent(event)} className="shrink-0">
-                <Pencil className="w-5 h-5 text-sidebar-accent" />
-              </Button>
+              {/* View Button */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setSelectedEvent(event)}>
+                    <Eye className="w-5 h-5 text-muted-foreground" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>פרטי אירוע</DialogTitle>
+                  </DialogHeader>
+                  <EventDetails event={event} />
+                </DialogContent>
+              </Dialog>
 
-              {/* Customer Name */}
-              <div className="flex-1 font-semibold text-secondary text-right">
-                {event.groom_name && event.bride_name 
-                  ? `${event.groom_name} & ${event.bride_name}` 
-                  : event.groom_name || "—"}
+              {/* Missing Documents Badge */}
+              <div className="w-32 text-center">
+                {event.allDocsComplete ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
+                    הושלמו בהצלחה
+                  </span>
+                ) : (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
+                    חסר {event.missingDocsCount} מסמכים
+                  </span>
+                )}
               </div>
 
-              {/* Venue Name */}
-              <div className="flex-1 text-muted-foreground text-right">
-                {event.venues?.name || "—"}
+              {/* Device Returned Badge */}
+              <div className="w-28 text-center">
+                {event.device_returned ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
+                    הוחזר
+                  </span>
+                ) : (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-yellow-500 text-white">
+                    סמן כהוחזר
+                  </span>
+                )}
+              </div>
+
+              {/* Payment Status Badge */}
+              <div className="w-28 text-center">
+                {event.payment_completed ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-blue-500 text-white">
+                    שולם
+                  </span>
+                ) : (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-blue-500 text-white">
+                    סמן כשולם
+                  </span>
+                )}
               </div>
 
               {/* Event Date */}
@@ -743,10 +818,20 @@ export default function Customers() {
                 {new Date(event.event_date).toLocaleDateString("he-IL")}
               </div>
 
-              {/* Rental Cost */}
-              <div className="w-24 text-center text-secondary">
-                ₪ {event.device_rental_cost?.toLocaleString() || 0}
+              {/* Venue Name */}
+              <div className="flex-1 text-muted-foreground text-right">
+                {event.venues?.name || "—"}
               </div>
+
+              {/* Customer Name */}
+              <div className="flex-1 font-semibold text-secondary text-right">
+                {event.ownerName || "—"}
+              </div>
+
+              {/* Edit Button */}
+              <Button variant="ghost" size="icon" onClick={() => openEditEvent(event)} className="shrink-0">
+                <Pencil className="w-5 h-5 text-sidebar-accent" />
+              </Button>
 
               {/* View Button */}
               <Dialog>
