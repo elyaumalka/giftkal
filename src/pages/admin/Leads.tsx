@@ -366,13 +366,13 @@ export default function Leads() {
         </DialogContent>
       </Dialog>
 
-      {/* Table Header - Right to Left */}
-      <div className="grid grid-cols-[1fr_1fr_1.5fr_1fr_auto_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+      {/* Table Header - Right to Left: Edit, Name, Phone, Email, Venue, Notes count, Tasks count, View */}
+      <div className="grid grid-cols-[auto_1fr_1fr_1.5fr_1fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+        <span className="w-10"></span>
         <span>שם הליד</span>
         <span>טלפון</span>
         <span>כתובת מייל</span>
         <span>שם האולם</span>
-        <span className="w-10"></span>
         <span className="w-16"></span>
         <span className="w-16"></span>
         <span className="w-10"></span>
@@ -383,8 +383,16 @@ export default function Leads() {
         {filteredLeads?.map((lead) => (
           <div
             key={lead.id}
-            className="grid grid-cols-[1fr_1fr_1.5fr_1fr_auto_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+            className="grid grid-cols-[auto_1fr_1fr_1.5fr_1fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
           >
+            {/* עריכה - first on right */}
+            <button
+              onClick={() => openEditLead(lead)}
+              className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+
             {/* שם הליד */}
             <span className="text-center font-bold">
               {lead.full_name}
@@ -405,14 +413,6 @@ export default function Leads() {
               {lead.venue_name || "—"}
             </span>
 
-            {/* עריכה */}
-            <button
-              onClick={() => openEditLead(lead)}
-              className="w-10 h-10 rounded-full border-2 border-[#1a2942] flex items-center justify-center hover:bg-[#1a2942] hover:text-white transition-colors"
-            >
-              <Pencil className="w-4 h-4" />
-            </button>
-
             {/* הערות */}
             <div className="flex items-center gap-1 w-16 justify-center">
               <span className="font-bold">{lead.notes?.filter((n: any) => !n.is_completed).length || 0}</span>
@@ -425,13 +425,13 @@ export default function Leads() {
               <MessageSquare className="w-5 h-5 text-muted-foreground" />
             </div>
 
-            {/* צפייה */}
+            {/* צפייה - last on left */}
             <button
               onClick={() => {
                 setSelectedLead(lead);
                 setIsViewLeadOpen(true);
               }}
-              className="w-10 h-10 rounded-full border-2 border-[#1a2942] flex items-center justify-center hover:bg-[#1a2942] hover:text-white transition-colors"
+              className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
             >
               <Eye className="w-5 h-5" />
             </button>
@@ -551,17 +551,14 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
 
   return (
     <div className="bg-[#e5e5e5] min-h-[500px]">
-      {/* Dark Header */}
+      {/* Dark Header - Title on right, buttons on left */}
       <div className="bg-[#1a2942] text-white px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsAddTaskOpen(true)}
-            className="bg-transparent border-white text-white hover:bg-white hover:text-[#1a2942] rounded-full px-4"
-          >
-            הוספת משימה
-          </Button>
+          <button onClick={onClose} className="hover:opacity-80">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             size="sm"
@@ -570,16 +567,19 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
           >
             הוספת הערה
           </Button>
-        </div>
-        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsAddTaskOpen(true)}
+            className="bg-transparent border-white text-white hover:bg-white hover:text-[#1a2942] rounded-full px-4"
+          >
+            הוספת משימה
+          </Button>
           <span className="text-xl font-bold">פרטי ליד</span>
-          <button onClick={onClose} className="hover:opacity-80">
-            <X className="w-6 h-6" />
-          </button>
         </div>
       </div>
 
-      {/* Lead Info Row */}
+      {/* Lead Info Row - RTL: Avatar + Name on right, other fields to left */}
       <div className="bg-white mx-6 mt-6 rounded-2xl px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <div className="text-center">
@@ -604,7 +604,7 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-left">
+          <div className="text-right">
             <p className="text-sm text-muted-foreground">שם הליד</p>
             <p className="font-bold text-lg">{lead.full_name}</p>
           </div>
