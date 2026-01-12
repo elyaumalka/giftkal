@@ -18,6 +18,7 @@ import Leads from "./pages/admin/Leads";
 import Support from "./pages/admin/Support";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
+import SeedData from "./pages/admin/SeedData";
 
 // Venue
 import { VenueLayout } from "./components/layout/VenueLayout";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="support" element={<Support />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="seed" element={<SeedData />} />
           </Route>
 
           {/* Venue owner routes */}
