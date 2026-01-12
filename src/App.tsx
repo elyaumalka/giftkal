@@ -3,8 +3,39 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+
+// Auth
+import Login from "./pages/auth/Login";
+
+// Admin
+import { AdminLayout } from "./components/layout/AdminLayout";
+import AdminDashboard from "./pages/admin/Dashboard";
+import Customers from "./pages/admin/Customers";
+import Transactions from "./pages/admin/Transactions";
+import EventOwners from "./pages/admin/EventOwners";
+import Leads from "./pages/admin/Leads";
+import Support from "./pages/admin/Support";
+import Reports from "./pages/admin/Reports";
+import Settings from "./pages/admin/Settings";
+
+// Venue
+import { VenueLayout } from "./components/layout/VenueLayout";
+import VenueDashboard from "./pages/venue/Dashboard";
+import VenueInvoices from "./pages/venue/Invoices";
+import VenueEvents from "./pages/venue/Events";
+import VenueSupport from "./pages/venue/Support";
+import VenueSettings from "./pages/venue/Settings";
+
+// Event
+import { EventLayout } from "./components/layout/EventLayout";
+import EventDashboard from "./pages/event/Dashboard";
+import EventInvitations from "./pages/event/Invitations";
+import EventGifts from "./pages/event/Gifts";
+import EventSettings from "./pages/event/Settings";
+
+// Public
+import GiftScreen from "./pages/gift/GiftScreen";
 
 const queryClient = new QueryClient();
 
@@ -15,8 +46,41 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          {/* Public routes */}
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/gift/:eventId" element={<GiftScreen />} />
+
+          {/* Admin routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="transactions" element={<Transactions />} />
+            <Route path="event-owners" element={<EventOwners />} />
+            <Route path="leads" element={<Leads />} />
+            <Route path="support" element={<Support />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+
+          {/* Venue owner routes */}
+          <Route path="/venue" element={<VenueLayout />}>
+            <Route index element={<VenueDashboard />} />
+            <Route path="invoices" element={<VenueInvoices />} />
+            <Route path="events" element={<VenueEvents />} />
+            <Route path="support" element={<VenueSupport />} />
+            <Route path="settings" element={<VenueSettings />} />
+          </Route>
+
+          {/* Event owner routes */}
+          <Route path="/event" element={<EventLayout />}>
+            <Route index element={<EventDashboard />} />
+            <Route path="invitations" element={<EventInvitations />} />
+            <Route path="gifts" element={<EventGifts />} />
+            <Route path="settings" element={<EventSettings />} />
+          </Route>
+
+          {/* Catch all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

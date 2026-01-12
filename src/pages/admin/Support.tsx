@@ -58,7 +58,7 @@ export default function Support() {
 
   const filteredTickets = tickets?.filter((ticket) =>
     ticket.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    ticket.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const respondToTicket = useMutation({
@@ -170,7 +170,7 @@ export default function Support() {
                 {filteredTickets?.map((ticket) => (
                   <TableRow key={ticket.id}>
                     <TableCell className="font-medium">
-                      {ticket.profiles?.full_name || "—"}
+                      {ticket.venues?.name || "לקוח"}
                     </TableCell>
                     {activeTab === "issues" && (
                       <>
@@ -180,8 +180,8 @@ export default function Support() {
                     )}
                     {activeTab === "inquiries" && (
                       <>
-                        <TableCell>{ticket.profiles?.phone || "—"}</TableCell>
-                        <TableCell>{ticket.profiles?.email || "—"}</TableCell>
+                        <TableCell>—</TableCell>
+                        <TableCell>—</TableCell>
                       </>
                     )}
                     <TableCell className="max-w-xs truncate">{ticket.subject}</TableCell>

@@ -68,7 +68,7 @@ export default function Transactions() {
   });
 
   const filteredEvents = eventTransactions?.filter((event) =>
-    event.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    event.ownerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     event.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -128,7 +128,7 @@ export default function Transactions() {
                   {new Date(event.event_date).toLocaleDateString("he-IL")}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {event.profiles?.full_name || "—"}
+                  {event.ownerName}
                 </TableCell>
                 <TableCell>{event.venues?.name || "—"}</TableCell>
                 <TableCell>{event.transactionCount}</TableCell>
@@ -150,7 +150,7 @@ export default function Transactions() {
                       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>
-                            עסקאות - {event.profiles?.full_name} | {event.venues?.name}
+                            עסקאות - {event.ownerName} | {event.venues?.name}
                           </DialogTitle>
                         </DialogHeader>
                         <TransactionsList transactions={eventDetails || []} />

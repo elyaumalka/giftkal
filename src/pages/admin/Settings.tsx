@@ -360,7 +360,7 @@ export default function Settings() {
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.full_name}</TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>{getUserRole(user.user_roles)}</TableCell>
+                      <TableCell>לא מוגדר</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="icon">
