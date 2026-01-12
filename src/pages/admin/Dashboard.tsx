@@ -1,19 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentList } from "@/components/dashboard/RecentList";
 import { Button } from "@/components/ui/button";
-import {
-  UserPlus,
-  Building2,
-  Users,
-  CreditCard,
-  ClipboardList,
-  Eye,
-  CheckCircle,
-  XCircle,
-  MessageSquare,
-} from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,8 +11,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+
+// Import icons
+import LeadsIcon from "@/assets/icons/Leads.svg";
+import EventOwnersIcon from "@/assets/icons/EventOwners.svg";
+import CustomersIcon from "@/assets/icons/Customers.svg";
+import TransactionsIcon from "@/assets/icons/Transactions.svg";
+import ToolsIcon from "@/assets/icons/Tools.svg";
 
 export default function AdminDashboard() {
+  const queryClient = useQueryClient();
+
   // Fetch stats
   const { data: stats } = useQuery({
     queryKey: ["admin-stats"],
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
     },
   });
 
-  // Fetch recent issues
+  // Fetch recent issues with venue data
   const { data: recentIssues } = useQuery({
     queryKey: ["recent-issues"],
     queryFn: async () => {
@@ -82,10 +82,7 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("tasks")
-        .select(`
-          *,
-          leads (full_name)
-        `)
+        .select("*")
         .eq("is_completed", false)
         .order("created_at", { ascending: false })
         .limit(3);
@@ -95,208 +92,211 @@ export default function AdminDashboard() {
 
   const handleCompleteTask = async (taskId: string) => {
     await supabase.from("tasks").update({ is_completed: true }).eq("id", taskId);
+    queryClient.invalidateQueries({ queryKey: ["recent-tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
   };
 
   const handleDeleteTask = async (taskId: string) => {
     await supabase.from("tasks").delete().eq("id", taskId);
+    queryClient.invalidateQueries({ queryKey: ["recent-tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
   };
 
   const handleCloseTicket = async (ticketId: string) => {
     await supabase.from("support_tickets").update({ status: "closed" }).eq("id", ticketId);
+    queryClient.invalidateQueries({ queryKey: ["recent-inquiries"] });
+    queryClient.invalidateQueries({ queryKey: ["recent-issues"] });
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold">דשבורד</h1>
-        <p className="text-muted-foreground mt-1">סקירה כללית של המערכת</p>
-      </div>
-
+    <div className="space-y-8 animate-fade-in">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatCard
-          title="סך לידים"
+          title="לידים"
           value={stats?.leads || 0}
-          icon={UserPlus}
-          variant="gold"
+          icon={LeadsIcon}
         />
         <StatCard
-          title="אולמות במערכת"
+          title="אולמות אירועים"
           value={stats?.venues || 0}
-          icon={Building2}
+          icon={EventOwnersIcon}
         />
         <StatCard
           title="בעלי אירועים"
           value={stats?.events || 0}
-          icon={Users}
+          icon={EventOwnersIcon}
         />
         <StatCard
-          title="עסקאות במערכת"
+          title="עסקאות"
           value={stats?.transactions || 0}
-          icon={CreditCard}
-          variant="success"
+          icon={TransactionsIcon}
         />
         <StatCard
           title="משימות פתוחות"
           value={stats?.openTasks || 0}
-          icon={ClipboardList}
-          variant="warning"
+          icon={ToolsIcon}
         />
       </div>
 
-      {/* Recent Lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Inquiries */}
-        <RecentList
-          title="פניות אחרונות"
-          viewAllPath="/admin/support"
-          isEmpty={!recentInquiries?.length}
-        >
-          <div className="space-y-3">
-            {recentInquiries?.map((inquiry) => (
-              <div
-                key={inquiry.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{inquiry.subject}</p>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {inquiry.description}
-                  </p>
-                </div>
+      {/* Recent Inquiries */}
+      <RecentList
+        title="פניות אחרונות"
+        viewAllPath="/admin/support"
+        viewAllText="לכל הפניות"
+        isEmpty={!recentInquiries?.length}
+      >
+        <div className="space-y-2">
+          {recentInquiries?.map((inquiry) => (
+            <div
+              key={inquiry.id}
+              className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-8 flex-1">
+                <span className="font-medium text-secondary min-w-[120px]">
+                  {inquiry.subject}
+                </span>
+                <span className="text-muted-foreground flex-1 truncate">
+                  {inquiry.description}
+                </span>
+              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0">
+                    <Eye className="w-5 h-5 text-muted-foreground" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>פרטי הפנייה</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">נושא</p>
+                      <p className="font-medium">{inquiry.subject}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">תיאור</p>
+                      <p>{inquiry.description}</p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          ))}
+        </div>
+      </RecentList>
+
+      {/* Recent Issues */}
+      <RecentList
+        title="תקלות אחרונות"
+        viewAllPath="/admin/support?tab=issues"
+        viewAllText="לכל התקלות"
+        isEmpty={!recentIssues?.length}
+      >
+        <div className="space-y-2">
+          {recentIssues?.map((issue) => (
+            <div
+              key={issue.id}
+              className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-6 flex-1">
+                <span className="font-medium text-secondary min-w-[100px]">
+                  {issue.subject}
+                </span>
+                <span className="text-muted-foreground min-w-[150px]">
+                  {issue.venues?.address || "-"}
+                </span>
+                <span className="text-secondary font-medium min-w-[120px]">
+                  {issue.venues?.name || "-"}
+                </span>
+                <Badge variant={issue.status === "open" ? "destructive" : "secondary"} className="min-w-[60px] justify-center">
+                  {issue.status === "open" ? "פתוח" : "סגור"}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-muted-foreground"
+                  onClick={() => handleCloseTicket(issue.id)}
+                >
+                  סגירת הפנייה
+                </Button>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="ghost" size="icon">
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-5 h-5 text-muted-foreground" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>פרטי הפנייה</DialogTitle>
+                      <DialogTitle>פרטי התקלה</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">נושא</p>
-                        <p className="font-medium">{inquiry.subject}</p>
+                        <p className="text-sm text-muted-foreground">אולם</p>
+                        <p className="font-medium">{issue.venues?.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">כתובת</p>
+                        <p>{issue.venues?.address}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">תיאור</p>
-                        <p>{inquiry.description}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">סטטוס</p>
-                        <p className={inquiry.status === "open" ? "text-warning" : "text-success"}>
-                          {inquiry.status === "open" ? "פתוח" : inquiry.status === "closed" ? "סגור" : "בטיפול"}
-                        </p>
+                        <p>{issue.description}</p>
                       </div>
                     </div>
                   </DialogContent>
                 </Dialog>
               </div>
-            ))}
-          </div>
-        </RecentList>
+            </div>
+          ))}
+        </div>
+      </RecentList>
 
-        {/* Recent Issues */}
-        <RecentList
-          title="תקלות אחרונות"
-          viewAllPath="/admin/support?tab=issues"
-          isEmpty={!recentIssues?.length}
-        >
-          <div className="space-y-3">
-            {recentIssues?.map((issue) => (
-              <div
-                key={issue.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{issue.subject}</p>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {issue.venues?.name} - {issue.venues?.address}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="text-success" onClick={() => handleCloseTicket(issue.id)}>
-                    <CheckCircle className="w-4 h-4" />
-                  </Button>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>פרטי התקלה</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">נושא</p>
-                          <p className="font-medium">{issue.subject}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">אולם</p>
-                          <p>{issue.venues?.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">כתובת</p>
-                          <p>{issue.venues?.address}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">תיאור</p>
-                          <p>{issue.description}</p>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+      {/* Tasks */}
+      <RecentList
+        title="משימות לביצוע"
+        viewAllPath="/admin/leads"
+        viewAllText="לכל המשימות"
+        isEmpty={!recentTasks?.length}
+      >
+        <div className="space-y-2">
+          {recentTasks?.map((task) => (
+            <div
+              key={task.id}
+              className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-6 flex-1">
+                <span className="text-muted-foreground flex-1">
+                  {task.description}
+                </span>
+                <span className="text-muted-foreground min-w-[100px]">
+                  {task.due_date ? new Date(task.due_date).toLocaleDateString("he-IL") : "-"}
+                </span>
               </div>
-            ))}
-          </div>
-        </RecentList>
-
-        {/* Recent Tasks */}
-        <RecentList
-          title="משימות לביצוע"
-          viewAllPath="/admin/leads"
-          isEmpty={!recentTasks?.length}
-        >
-          <div className="space-y-3">
-            {recentTasks?.map((task) => (
-              <div
-                key={task.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{task.description}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {task.leads?.full_name || "ללא ליד מקושר"}
-                    {task.due_date && ` • ${new Date(task.due_date).toLocaleDateString("he-IL")}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-success"
-                    onClick={() => handleCompleteTask(task.id)}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive"
-                    onClick={() => handleDeleteTask(task.id)}
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-sidebar-accent border-sidebar-accent hover:bg-sidebar-accent hover:text-white"
+                  onClick={() => handleCompleteTask(task.id)}
+                >
+                  סימון כבוצע
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDeleteTask(task.id)}
+                >
+                  מחיקה
+                </Button>
               </div>
-            ))}
-          </div>
-        </RecentList>
-      </div>
+            </div>
+          ))}
+        </div>
+      </RecentList>
     </div>
   );
 }
