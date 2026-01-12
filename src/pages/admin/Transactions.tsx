@@ -200,11 +200,11 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
   );
 
   return (
-    <div className="min-h-[500px] max-h-[80vh] overflow-y-auto">
-      {/* Header Row - White background */}
-      <div className="flex items-center justify-between px-8 py-5 bg-white border-b border-gray-200">
+    <div className="bg-[#e5e5e5] min-h-[500px] max-h-[80vh] overflow-y-auto">
+      {/* Header Row */}
+      <div className="flex items-center justify-between px-8 py-6">
         {/* Left - Search */}
-        <div className="flex items-center gap-2 bg-[#f5f5f5] rounded-full px-5 py-3">
+        <div className="flex items-center gap-2 bg-white rounded-full px-5 py-3 shadow-sm">
           <Input
             placeholder="חיפוש חופשי"
             value={searchQuery}
@@ -217,38 +217,36 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
         </div>
 
         {/* Right - Event Info */}
-        <div className="flex items-center gap-12">
+        <div className="flex items-center gap-16">
           <div className="text-center">
-            <p className="text-xs text-muted-foreground mb-1">שם האולם</p>
-            <p className="font-bold text-[#c9a54e] text-lg">{event.venues?.name || "—"}</p>
+            <p className="text-sm text-muted-foreground mb-1">שם האולם</p>
+            <p className="font-bold text-[#c9a54e] text-xl">{event.venues?.name || "—"}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-muted-foreground mb-1">בעל האירוע</p>
-            <p className="font-bold text-lg">{event.ownerName}</p>
+            <p className="text-sm text-muted-foreground mb-1">בעל האירוע</p>
+            <p className="font-bold text-xl">{event.ownerName}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-muted-foreground mb-1">תאריך</p>
-            <p className="font-bold text-lg">{new Date(event.event_date).toLocaleDateString("he-IL")}</p>
+            <p className="text-sm text-muted-foreground mb-1">תאריך</p>
+            <p className="font-bold text-xl">{new Date(event.event_date).toLocaleDateString("he-IL")}</p>
           </div>
         </div>
       </div>
 
-      {/* Content area - Gray background */}
-      <div className="bg-[#e5e5e5] pt-4">
-        {/* Table Header - Right to Left */}
-        <div className="grid grid-cols-[1fr_1fr_1.5fr_1fr_1fr_0.8fr_auto_auto] gap-4 px-8 py-3 text-sm font-medium text-muted-foreground text-center">
-          <span>תאריך</span>
-          <span>שם הלקוח</span>
-          <span>כתובת מייל</span>
-          <span>שם האולם</span>
-          <span>בעל האירוע</span>
-          <span>סכום</span>
-          <span className="w-28"></span>
-          <span className="w-28"></span>
-        </div>
+      {/* Table Header - Right to Left */}
+      <div className="grid grid-cols-[1fr_1fr_1.5fr_1fr_1fr_0.8fr_auto_auto] gap-4 px-8 py-3 text-sm font-medium text-muted-foreground text-center">
+        <span>תאריך</span>
+        <span>שם הלקוח</span>
+        <span>כתובת מייל</span>
+        <span>שם האולם</span>
+        <span>בעל האירוע</span>
+        <span>סכום</span>
+        <span className="w-28"></span>
+        <span className="w-28"></span>
+      </div>
 
-        {/* Transaction Rows */}
-        <div className="space-y-3 px-8 pb-8">
+      {/* Transaction Rows */}
+      <div className="space-y-3 px-8 pb-8">
         {filteredTransactions.map((transaction) => (
           <div
             key={transaction.id}
@@ -319,20 +317,19 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
             אין עסקאות לאירוע זה
           </div>
         )}
-        </div>
-
-        {/* Blessing Dialog */}
-        {blessingText && (
-          <Dialog open={!!blessingText} onOpenChange={() => setBlessingText(null)}>
-            <DialogContent>
-              <div className="text-center space-y-4">
-                <h3 className="text-xl font-bold">ברכה מ{blessingFrom}</h3>
-                <p className="text-lg leading-relaxed">{blessingText}</p>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
       </div>
+
+      {/* Blessing Dialog */}
+      {blessingText && (
+        <Dialog open={!!blessingText} onOpenChange={() => setBlessingText(null)}>
+          <DialogContent>
+            <div className="text-center space-y-4">
+              <h3 className="text-xl font-bold">ברכה מ{blessingFrom}</h3>
+              <p className="text-lg leading-relaxed">{blessingText}</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
