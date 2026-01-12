@@ -674,12 +674,12 @@ export default function Customers() {
       {activeTab === "events" && (
         <div className="flex items-center gap-4 px-4 py-3 text-sm text-muted-foreground font-medium">
           <div className="w-10"></div>
-          <div className="w-32 text-center">מסמכים חסרים</div>
-          <div className="w-28 text-center">הוחזר/לא הוחזר</div>
-          <div className="w-28 text-center">עלות השכרה</div>
-          <div className="w-28 text-center">תאריך האירוע</div>
-          <div className="flex-1 text-right">שם האולם</div>
           <div className="flex-1 text-right">שם הלקוח</div>
+          <div className="flex-1 text-right">שם האולם</div>
+          <div className="w-28 text-center">תאריך האירוע</div>
+          <div className="w-28 text-center">עלות השכרה</div>
+          <div className="w-28 text-center">הוחזר/לא הוחזר</div>
+          <div className="w-32 text-center">מסמכים חסרים</div>
           <div className="w-10"></div>
         </div>
       )}
@@ -759,30 +759,35 @@ export default function Customers() {
               key={event.id}
               className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow"
             >
-              {/* View Button */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setSelectedEvent(event)}>
-                    <Eye className="w-5 h-5 text-muted-foreground" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>פרטי אירוע</DialogTitle>
-                  </DialogHeader>
-                  <EventDetails event={event} />
-                </DialogContent>
-              </Dialog>
+              {/* Edit Button */}
+              <Button variant="ghost" size="icon" onClick={() => openEditEvent(event)} className="shrink-0">
+                <Pencil className="w-5 h-5 text-sidebar-accent" />
+              </Button>
 
-              {/* Missing Documents Badge */}
-              <div className="w-32 text-center">
-                {event.allDocsComplete ? (
-                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
-                    הושלמו בהצלחה
+              {/* Customer Name */}
+              <div className="flex-1 font-semibold text-secondary text-right">
+                {event.ownerName || "—"}
+              </div>
+
+              {/* Venue Name */}
+              <div className="flex-1 text-muted-foreground text-right">
+                {event.venues?.name || "—"}
+              </div>
+
+              {/* Event Date */}
+              <div className="w-28 text-center text-secondary">
+                {new Date(event.event_date).toLocaleDateString("he-IL")}
+              </div>
+
+              {/* Payment Status Badge */}
+              <div className="w-28 text-center">
+                {event.payment_completed ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-blue-500 text-white">
+                    שולם
                   </span>
                 ) : (
-                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
-                    חסר {event.missingDocsCount} מסמכים
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-blue-500 text-white">
+                    סמן כשולם
                   </span>
                 )}
               </div>
@@ -800,38 +805,18 @@ export default function Customers() {
                 )}
               </div>
 
-              {/* Payment Status Badge */}
-              <div className="w-28 text-center">
-                {event.payment_completed ? (
-                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-blue-500 text-white">
-                    שולם
+              {/* Missing Documents Badge */}
+              <div className="w-32 text-center">
+                {event.allDocsComplete ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
+                    הושלמו בהצלחה
                   </span>
                 ) : (
-                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-blue-500 text-white">
-                    סמן כשולם
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
+                    חסר {event.missingDocsCount} מסמכים
                   </span>
                 )}
               </div>
-
-              {/* Event Date */}
-              <div className="w-28 text-center text-secondary">
-                {new Date(event.event_date).toLocaleDateString("he-IL")}
-              </div>
-
-              {/* Venue Name */}
-              <div className="flex-1 text-muted-foreground text-right">
-                {event.venues?.name || "—"}
-              </div>
-
-              {/* Customer Name */}
-              <div className="flex-1 font-semibold text-secondary text-right">
-                {event.ownerName || "—"}
-              </div>
-
-              {/* Edit Button */}
-              <Button variant="ghost" size="icon" onClick={() => openEditEvent(event)} className="shrink-0">
-                <Pencil className="w-5 h-5 text-sidebar-accent" />
-              </Button>
 
               {/* View Button */}
               <Dialog>
