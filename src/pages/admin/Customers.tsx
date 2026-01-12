@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { EventDetailsDialog } from "@/components/admin/EventDetailsDialog";
 
 export default function Customers() {
   const [activeTab, setActiveTab] = useState<"venues" | "events">("venues");
@@ -825,11 +826,8 @@ export default function Customers() {
                     <Eye className="w-5 h-5 text-muted-foreground" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>פרטי אירוע</DialogTitle>
-                  </DialogHeader>
-                  <EventDetails event={event} />
+                <DialogContent className="max-w-4xl p-0 overflow-hidden">
+                  <EventDetailsDialog event={event} onClose={() => setSelectedEvent(null)} />
                 </DialogContent>
               </Dialog>
             </div>
