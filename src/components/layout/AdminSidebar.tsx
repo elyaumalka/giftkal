@@ -105,17 +105,14 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200",
                     isActive
-                      ? "bg-white text-[#051839] font-semibold shadow-lg"
-                      : "bg-white/10 text-white hover:bg-white/20"
+                      ? "bg-[#95742F] text-white font-semibold shadow-lg"
+                      : "bg-[#08275E] text-white hover:bg-[#08275E]/80"
                   )}
                 >
                   <img 
                     src={item.icon} 
                     alt={item.title} 
-                    className={cn(
-                      "w-6 h-6 shrink-0",
-                      isActive ? "" : "brightness-0 invert"
-                    )} 
+                    className="w-6 h-6 shrink-0 brightness-0 invert"
                   />
                   {!collapsed && (
                     <span className="flex-1 text-sm">{item.title}</span>
