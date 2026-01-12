@@ -69,7 +69,7 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
   return (
     <>
       {/* Top Header */}
-      <header className="fixed top-0 right-0 left-0 h-16 bg-[#1a2942] z-50 flex items-center justify-between px-6">
+      <header className="fixed top-0 right-0 left-0 h-16 bg-[#051839] z-50 flex items-center justify-between px-6">
         {/* Logo on the right */}
         <div className="flex items-center">
           <img src={logo} alt="Giftkal Logo" className="h-10" />
