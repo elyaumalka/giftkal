@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentList } from "@/components/dashboard/RecentList";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2 } from "lucide-react";
+import { Eye } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
-// Import icons
-import LeadsIcon from "@/assets/icons/Leads.svg";
-import EventOwnersIcon from "@/assets/icons/EventOwners.svg";
-import CustomersIcon from "@/assets/icons/Customers.svg";
-import TransactionsIcon from "@/assets/icons/Transactions.svg";
-import ToolsIcon from "@/assets/icons/Tools.svg";
+// Import stat icons (colored for dashboard)
+import StatLeadsIcon from "@/assets/icons/stat-leads.svg";
+import StatEventsIcon from "@/assets/icons/stat-events.svg";
+import StatCustomersIcon from "@/assets/icons/stat-customers.svg";
+import StatTransactionsIcon from "@/assets/icons/stat-transactions.svg";
+import StatToolsIcon from "@/assets/icons/stat-tools.svg";
 
 export default function AdminDashboard() {
   const queryClient = useQueryClient();
@@ -45,34 +45,60 @@ export default function AdminDashboard() {
     },
   });
 
-  // Fetch recent inquiries
+  // Fetch recent inquiries with profile data via raw query
   const { data: recentInquiries } = useQuery({
-    queryKey: ["recent-inquiries"],
+    queryKey: ["recent-inquiries-with-profiles"],
     queryFn: async () => {
       const { data } = await supabase
         .from("support_tickets")
-        .select("*")
+        .select("id, subject, description, user_id, status, created_at")
         .eq("ticket_type", "inquiry")
         .order("created_at", { ascending: false })
         .limit(3);
-      return data || [];
+      
+      if (!data) return [];
+      
+      // Get profile data for each ticket
+      const userIds = data.map(t => t.user_id).filter(Boolean);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone, email")
+        .in("id", userIds);
+      
+      return data.map(ticket => ({
+        ...ticket,
+        profile: profiles?.find(p => p.id === ticket.user_id) || null
+      }));
     },
   });
 
-  // Fetch recent issues with venue data
+  // Fetch recent issues with venue and profile data
   const { data: recentIssues } = useQuery({
-    queryKey: ["recent-issues"],
+    queryKey: ["recent-issues-with-profiles"],
     queryFn: async () => {
       const { data } = await supabase
         .from("support_tickets")
         .select(`
-          *,
+          id, subject, description, user_id, venue_id, status, created_at,
           venues (name, address)
         `)
         .eq("ticket_type", "issue")
         .order("created_at", { ascending: false })
         .limit(3);
-      return data || [];
+      
+      if (!data) return [];
+      
+      // Get profile data for each ticket
+      const userIds = data.map(t => t.user_id).filter(Boolean);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone, email")
+        .in("id", userIds);
+      
+      return data.map(ticket => ({
+        ...ticket,
+        profile: profiles?.find(p => p.id === ticket.user_id) || null
+      }));
     },
   });
 
@@ -82,11 +108,24 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("tasks")
-        .select("*")
+        .select("id, description, due_date, user_id, is_completed")
         .eq("is_completed", false)
         .order("created_at", { ascending: false })
         .limit(3);
-      return data || [];
+      
+      if (!data) return [];
+      
+      // Get profile data for assigned users
+      const userIds = data.map(t => t.user_id).filter(Boolean);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+      
+      return data.map(task => ({
+        ...task,
+        profile: profiles?.find(p => p.id === task.user_id) || null
+      }));
     },
   });
 
@@ -104,8 +143,8 @@ export default function AdminDashboard() {
 
   const handleCloseTicket = async (ticketId: string) => {
     await supabase.from("support_tickets").update({ status: "closed" }).eq("id", ticketId);
-    queryClient.invalidateQueries({ queryKey: ["recent-inquiries"] });
-    queryClient.invalidateQueries({ queryKey: ["recent-issues"] });
+    queryClient.invalidateQueries({ queryKey: ["recent-inquiries-with-profiles"] });
+    queryClient.invalidateQueries({ queryKey: ["recent-issues-with-profiles"] });
   };
 
   return (
@@ -115,31 +154,31 @@ export default function AdminDashboard() {
         <StatCard
           title="לידים"
           value={stats?.leads || 0}
-          icon={LeadsIcon}
+          icon={StatLeadsIcon}
         />
         <StatCard
           title="אולמות אירועים"
           value={stats?.venues || 0}
-          icon={EventOwnersIcon}
+          icon={StatEventsIcon}
         />
         <StatCard
           title="בעלי אירועים"
           value={stats?.events || 0}
-          icon={EventOwnersIcon}
+          icon={StatEventsIcon}
         />
         <StatCard
           title="עסקאות"
           value={stats?.transactions || 0}
-          icon={TransactionsIcon}
+          icon={StatTransactionsIcon}
         />
         <StatCard
           title="משימות פתוחות"
           value={stats?.openTasks || 0}
-          icon={ToolsIcon}
+          icon={StatToolsIcon}
         />
       </div>
 
-      {/* Recent Inquiries */}
+      {/* Recent Inquiries - פניות אחרונות */}
       <RecentList
         title="פניות אחרונות"
         viewAllPath="/admin/support"
@@ -152,9 +191,15 @@ export default function AdminDashboard() {
               key={inquiry.id}
               className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
             >
-              <div className="flex items-center gap-8 flex-1">
-                <span className="font-medium text-secondary min-w-[120px]">
-                  {inquiry.subject}
+              <div className="flex items-center gap-6 flex-1">
+                <span className="font-medium text-secondary min-w-[100px]">
+                  {inquiry.profile?.full_name || "לא ידוע"}
+                </span>
+                <span className="text-muted-foreground min-w-[100px]">
+                  {inquiry.profile?.phone || "-"}
+                </span>
+                <span className="text-muted-foreground min-w-[160px]">
+                  {inquiry.profile?.email || "-"}
                 </span>
                 <span className="text-muted-foreground flex-1 truncate">
                   {inquiry.description}
@@ -172,6 +217,18 @@ export default function AdminDashboard() {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
+                      <p className="text-sm text-muted-foreground">שם</p>
+                      <p className="font-medium">{inquiry.profile?.full_name || "לא ידוע"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">טלפון</p>
+                      <p>{inquiry.profile?.phone || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">אימייל</p>
+                      <p>{inquiry.profile?.email || "-"}</p>
+                    </div>
+                    <div>
                       <p className="text-sm text-muted-foreground">נושא</p>
                       <p className="font-medium">{inquiry.subject}</p>
                     </div>
@@ -187,7 +244,7 @@ export default function AdminDashboard() {
         </div>
       </RecentList>
 
-      {/* Recent Issues */}
+      {/* Recent Issues - תקלות אחרונות */}
       <RecentList
         title="תקלות אחרונות"
         viewAllPath="/admin/support?tab=issues"
@@ -202,7 +259,7 @@ export default function AdminDashboard() {
             >
               <div className="flex items-center gap-6 flex-1">
                 <span className="font-medium text-secondary min-w-[100px]">
-                  {issue.subject}
+                  {issue.profile?.full_name || "לא ידוע"}
                 </span>
                 <span className="text-muted-foreground min-w-[150px]">
                   {issue.venues?.address || "-"}
@@ -210,11 +267,21 @@ export default function AdminDashboard() {
                 <span className="text-secondary font-medium min-w-[120px]">
                   {issue.venues?.name || "-"}
                 </span>
+                <span className="text-muted-foreground flex-1">
+                  {issue.subject}
+                </span>
                 <Badge variant={issue.status === "open" ? "destructive" : "secondary"} className="min-w-[60px] justify-center">
                   {issue.status === "open" ? "פתוח" : "סגור"}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-muted-foreground"
+                >
+                  מענה
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -235,12 +302,20 @@ export default function AdminDashboard() {
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
+                        <p className="text-sm text-muted-foreground">שם הפונה</p>
+                        <p className="font-medium">{issue.profile?.full_name || "לא ידוע"}</p>
+                      </div>
+                      <div>
                         <p className="text-sm text-muted-foreground">אולם</p>
                         <p className="font-medium">{issue.venues?.name}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">כתובת</p>
                         <p>{issue.venues?.address}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">נושא התקלה</p>
+                        <p className="font-medium">{issue.subject}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">תיאור</p>
@@ -255,7 +330,7 @@ export default function AdminDashboard() {
         </div>
       </RecentList>
 
-      {/* Tasks */}
+      {/* Tasks - משימות לביצוע */}
       <RecentList
         title="משימות לביצוע"
         viewAllPath="/admin/leads"
@@ -271,6 +346,9 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-6 flex-1">
                 <span className="text-muted-foreground flex-1">
                   {task.description}
+                </span>
+                <span className="font-medium text-secondary min-w-[100px]">
+                  {task.profile?.full_name || "לא משויך"}
                 </span>
                 <span className="text-muted-foreground min-w-[100px]">
                   {task.due_date ? new Date(task.due_date).toLocaleDateString("he-IL") : "-"}
