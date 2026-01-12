@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Settings as SettingsIcon,
   Key,
   Users,
@@ -25,6 +38,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Database } from "@/integrations/supabase/types";
+
+type UserRole = Database["public"]["Enums"]["user_role"];
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("general");
@@ -38,6 +54,13 @@ export default function Settings() {
   // API key state
   const [newApiName, setNewApiName] = useState("");
   const [newApiKey, setNewApiKey] = useState("");
+
+  // Edit user state
+  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [editUserName, setEditUserName] = useState("");
+  const [editUserPhone, setEditUserPhone] = useState("");
+  const [editUserRole, setEditUserRole] = useState<UserRole | "">("");
 
   // Fetch system settings
   const { data: settings } = useQuery({
@@ -80,17 +103,36 @@ export default function Settings() {
   const { data: users } = useQuery({
     queryKey: ["users-with-roles"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: profiles } = await supabase
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false });
-      return data || [];
+      
+      if (!profiles) return [];
+
+      // Fetch roles for each user
+      const usersWithRoles = await Promise.all(
+        profiles.map(async (profile) => {
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", profile.user_id);
+          return { ...profile, roles: roles || [] };
+        })
+      );
+
+      return usersWithRoles;
     },
   });
 
+  useEffect(() => {
+    if (settings?.admin_email) {
+      setAdminEmail(settings.admin_email);
+    }
+  }, [settings]);
+
   const saveSettings = useMutation({
     mutationFn: async () => {
-      // Update or insert settings
       const { error } = await supabase
         .from("system_settings")
         .upsert({
@@ -103,13 +145,16 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ["system-settings"] });
       toast({ title: "ההגדרות נשמרו בהצלחה" });
     },
+    onError: (error: any) => {
+      toast({ title: "שגיאה בשמירת הגדרות", description: error.message, variant: "destructive" });
+    },
   });
 
   const addApiKey = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("api_keys").insert({
         name: newApiName,
-        key_hash: newApiKey, // In production, hash this!
+        key_hash: newApiKey,
       });
       if (error) throw error;
     },
@@ -118,6 +163,9 @@ export default function Settings() {
       setNewApiName("");
       setNewApiKey("");
       toast({ title: "מפתח API נוסף בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה בהוספת מפתח", description: error.message, variant: "destructive" });
     },
   });
 
@@ -130,11 +178,16 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
       toast({ title: "מפתח API נמחק" });
     },
+    onError: (error: any) => {
+      toast({ title: "שגיאה במחיקת מפתח", description: error.message, variant: "destructive" });
+    },
   });
 
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
-      // Delete user role and profile (cascade will handle auth.users)
+      // First delete user roles
+      await supabase.from("user_roles").delete().eq("user_id", userId);
+      // Then delete profile
       const { error } = await supabase.from("profiles").delete().eq("user_id", userId);
       if (error) throw error;
     },
@@ -142,7 +195,58 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ["users-with-roles"] });
       toast({ title: "המשתמש נמחק" });
     },
+    onError: (error: any) => {
+      toast({ title: "שגיאה במחיקת משתמש", description: error.message, variant: "destructive" });
+    },
   });
+
+  const updateUser = useMutation({
+    mutationFn: async () => {
+      if (!selectedUser) return;
+      
+      // Update profile
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: editUserName,
+          phone: editUserPhone || null,
+        })
+        .eq("user_id", selectedUser.user_id);
+      
+      if (profileError) throw profileError;
+
+      // Update role if changed
+      if (editUserRole) {
+        // Delete existing roles
+        await supabase.from("user_roles").delete().eq("user_id", selectedUser.user_id);
+        
+        // Insert new role
+        const { error: roleError } = await supabase.from("user_roles").insert({
+          user_id: selectedUser.user_id,
+          role: editUserRole,
+        });
+        
+        if (roleError) throw roleError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users-with-roles"] });
+      setIsEditUserOpen(false);
+      setSelectedUser(null);
+      toast({ title: "המשתמש עודכן בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה בעדכון משתמש", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const openEditUser = (user: any) => {
+    setSelectedUser(user);
+    setEditUserName(user.full_name);
+    setEditUserPhone(user.phone || "");
+    setEditUserRole(user.roles?.[0]?.role || "");
+    setIsEditUserOpen(true);
+  };
 
   const getUserRole = (roles: any[]) => {
     if (!roles?.length) return "לא מוגדר";
@@ -155,12 +259,58 @@ export default function Settings() {
     }
   };
 
+  const deleteRequiredDoc = useMutation({
+    mutationFn: async (docId: string) => {
+      const { error } = await supabase.from("required_documents").delete().eq("id", docId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["required-documents"] });
+      toast({ title: "המסמך נמחק" });
+    },
+  });
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-3xl font-bold">הגדרות</h1>
         <p className="text-muted-foreground mt-1">ניהול הגדרות המערכת</p>
       </div>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>עריכת משתמש</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>שם מלא</Label>
+              <Input value={editUserName} onChange={(e) => setEditUserName(e.target.value)} placeholder="שם המשתמש" />
+            </div>
+            <div>
+              <Label>טלפון</Label>
+              <Input value={editUserPhone} onChange={(e) => setEditUserPhone(e.target.value)} placeholder="050-1234567" />
+            </div>
+            <div>
+              <Label>תפקיד</Label>
+              <Select value={editUserRole} onValueChange={(val) => setEditUserRole(val as UserRole)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר תפקיד" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">מנהל</SelectItem>
+                  <SelectItem value="venue_owner">בעל אולם</SelectItem>
+                  <SelectItem value="event_owner">בעל אירוע</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={() => updateUser.mutate()} disabled={!editUserName || updateUser.isPending} className="w-full">
+              {updateUser.isPending ? "שומר..." : "שמור שינויים"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full max-w-lg grid-cols-3">
@@ -188,7 +338,7 @@ export default function Settings() {
                 <div>
                   <Label>כתובת מייל מנהל</Label>
                   <Input
-                    value={adminEmail || settings?.admin_email || ""}
+                    value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     placeholder="admin@example.com"
                   />
@@ -219,9 +369,9 @@ export default function Settings() {
                   </Button>
                 </div>
               </div>
-              <Button onClick={() => saveSettings.mutate()}>
+              <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending}>
                 <Save className="w-4 h-4 ml-2" />
-                שמור הגדרות
+                {saveSettings.isPending ? "שומר..." : "שמור הגדרות"}
               </Button>
             </CardContent>
           </Card>
@@ -238,7 +388,7 @@ export default function Settings() {
                     {requiredDocs?.filter(d => d.for_type === "venue_owner").map(doc => (
                       <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
                         <span>{doc.document_type}</span>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => deleteRequiredDoc.mutate(doc.id)}>
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
@@ -255,7 +405,7 @@ export default function Settings() {
                     {requiredDocs?.filter(d => d.for_type === "event_owner").map(doc => (
                       <div key={doc.id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
                         <span>{doc.document_type}</span>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => deleteRequiredDoc.mutate(doc.id)}>
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
@@ -288,9 +438,9 @@ export default function Settings() {
                   value={newApiKey}
                   onChange={(e) => setNewApiKey(e.target.value)}
                 />
-                <Button onClick={() => addApiKey.mutate()} disabled={!newApiName || !newApiKey}>
+                <Button onClick={() => addApiKey.mutate()} disabled={!newApiName || !newApiKey || addApiKey.isPending}>
                   <Plus className="w-4 h-4 ml-2" />
-                  הוסף
+                  {addApiKey.isPending ? "מוסיף..." : "הוסף"}
                 </Button>
               </div>
               <Table>
@@ -351,7 +501,8 @@ export default function Settings() {
                   <TableRow>
                     <TableHead>שם</TableHead>
                     <TableHead>מייל</TableHead>
-                    <TableHead>סוג</TableHead>
+                    <TableHead>טלפון</TableHead>
+                    <TableHead>תפקיד</TableHead>
                     <TableHead>פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -360,10 +511,11 @@ export default function Settings() {
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.full_name}</TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>לא מוגדר</TableCell>
+                      <TableCell>{user.phone || "—"}</TableCell>
+                      <TableCell>{getUserRole(user.roles)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" onClick={() => openEditUser(user)}>
                             <Pencil className="w-4 h-4" />
                           </Button>
                           <Button
@@ -379,7 +531,7 @@ export default function Settings() {
                   ))}
                   {!users?.length && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                         לא נמצאו משתמשים
                       </TableCell>
                     </TableRow>
