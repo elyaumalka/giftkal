@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, User, X } from "lucide-react";
+import { Plus, User, X, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -27,6 +27,12 @@ export function VenueDetailsDialog({ venue, onClose }: VenueDetailsDialogProps) 
   const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
   const [newDeviceName, setNewDeviceName] = useState("");
   const [newDeviceSerial, setNewDeviceSerial] = useState("");
+  
+  // Document upload state
+  const [isUploadDocOpen, setIsUploadDocOpen] = useState(false);
+  const [uploadDocName, setUploadDocName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
@@ -54,30 +60,16 @@ export function VenueDetailsDialog({ venue, onClose }: VenueDetailsDialogProps) 
     },
   });
 
-  // Fetch required documents for venue owners
-  const { data: requiredDocs } = useQuery({
-    queryKey: ["required-documents-venue"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("required_documents")
-        .select("*")
-        .eq("for_type", "venue_owner")
-        .order("created_at", { ascending: true });
-      return data || [];
-    },
-  });
-
-  // Fetch uploaded documents for this venue owner
-  const { data: uploadedDocs } = useQuery({
-    queryKey: ["venue-owner-documents", venue.owner_id],
+  // Fetch uploaded documents for this venue
+  const { data: uploadedDocs, refetch: refetchDocs } = useQuery({
+    queryKey: ["venue-documents", venue.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("documents")
         .select("*")
-        .eq("user_id", venue.owner_id);
+        .eq("venue_id", venue.id);
       return data || [];
     },
-    enabled: !!venue.owner_id,
   });
 
   // Count events for this venue
@@ -150,7 +142,70 @@ export function VenueDetailsDialog({ venue, onClose }: VenueDetailsDialogProps) 
     },
   });
 
-  const uploadedDocTypes = uploadedDocs?.map((d: any) => d.document_type) || [];
+  // Upload document
+  const uploadDocument = useMutation({
+    mutationFn: async () => {
+      if (!selectedFile || !uploadDocName) throw new Error("חסרים פרטים");
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("משתמש לא מחובר");
+      
+      // Upload file to storage
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${venue.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from("documents")
+        .upload(fileName, selectedFile);
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("documents")
+        .getPublicUrl(fileName);
+      
+      // Save document record
+      const { error: dbError } = await supabase.from("documents").insert({
+        document_type: uploadDocName,
+        file_name: selectedFile.name,
+        file_url: publicUrl,
+        venue_id: venue.id,
+        user_id: user.id,
+      });
+      
+      if (dbError) throw dbError;
+    },
+    onSuccess: () => {
+      refetchDocs();
+      setUploadDocName("");
+      setSelectedFile(null);
+      setIsUploadDocOpen(false);
+      toast({ title: "מסמך הועלה בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה בהעלאת מסמך", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Delete document
+  const deleteDocument = useMutation({
+    mutationFn: async (docId: string) => {
+      const { error } = await supabase.from("documents").delete().eq("id", docId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetchDocs();
+      toast({ title: "מסמך נמחק בהצלחה" });
+    },
+  });
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
 
   return (
     <div className="flex flex-col max-h-[85vh]" dir="rtl">
@@ -292,49 +347,87 @@ export function VenueDetailsDialog({ venue, onClose }: VenueDetailsDialogProps) 
 
             {/* Documents Section */}
             <div className="grid grid-cols-2 gap-3 mt-4">
-              {requiredDocs?.map((doc: any) => {
-                const isUploaded = uploadedDocTypes.includes(doc.document_type);
-                const uploadedDoc = uploadedDocs?.find((d: any) => d.document_type === doc.document_type);
-                
-                return (
-                  <div
-                    key={doc.id}
-                    className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 border shadow-sm min-h-[100px]"
+              {/* Uploaded documents */}
+              {uploadedDocs?.map((doc: any) => (
+                <div
+                  key={doc.id}
+                  className="bg-white rounded-xl p-4 flex flex-col items-center gap-2 border shadow-sm min-h-[100px]"
+                >
+                  <p className="text-sm font-medium text-secondary text-center">{doc.document_type}</p>
+                  <Button
+                    size="sm"
+                    className="w-full bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs"
+                    onClick={() => doc.file_url && window.open(doc.file_url, '_blank')}
                   >
-                    <p className="text-sm font-medium text-secondary text-center">{doc.document_type}</p>
-                    {isUploaded ? (
-                      <>
-                        <Button
-                          size="sm"
-                          className="w-full bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs"
-                          onClick={() => uploadedDoc?.file_url && window.open(uploadedDoc.file_url, '_blank')}
-                        >
-                          צפייה במסמך
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="w-full rounded-lg text-xs bg-red-500 hover:bg-red-600"
-                        >
-                          מחיקה
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="w-full flex-1 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center min-h-[50px]">
-                        <Plus className="w-6 h-6 text-muted-foreground/50" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              
-              {/* Add document placeholder */}
-              <div className="bg-white rounded-xl p-4 flex flex-col items-center justify-center gap-2 border shadow-sm min-h-[100px]">
-                <p className="text-sm font-medium text-muted-foreground text-center">העלאת מסמך</p>
-                <div className="w-full flex-1 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-muted-foreground/50" />
+                    צפייה במסמך
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="w-full rounded-lg text-xs bg-red-500 hover:bg-red-600"
+                    onClick={() => deleteDocument.mutate(doc.id)}
+                  >
+                    מחיקה
+                  </Button>
                 </div>
-              </div>
+              ))}
+              
+              {/* Add document card with upload dialog */}
+              <Dialog open={isUploadDocOpen} onOpenChange={setIsUploadDocOpen}>
+                <DialogTrigger asChild>
+                  <div className="bg-white rounded-xl p-4 flex flex-col items-center justify-center gap-2 border shadow-sm min-h-[100px] cursor-pointer hover:bg-muted/50 transition-colors">
+                    <p className="text-sm font-medium text-muted-foreground text-center">העלאת מסמך</p>
+                    <div className="w-full flex-1 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
+                      <Plus className="w-6 h-6 text-muted-foreground/50" />
+                    </div>
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>העלאת מסמך חדש</DialogTitle>
+                  </DialogHeader>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <Label className="text-muted-foreground text-sm mb-2 block">שם המסמך</Label>
+                      <Input 
+                        variant="form" 
+                        value={uploadDocName} 
+                        onChange={(e) => setUploadDocName(e.target.value)}
+                        placeholder="תעודת זהות"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-sm mb-2 block">קובץ</Label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      />
+                      <Button
+                        variant="outline"
+                        className="w-full h-20 border-2 border-dashed rounded-xl"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <Upload className="w-6 h-6 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            {selectedFile ? selectedFile.name : "לחץ לבחירת קובץ"}
+                          </span>
+                        </div>
+                      </Button>
+                    </div>
+                    <Button 
+                      onClick={() => uploadDocument.mutate()} 
+                      disabled={!uploadDocName || !selectedFile || uploadDocument.isPending}
+                      className="w-full rounded-full bg-secondary hover:bg-secondary/90"
+                    >
+                      {uploadDocument.isPending ? "מעלה..." : "העלה מסמך"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
