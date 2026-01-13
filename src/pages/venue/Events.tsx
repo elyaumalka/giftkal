@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, CheckCircle, XCircle, Eye, Filter, X } from "lucide-react";
+import { Plus, Eye, Filter, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,24 +12,43 @@ export default function VenueEvents() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const { toast } = useToast();
 
+  const { data: venue } = useQuery({
+    queryKey: ["venue-info"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data } = await supabase
+        .from("venues")
+        .select("id, name")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+
+      return data;
+    },
+  });
+
   const { data: events } = useQuery({
     queryKey: ["venue-events"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      const { data: venue } = await supabase
+      const { data: venueData } = await supabase
         .from("venues")
         .select("id")
         .eq("owner_id", user.id)
         .maybeSingle();
 
-      if (!venue) return [];
+      if (!venueData) return [];
 
       const { data } = await supabase
         .from("events")
-        .select("*")
-        .eq("venue_id", venue.id)
+        .select(`
+          *,
+          profiles:owner_id (full_name, phone)
+        `)
+        .eq("venue_id", venueData.id)
         .order("event_date", { ascending: false });
 
       return data || [];
@@ -38,52 +57,36 @@ export default function VenueEvents() {
 
   const filteredEvents = events?.filter((e: any) =>
     e.groom_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.bride_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    e.bride_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#051839]">בעלי אירועים</h1>
-          <p className="text-gray-500 mt-1">ניהול האירועים באולם</p>
-        </div>
-        <button 
-          onClick={() => toast({ title: "בקרוב", description: "הוספת אירוע חדש" })}
-          className="w-10 h-10 rounded-full bg-[#051839] flex items-center justify-center text-white hover:bg-[#051839]/80 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="flex items-center gap-4">
-        <button className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
+      {/* Top Row - Actions */}
+      <div className="flex items-center gap-3">
+        <button className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
           <Filter className="w-5 h-5" />
         </button>
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            placeholder="חיפוש חופשי"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-10 rounded-full border-gray-200 bg-white"
-          />
-        </div>
+        <button 
+          onClick={() => toast({ title: "בקרוב", description: "הוספת בעל אירוע חדש" })}
+          className="px-6 py-3 rounded-full bg-[#051839] text-white font-medium hover:bg-[#051839]/90 transition-colors"
+        >
+          הוספת בעל אירוע
+        </button>
       </div>
 
-      {/* Events Table */}
+      {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="p-4">
           {/* Table Header */}
           <div className="grid grid-cols-6 gap-4 text-sm font-medium text-gray-500 mb-4 px-4">
-            <span>תאריך אירוע</span>
-            <span>שם בעל האירוע</span>
-            <span>טלפון</span>
-            <span>סוג האירוע</span>
-            <span>מסמכים</span>
-            <span>פעולות</span>
+            <span className="text-right">תאריך אירוע</span>
+            <span className="text-right">בעל האירוע</span>
+            <span className="text-right">טלפון</span>
+            <span className="text-right">שם האולם</span>
+            <span className="text-right">סוג האירוע</span>
+            <span className="text-right">האם כל המסמכים הושלמו בהצלחה</span>
           </div>
           
           {/* Table Rows */}
@@ -91,32 +94,34 @@ export default function VenueEvents() {
             {filteredEvents?.map((event: any) => (
               <div 
                 key={event.id} 
-                className="grid grid-cols-6 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm"
+                className="grid grid-cols-6 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => setSelectedEvent(event)}
               >
-                <span className="text-[#051839]">
+                <span className="font-bold text-[#051839]">
                   {new Date(event.event_date).toLocaleDateString("he-IL")}
                 </span>
-                <span className="font-medium text-[#051839]">
-                  {event.groom_name && event.bride_name
-                    ? `${event.groom_name} & ${event.bride_name}`
-                    : "—"}
+                <span className="font-bold text-[#051839]">
+                  {event.profiles?.full_name || event.groom_name || "—"}
                 </span>
-                <span className="text-gray-600">—</span>
-                <span className="text-gray-600">{event.event_type || "חתונה"}</span>
+                <span className="font-bold text-[#051839]">
+                  {event.profiles?.phone || "—"}
+                </span>
+                <span className="font-bold text-[#95742F]">
+                  {venue?.name || "—"}
+                </span>
+                <span className="text-[#051839]">
+                  {event.event_type || "חתונה"}
+                </span>
                 <span>
                   {event.documents_complete ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="inline-block px-4 py-2 rounded-full bg-[#22C55E] text-white font-medium text-center">
+                      הושלמו בהצלחה
+                    </span>
                   ) : (
-                    <XCircle className="w-5 h-5 text-red-500" />
+                    <span className="inline-block px-4 py-2 rounded-full bg-[#C41E3A] text-white font-medium text-center">
+                      חסרים מסמכים
+                    </span>
                   )}
-                </span>
-                <span>
-                  <button 
-                    onClick={() => setSelectedEvent(event)}
-                    className="w-8 h-8 rounded-full bg-[#051839] flex items-center justify-center text-white hover:bg-[#051839]/80 transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
                 </span>
               </div>
             ))}
@@ -150,6 +155,18 @@ export default function VenueEvents() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <Label className="text-gray-500 text-sm">בעל האירוע</Label>
+                  <p className="font-medium text-[#051839]">
+                    {selectedEvent.profiles?.full_name || selectedEvent.groom_name || "—"}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-gray-500 text-sm">טלפון</Label>
+                  <p className="font-medium text-[#051839]">
+                    {selectedEvent.profiles?.phone || "—"}
+                  </p>
+                </div>
+                <div>
                   <Label className="text-gray-500 text-sm">חתן</Label>
                   <p className="font-medium text-[#051839]">{selectedEvent.groom_name || "—"}</p>
                 </div>
@@ -166,6 +183,20 @@ export default function VenueEvents() {
                 <div>
                   <Label className="text-gray-500 text-sm">סוג אירוע</Label>
                   <p className="font-medium text-[#051839]">{selectedEvent.event_type || "חתונה"}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-gray-500 text-sm">סטטוס מסמכים</Label>
+                <div className="mt-1">
+                  {selectedEvent.documents_complete ? (
+                    <span className="inline-block px-4 py-2 rounded-full bg-[#22C55E] text-white font-medium">
+                      הושלמו בהצלחה
+                    </span>
+                  ) : (
+                    <span className="inline-block px-4 py-2 rounded-full bg-[#C41E3A] text-white font-medium">
+                      חסרים מסמכים
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
