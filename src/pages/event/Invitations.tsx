@@ -30,6 +30,7 @@ export default function EventInvitations() {
   const [groomGrandparents, setGroomGrandparents] = useState("");
   const [brideGrandparents, setBrideGrandparents] = useState("");
   const [introText, setIntroText] = useState("");
+  const [voiceText, setVoiceText] = useState("");
   
   // Generated invitations
   const [generatedInvitations, setGeneratedInvitations] = useState<Invitation[]>([]);
@@ -90,7 +91,7 @@ export default function EventInvitations() {
   const generateInvitations = async () => {
     if (!groomName || !brideName) {
       toast({ title: "נא למלא לפחות את שמות החתן והכלה", variant: "destructive" });
-      return;
+      return false;
     }
 
     setIsGenerating(true);
@@ -111,12 +112,14 @@ export default function EventInvitations() {
 
       if (data?.invitations) {
         setGeneratedInvitations(data.invitations);
-        setCurrentStep(2);
         toast({ title: "ההזמנות נוצרו בהצלחה!" });
+        return true;
       }
+      return false;
     } catch (error: any) {
       console.error("Error generating invitations:", error);
       toast({ title: "שגיאה ביצירת ההזמנות", description: error.message, variant: "destructive" });
+      return false;
     } finally {
       setIsGenerating(false);
     }
@@ -151,13 +154,13 @@ export default function EventInvitations() {
   const handleNextStep = async () => {
     if (currentStep === 1) {
       await saveEventData.mutateAsync();
-      await generateInvitations();
+      setCurrentStep(2);
     } else if (currentStep === 2) {
-      if (!selectedInvitation) {
-        toast({ title: "נא לבחור הזמנה", variant: "destructive" });
-        return;
+      // Generate invitations when moving to step 3
+      const success = await generateInvitations();
+      if (success) {
+        setCurrentStep(3);
       }
-      setCurrentStep(3);
     }
   };
 
@@ -168,6 +171,10 @@ export default function EventInvitations() {
   };
 
   const handleSendInvitations = () => {
+    if (!selectedInvitation) {
+      toast({ title: "נא לבחור הזמנה", variant: "destructive" });
+      return;
+    }
     toast({ title: "ההזמנות נשלחו בהצלחה!", description: `נשלחו ${guests?.length || 0} הזמנות` });
   };
 
@@ -199,7 +206,7 @@ export default function EventInvitations() {
         ))}
       </div>
 
-      {/* Step 1: Form */}
+      {/* Step 1: Form - פרטי האירוע */}
       {currentStep === 1 && (
         <div className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4" dir="rtl">
@@ -269,6 +276,65 @@ export default function EventInvitations() {
             />
           </div>
 
+          {/* Navigation Buttons - הבא בשמאל, הקודם בימין */}
+          <div className="flex items-center justify-between pt-4">
+            <button
+              onClick={handleNextStep}
+              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
+            >
+              לשלב הבא
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <button
+              disabled
+              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium opacity-50 cursor-not-allowed"
+            >
+              <ArrowRight className="w-4 h-4" />
+              לשלב הקודם
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: בחירת מוזמנים - העלאת קבצים */}
+      {currentStep === 2 && (
+        <div className="space-y-6">
+          {/* Upload Cards Row 1 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
+            <div className="bg-[#051839] rounded-2xl p-6 text-white text-center space-y-2 cursor-pointer hover:bg-[#08275E] transition-colors">
+              <h3 className="font-bold text-lg flex items-center justify-center gap-2">
+                העלאת קובץ שמע
+                <ArrowLeft className="w-4 h-4" />
+              </h3>
+              <p className="text-sm text-gray-300">לרוצים להזמין באמצעות הודעה קולית</p>
+            </div>
+            <div className="bg-[#051839] rounded-2xl p-6 text-white text-center cursor-pointer hover:bg-[#08275E] transition-colors">
+              <h3 className="font-bold text-lg flex items-center justify-center gap-2">
+                העלאת רשימת מוזמנים (אקסאל)
+                <ArrowLeft className="w-4 h-4" />
+              </h3>
+            </div>
+          </div>
+
+          {/* Upload Cards Row 2 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
+            <div className="bg-gray-100 rounded-2xl p-6">
+              <p className="text-[#051839] text-center font-medium mb-4">הזנת טקסט הזמנה למערכת המענה הקולי</p>
+              <Textarea
+                value={voiceText}
+                onChange={(e) => setVoiceText(e.target.value)}
+                placeholder="הזן את הטקסט להזמנה קולית..."
+                className="rounded-xl border-gray-200 bg-white text-right min-h-[100px]"
+              />
+            </div>
+            <div className="bg-[#C41E3A] rounded-2xl p-6 text-white text-center flex items-center justify-center cursor-pointer hover:bg-[#C41E3A]/90 transition-colors">
+              <button className="font-bold flex items-center justify-center gap-2">
+                הורדת קובץ דוגמא
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
           {/* Navigation Buttons */}
           <div className="flex items-center justify-between pt-4">
             <button
@@ -290,8 +356,7 @@ export default function EventInvitations() {
             </button>
             <button
               onClick={handlePrevStep}
-              disabled
-              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium opacity-50 cursor-not-allowed"
+              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
             >
               <ArrowRight className="w-4 h-4" />
               לשלב הקודם
@@ -300,8 +365,8 @@ export default function EventInvitations() {
         </div>
       )}
 
-      {/* Step 2: Choose Invitation Design */}
-      {currentStep === 2 && (
+      {/* Step 3: בחירת עיצוב הזמנה מ-AI או העלאה */}
+      {currentStep === 3 && (
         <div className="space-y-6">
           {/* Generated Invitations Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" dir="rtl">
@@ -309,13 +374,13 @@ export default function EventInvitations() {
               <div
                 key={invitation.id}
                 onClick={() => setSelectedInvitation(invitation.id)}
-                className={`relative bg-white rounded-2xl shadow-sm p-6 cursor-pointer transition-all hover:shadow-md ${
+                className={`relative bg-white rounded-2xl shadow-sm p-6 cursor-pointer transition-all hover:shadow-md min-h-[280px] ${
                   selectedInvitation === invitation.id ? "ring-2 ring-[#95742F]" : ""
                 }`}
               >
                 {/* Checkbox */}
                 <div
-                  className={`absolute top-4 right-4 w-6 h-6 rounded border-2 flex items-center justify-center ${
+                  className={`absolute top-4 left-4 w-6 h-6 rounded border-2 flex items-center justify-center ${
                     selectedInvitation === invitation.id
                       ? "bg-[#95742F] border-[#95742F]"
                       : "border-gray-300 bg-white"
@@ -328,9 +393,9 @@ export default function EventInvitations() {
                   )}
                 </div>
                 
-                <div className="pt-6">
-                  <h3 className="font-bold text-[#051839] mb-2">{invitation.style}</h3>
-                  <p className="text-sm text-gray-600 whitespace-pre-line line-clamp-6">{invitation.content}</p>
+                <div className="pt-2">
+                  <h3 className="font-bold text-[#051839] mb-3 text-lg">{invitation.style}</h3>
+                  <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">{invitation.content}</p>
                 </div>
               </div>
             ))}
@@ -345,67 +410,7 @@ export default function EventInvitations() {
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleNextStep}
-              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
-            >
-              לשלב הבא
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handlePrevStep}
-              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
-            >
-              <ArrowRight className="w-4 h-4" />
-              לשלב הקודם
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Send Invitations */}
-      {currentStep === 3 && (
-        <div className="space-y-6">
-          {/* Upload Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-[#051839] rounded-2xl p-6 text-white text-center space-y-2">
-              <h3 className="font-bold text-lg">העלאת קובץ שמע</h3>
-              <p className="text-sm text-gray-300">לרוצים להזמין באמצעות הודעה קולית</p>
-              <button className="mt-4 flex items-center justify-center gap-2 mx-auto text-white hover:underline">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="bg-[#051839] rounded-2xl p-6 text-white text-center">
-              <h3 className="font-bold text-lg flex items-center justify-center gap-2">
-                העלאת רשימת מוזמנים (אקסאל)
-                <ArrowLeft className="w-4 h-4" />
-              </h3>
-            </div>
-          </div>
-
-          {/* Text input and sample file */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-[#C41E3A] rounded-2xl p-6 text-white text-center">
-              <button className="font-bold flex items-center justify-center gap-2 mx-auto">
-                הורדת קובץ דוגמא
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="bg-gray-100 rounded-2xl p-6">
-              <p className="text-[#051839] text-center font-medium">הזנת טקסט הזמנה למערכת המענה הקולי</p>
-            </div>
-          </div>
-
-          {/* Guest count info */}
-          <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
-            <p className="text-[#051839] font-medium">
-              סה"כ {guests?.length || 0} מוזמנים ברשימה
-            </p>
-          </div>
-
-          {/* Navigation Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-4">
             <button
               onClick={handleSendInvitations}
               className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
