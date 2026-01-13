@@ -119,11 +119,21 @@ export default function EventGifts() {
                           <ArrowLeft className="w-3 h-3 mr-1" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="max-w-lg">
                         <DialogHeader>
                           <DialogTitle className="text-right">ברכה מ{gift.payer_name}</DialogTitle>
                         </DialogHeader>
-                        <p className="text-lg leading-relaxed text-right">{gift.blessing_text}</p>
+                        {gift.receipt_url ? (
+                          <div className="flex justify-center">
+                            <img 
+                              src={gift.receipt_url} 
+                              alt="ברכה מעוצבת" 
+                              className="max-w-full rounded-xl shadow-lg"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-lg leading-relaxed text-right">{gift.blessing_text}</p>
+                        )}
                       </DialogContent>
                     </Dialog>
                   ) : null}
