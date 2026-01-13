@@ -2,15 +2,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -18,11 +9,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Download, Heart, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EventGifts() {
-  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
 
   const { data: gifts } = useQuery({
@@ -49,12 +39,6 @@ export default function EventGifts() {
     },
   });
 
-  const filteredGifts = gifts?.filter((g: any) =>
-    g.payer_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const totalGifts = gifts?.reduce((sum: number, g: any) => sum + Number(g.amount), 0) || 0;
-
   const handleExportExcel = () => {
     toast({
       title: "מייצא לאקסל...",
@@ -71,85 +55,87 @@ export default function EventGifts() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">מתנות</h1>
-          <p className="text-muted-foreground mt-1">
-            סה"כ: ₪{totalGifts.toLocaleString()} מ-{gifts?.length || 0} נותני מתנות
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleDownloadBlessings}>
-            <Heart className="w-4 h-4 ml-2" />
-            הורד ברכות
-          </Button>
-          <Button variant="outline" onClick={handleExportExcel}>
-            <Download className="w-4 h-4 ml-2" />
-            ייצוא לאקסל
-          </Button>
-        </div>
+      {/* Action Buttons */}
+      <div className="flex items-center gap-4">
+        <Button 
+          onClick={handleDownloadBlessings}
+          className="bg-[#1A9A8A] hover:bg-[#1A9A8A]/90 text-white rounded-lg px-6 py-3 text-sm font-medium"
+        >
+          הורדת PDF של הברכות
+          <ArrowLeft className="w-4 h-4 mr-2" />
+        </Button>
+        <Button 
+          onClick={handleExportExcel}
+          variant="outline"
+          className="bg-white border-gray-300 text-[#051839] rounded-lg px-6 py-3 text-sm font-medium"
+        >
+          ייצוא לאקסאל
+          <ArrowLeft className="w-4 h-4 mr-2" />
+        </Button>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="חיפוש לפי שם..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pr-10"
-        />
-      </div>
-
-      <div className="bg-card rounded-xl shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>שם</TableHead>
-              <TableHead>סכום</TableHead>
-              <TableHead>תשלומים</TableHead>
-              <TableHead>קירבה</TableHead>
-              <TableHead>ברכה</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredGifts?.map((gift: any) => (
-              <TableRow key={gift.id}>
-                <TableCell className="font-medium">{gift.payer_name}</TableCell>
-                <TableCell className="font-semibold text-success">
-                  ₪{Number(gift.amount).toLocaleString()}
-                </TableCell>
-                <TableCell>{gift.installments || 1}</TableCell>
-                <TableCell>{gift.relationship || "—"}</TableCell>
-                <TableCell>
+      {/* Gifts Table */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-6">
+          {/* Title */}
+          <h2 className="text-xl font-bold text-[#051839] mb-6 text-right">נותני מתנות</h2>
+          
+          {/* Table Header */}
+          <div className="grid grid-cols-5 gap-4 text-sm font-medium text-gray-500 mb-4 px-4">
+            <span className="text-right">קירבה</span>
+            <span className="text-right">מס׳ תשלומים</span>
+            <span className="text-right">סכום</span>
+            <span className="text-right col-span-2">שם פרטי ומשפחה</span>
+          </div>
+          
+          {/* Table Rows */}
+          <div className="space-y-3">
+            {gifts?.map((gift: any) => (
+              <div 
+                key={gift.id} 
+                className="grid grid-cols-5 gap-4 items-center bg-gray-100 rounded-xl p-4 text-sm"
+              >
+                <div className="text-right">
                   {gift.blessing_text ? (
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Heart className="w-4 h-4 text-primary" />
+                        <Button 
+                          className="bg-[#1A9A8A] hover:bg-[#1A9A8A]/90 text-white rounded-lg px-4 py-2 text-xs font-medium"
+                        >
+                          צפייה בברכה
+                          <ArrowLeft className="w-3 h-3 mr-1" />
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>ברכה מ{gift.payer_name}</DialogTitle>
+                          <DialogTitle className="text-right">ברכה מ{gift.payer_name}</DialogTitle>
                         </DialogHeader>
-                        <p className="text-lg leading-relaxed">{gift.blessing_text}</p>
+                        <p className="text-lg leading-relaxed text-right">{gift.blessing_text}</p>
                       </DialogContent>
                     </Dialog>
                   ) : (
-                    "—"
+                    <span className="font-bold text-[#051839]">{gift.relationship || "—"}</span>
                   )}
-                </TableCell>
-              </TableRow>
+                </div>
+                <span className="font-bold text-[#051839] text-right">
+                  {gift.installments || 1}
+                </span>
+                <span className="font-bold text-[#051839] text-right">
+                  ₪{Number(gift.amount).toLocaleString()}
+                </span>
+                <span className="font-bold text-[#051839] text-right col-span-2">
+                  {gift.payer_name}
+                </span>
+              </div>
             ))}
-            {!filteredGifts?.length && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  אין מתנות להצגה
-                </TableCell>
-              </TableRow>
+            
+            {(!gifts || gifts.length === 0) && (
+              <div className="text-center py-8 text-gray-500">
+                אין מתנות להצגה
+              </div>
             )}
-          </TableBody>
-        </Table>
+          </div>
+        </div>
       </div>
     </div>
   );
