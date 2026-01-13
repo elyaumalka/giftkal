@@ -1,33 +1,19 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Plus, MessageSquare, AlertTriangle, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, MessageSquare, AlertTriangle, Eye, X, ArrowLeft } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 export default function VenueSupport() {
-  const [activeTab, setActiveTab] = useState("inquiries");
+  const [activeTab, setActiveTab] = useState<"inquiries" | "issues">("inquiries");
   const [newSubject, setNewSubject] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [showNewTicketDialog, setShowNewTicketDialog] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -73,6 +59,7 @@ export default function VenueSupport() {
       queryClient.invalidateQueries({ queryKey: ["venue-tickets"] });
       setNewSubject("");
       setNewDescription("");
+      setShowNewTicketDialog(false);
       toast({ title: "הפנייה נשלחה בהצלחה" });
     },
   });
@@ -80,11 +67,11 @@ export default function VenueSupport() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "open":
-        return <span className="badge-warning px-2 py-1 rounded text-xs">פתוח</span>;
+        return <span className="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700 border border-yellow-200">פתוח</span>;
       case "in_progress":
-        return <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-700 border border-blue-200">בטיפול</span>;
+        return <span className="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700 border border-blue-200">בטיפול</span>;
       case "closed":
-        return <span className="badge-success px-2 py-1 rounded text-xs">סגור</span>;
+        return <span className="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700 border border-green-200">סגור</span>;
       default:
         return null;
     }
@@ -92,123 +79,177 @@ export default function VenueSupport() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold">פניות ותקלות</h1>
-        <p className="text-muted-foreground mt-1">פתיחת פניות חדשות וצפייה בסטטוס</p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#051839]">פניות ותקלות</h1>
+          <p className="text-gray-500 mt-1">פתיחת פניות חדשות וצפייה בסטטוס</p>
+        </div>
+        <button 
+          onClick={() => setShowNewTicketDialog(true)}
+          className="w-10 h-10 rounded-full bg-[#051839] flex items-center justify-center text-white hover:bg-[#051839]/80 transition-colors"
+        >
+          <Plus className="w-5 h-5" />
+        </button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="inquiries" className="gap-2">
-            <MessageSquare className="w-4 h-4" />
-            פניות
-          </TabsTrigger>
-          <TabsTrigger value="issues" className="gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            תקלות
-          </TabsTrigger>
-        </TabsList>
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveTab("inquiries")}
+          className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
+            activeTab === "inquiries"
+              ? "bg-[#051839] text-white"
+              : "bg-white text-[#051839] hover:bg-gray-100"
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          פניות
+        </button>
+        <button
+          onClick={() => setActiveTab("issues")}
+          className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
+            activeTab === "issues"
+              ? "bg-[#051839] text-white"
+              : "bg-white text-[#051839] hover:bg-gray-100"
+          }`}
+        >
+          <AlertTriangle className="w-4 h-4" />
+          תקלות
+        </button>
+      </div>
 
-        <TabsContent value={activeTab} className="mt-6 space-y-6">
-          {/* New ticket form */}
-          <div className="bg-card rounded-xl p-6 shadow-sm space-y-4">
-            <h3 className="font-semibold">
+      {/* Tickets Table */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-4">
+          {/* Table Header */}
+          <div className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-500 mb-4 px-4">
+            <span>תאריך</span>
+            <span>נושא</span>
+            <span>סטטוס</span>
+            <span>צפייה</span>
+          </div>
+          
+          {/* Table Rows */}
+          <div className="space-y-2">
+            {tickets?.map((ticket: any) => (
+              <div 
+                key={ticket.id} 
+                className="grid grid-cols-4 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm"
+              >
+                <span className="text-[#051839]">
+                  {new Date(ticket.created_at).toLocaleDateString("he-IL")}
+                </span>
+                <span className="font-medium text-[#051839]">{ticket.subject}</span>
+                <span>{getStatusBadge(ticket.status)}</span>
+                <span>
+                  <button 
+                    onClick={() => setSelectedTicket(ticket)}
+                    className="w-8 h-8 rounded-full bg-[#051839] flex items-center justify-center text-white hover:bg-[#051839]/80 transition-colors"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </span>
+              </div>
+            ))}
+            
+            {!tickets?.length && (
+              <div className="text-center py-8 text-gray-500">
+                אין פניות להצגה
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* New Ticket Dialog */}
+      <Dialog open={showNewTicketDialog} onOpenChange={setShowNewTicketDialog}>
+        <DialogContent className="p-0 overflow-hidden rounded-2xl border-0 max-w-md">
+          <DialogHeader className="bg-[#051839] text-white p-4 flex flex-row items-center justify-between">
+            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+              <Plus className="w-5 h-5" />
               {activeTab === "inquiries" ? "פנייה חדשה" : "דיווח על תקלה"}
-            </h3>
-            <div>
-              <Label>נושא</Label>
+            </DialogTitle>
+            <button 
+              onClick={() => setShowNewTicketDialog(false)}
+              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </DialogHeader>
+          
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">נושא</Label>
               <Input
                 value={newSubject}
                 onChange={(e) => setNewSubject(e.target.value)}
                 placeholder="נושא הפנייה..."
+                className="rounded-xl border-gray-200 text-center"
               />
             </div>
-            <div>
-              <Label>תיאור</Label>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">תיאור</Label>
               <Textarea
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
                 placeholder="פרט את הפנייה..."
                 rows={4}
+                className="rounded-xl border-gray-200"
               />
             </div>
-            <Button
-              variant="gold"
+            <button
               onClick={() => createTicket.mutate()}
               disabled={!newSubject.trim() || !newDescription.trim()}
+              className="w-full bg-[#051839] hover:bg-[#051839]/90 text-white rounded-xl py-3 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <Plus className="w-4 h-4 ml-2" />
-              שלח
-            </Button>
+              <span>שלח</span>
+              <ArrowLeft className="w-4 h-4" />
+            </button>
           </div>
+        </DialogContent>
+      </Dialog>
 
-          {/* Tickets table */}
-          <div className="bg-card rounded-xl shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>תאריך</TableHead>
-                  <TableHead>נושא</TableHead>
-                  <TableHead>סטטוס</TableHead>
-                  <TableHead>צפייה</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tickets?.map((ticket: any) => (
-                  <TableRow key={ticket.id}>
-                    <TableCell>
-                      {new Date(ticket.created_at).toLocaleDateString("he-IL")}
-                    </TableCell>
-                    <TableCell className="font-medium">{ticket.subject}</TableCell>
-                    <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                    <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>פרטי הפנייה</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label className="text-muted-foreground">נושא</Label>
-                              <p className="font-medium">{ticket.subject}</p>
-                            </div>
-                            <div>
-                              <Label className="text-muted-foreground">תיאור</Label>
-                              <p>{ticket.description}</p>
-                            </div>
-                            <div>
-                              <Label className="text-muted-foreground">סטטוס</Label>
-                              <p>{getStatusBadge(ticket.status)}</p>
-                            </div>
-                            {ticket.response && (
-                              <div className="p-4 bg-muted rounded-lg">
-                                <Label className="text-muted-foreground">תשובה</Label>
-                                <p>{ticket.response}</p>
-                              </div>
-                            )}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!tickets?.length && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      אין פניות להצגה
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* View Ticket Dialog */}
+      <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+        <DialogContent className="p-0 overflow-hidden rounded-2xl border-0 max-w-md">
+          <DialogHeader className="bg-[#051839] text-white p-4 flex flex-row items-center justify-between">
+            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+              <Eye className="w-5 h-5" />
+              פרטי הפנייה
+            </DialogTitle>
+            <button 
+              onClick={() => setSelectedTicket(null)}
+              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </DialogHeader>
+          
+          {selectedTicket && (
+            <div className="p-6 space-y-4">
+              <div>
+                <Label className="text-gray-500 text-sm">נושא</Label>
+                <p className="font-medium text-[#051839]">{selectedTicket.subject}</p>
+              </div>
+              <div>
+                <Label className="text-gray-500 text-sm">תיאור</Label>
+                <p className="text-[#051839]">{selectedTicket.description}</p>
+              </div>
+              <div>
+                <Label className="text-gray-500 text-sm">סטטוס</Label>
+                <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+              </div>
+              {selectedTicket.response && (
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <Label className="text-gray-500 text-sm">תשובה</Label>
+                  <p className="text-[#051839]">{selectedTicket.response}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

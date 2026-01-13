@@ -1,16 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Download } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function VenueInvoices() {
   const { data: invoices } = useQuery({
@@ -44,64 +34,71 @@ export default function VenueInvoices() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">חשבוניות</h1>
-        <p className="text-muted-foreground mt-1">צפייה והורדת חשבוניות</p>
+        <h1 className="text-2xl font-bold text-[#051839]">חשבוניות</h1>
+        <p className="text-gray-500 mt-1">צפייה והורדת חשבוניות</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>היסטוריית חשבוניות</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>תאריך</TableHead>
-                <TableHead>סכום</TableHead>
-                <TableHead>עבור חודש</TableHead>
-                <TableHead>הורדה</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices?.map((invoice: any) => (
-                <TableRow key={invoice.id}>
-                  <TableCell>
-                    {new Date(invoice.created_at).toLocaleDateString("he-IL")}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    ₪{Number(invoice.amount).toLocaleString()}
-                  </TableCell>
-                  <TableCell>{formatMonth(invoice.for_month)}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={!invoice.file_url}
-                      asChild={!!invoice.file_url}
+      {/* Invoices Table */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-[#051839] text-white p-4">
+          <h2 className="text-lg font-semibold">היסטוריית חשבוניות</h2>
+        </div>
+        
+        <div className="p-4">
+          {/* Table Header */}
+          <div className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-500 mb-4 px-4">
+            <span>תאריך</span>
+            <span>סכום</span>
+            <span>עבור חודש</span>
+            <span>הורדה</span>
+          </div>
+          
+          {/* Table Rows */}
+          <div className="space-y-2">
+            {invoices?.map((invoice: any) => (
+              <div 
+                key={invoice.id} 
+                className="grid grid-cols-4 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm"
+              >
+                <span className="text-[#051839]">
+                  {new Date(invoice.created_at).toLocaleDateString("he-IL")}
+                </span>
+                <span className="font-medium text-[#95742F]">
+                  ₪{Number(invoice.amount).toLocaleString()}
+                </span>
+                <span className="text-gray-600">{formatMonth(invoice.for_month)}</span>
+                <span>
+                  {invoice.file_url ? (
+                    <a 
+                      href={invoice.file_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full bg-[#051839] flex items-center justify-center text-white hover:bg-[#051839]/80 transition-colors"
                     >
-                      {invoice.file_url ? (
-                        <a href={invoice.file_url} target="_blank" rel="noopener noreferrer">
-                          <Download className="w-4 h-4" />
-                        </a>
-                      ) : (
-                        <Download className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!invoices?.length && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    אין חשבוניות להצגה
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                      <Download className="w-4 h-4" />
+                    </a>
+                  ) : (
+                    <button 
+                      disabled 
+                      className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 cursor-not-allowed"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                  )}
+                </span>
+              </div>
+            ))}
+            
+            {!invoices?.length && (
+              <div className="text-center py-8 text-gray-500">
+                אין חשבוניות להצגה
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
