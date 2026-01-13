@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Upload, AlertCircle, CheckCircle } from "lucide-react";
+import { ArrowLeft, Upload, AlertCircle, CheckCircle } from "lucide-react";
 
 export default function EventSettings() {
   const { toast } = useToast();
@@ -98,126 +96,143 @@ export default function EventSettings() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">הגדרות</h1>
-        <p className="text-muted-foreground mt-1">ניהול פרטים אישיים ומסמכים</p>
+        <h1 className="text-2xl font-bold text-[#051839]">הגדרות</h1>
+        <p className="text-gray-500 mt-1">ניהול פרטים אישיים ומסמכים</p>
       </div>
 
-      {/* Personal details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>פרטים אישיים</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label>שם מלא</Label>
+      {/* Personal Details Card */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-[#051839] text-white p-4">
+          <h2 className="text-lg font-semibold">פרטים אישיים</h2>
+        </div>
+        
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">שם מלא</Label>
               <Input
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="שם מלא"
+                className="rounded-xl border-gray-200 text-right"
               />
             </div>
-            <div>
-              <Label>טלפון</Label>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">טלפון</Label>
               <Input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="טלפון"
+                className="rounded-xl border-gray-200 text-right"
               />
             </div>
-            <div>
-              <Label>מייל</Label>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">מייל</Label>
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="מייל"
+                disabled
+                className="rounded-xl border-gray-200 text-right bg-gray-50"
               />
             </div>
           </div>
-          <Button onClick={() => updateProfile.mutate()}>
-            <Save className="w-4 h-4 ml-2" />
-            שמור
-          </Button>
-        </CardContent>
-      </Card>
+          
+          <button 
+            onClick={() => updateProfile.mutate()}
+            className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-6 flex items-center justify-center gap-2 transition-colors font-medium"
+          >
+            <span>שמירה</span>
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
 
-      {/* Bank details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>פרטי חשבון להעברה</CardTitle>
-          <CardDescription>פרטי החשבון אליו יועברו הכספים</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label>שם הבנק</Label>
+      {/* Bank Details Card */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-[#051839] text-white p-4">
+          <h2 className="text-lg font-semibold">פרטי חשבון להעברה</h2>
+          <p className="text-sm text-gray-300 mt-1">פרטי החשבון אליו יועברו הכספים</p>
+        </div>
+        
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">שם הבנק</Label>
               <Input
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
                 placeholder="לדוגמא: לאומי"
+                className="rounded-xl border-gray-200 text-right"
               />
             </div>
-            <div>
-              <Label>מספר סניף</Label>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">מספר סניף</Label>
               <Input
                 value={bankBranch}
                 onChange={(e) => setBankBranch(e.target.value)}
                 placeholder="מספר סניף"
+                className="rounded-xl border-gray-200 text-right"
               />
             </div>
-            <div>
-              <Label>מספר חשבון</Label>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">מספר חשבון</Label>
               <Input
                 value={bankAccount}
                 onChange={(e) => setBankAccount(e.target.value)}
                 placeholder="מספר חשבון"
+                className="rounded-xl border-gray-200 text-right"
               />
             </div>
           </div>
-          <Button onClick={() => toast({ title: "פרטי הבנק נשמרו" })}>
-            <Save className="w-4 h-4 ml-2" />
-            שמור
-          </Button>
-        </CardContent>
-      </Card>
+          
+          <button 
+            onClick={() => toast({ title: "פרטי הבנק נשמרו" })}
+            className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-6 flex items-center justify-center gap-2 transition-colors font-medium"
+          >
+            <span>שמירה</span>
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
 
-      {/* Required documents */}
-      <Card>
-        <CardHeader>
-          <CardTitle>מסמכים נדרשים</CardTitle>
-          <CardDescription>העלה את המסמכים הנדרשים להשלמת הרישום</CardDescription>
-        </CardHeader>
-        <CardContent>
+      {/* Required Documents Card */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-[#051839] text-white p-4">
+          <h2 className="text-lg font-semibold">מסמכים נדרשים</h2>
+          <p className="text-sm text-gray-300 mt-1">העלה את המסמכים הנדרשים להשלמת הרישום</p>
+        </div>
+        
+        <div className="p-6">
           <div className="space-y-3">
             {requiredDocs?.map((doc: any) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between p-4 bg-muted rounded-lg"
+                className="flex items-center justify-between p-4 bg-gray-100 rounded-xl"
               >
-                <div className="flex items-center gap-3">
-                  {isDocUploaded(doc.document_type) ? (
-                    <CheckCircle className="w-5 h-5 text-success" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-warning" />
-                  )}
-                  <span>{doc.document_type}</span>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Upload className="w-4 h-4 ml-2" />
+                <button className="bg-[#051839] hover:bg-[#08275E] text-white rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors">
+                  <Upload className="w-4 h-4" />
                   העלאה
-                </Button>
+                </button>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-[#051839]">{doc.document_type}</span>
+                  {isDocUploaded(doc.document_type) ? (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-amber-500" />
+                  )}
+                </div>
               </div>
             ))}
             {!requiredDocs?.length && (
-              <p className="text-muted-foreground text-center py-4">
+              <p className="text-gray-500 text-center py-8">
                 אין מסמכים נדרשים
               </p>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
