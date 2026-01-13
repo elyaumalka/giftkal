@@ -93,6 +93,7 @@ export default function VenueLanding() {
   const venueName = config.venue_name || venue.name;
   const aboutText = config.about || "";
   const phoneNumber = config.phone || "";
+  const galleryImages = config.gallery || [];
   const whatsappNumber = config.whatsapp || "";
   const emailAddress = config.email || "";
 
@@ -167,17 +168,19 @@ export default function VenueLanding() {
         </div>
       </div>
 
-      {/* Gallery Section - Placeholder */}
-      <div className="py-8 px-4">
-        <h2 className="text-xl font-bold text-[#051839] text-center mb-6">גלריית תמונות</h2>
-        <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
-          {[...Array(12)].map((_, i) => (
-            <div key={i} className="aspect-square rounded-lg bg-gray-200 overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />
-            </div>
-          ))}
+      {/* Gallery Section */}
+      {galleryImages.length > 0 && (
+        <div className="py-8 px-4">
+          <h2 className="text-xl font-bold text-[#051839] text-center mb-6">גלריית תמונות</h2>
+          <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
+            {galleryImages.map((url: string, i: number) => (
+              <div key={i} className="aspect-square rounded-lg bg-gray-200 overflow-hidden">
+                <img src={url} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* About Section */}
       {aboutText && (

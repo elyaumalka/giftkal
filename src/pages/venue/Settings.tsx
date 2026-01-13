@@ -1,16 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload, User, Globe, Copy, ExternalLink } from "lucide-react";
+import { ArrowLeft, Upload, User, Globe, Copy, ExternalLink, Loader2 } from "lucide-react";
 
 export default function VenueSettings() {
   const [activeTab, setActiveTab] = useState<"user" | "landing">("user");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // File input refs
+  const tabletLogoRef = useRef<HTMLInputElement>(null);
+  const tabletBannerRef = useRef<HTMLInputElement>(null);
+  const landingLogoRef = useRef<HTMLInputElement>(null);
+  const landingGalleryRef = useRef<HTMLInputElement>(null);
+
+  // Upload states
+  const [uploadingTabletLogo, setUploadingTabletLogo] = useState(false);
+  const [uploadingTabletBanner, setUploadingTabletBanner] = useState(false);
+  const [uploadingLandingLogo, setUploadingLandingLogo] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   // User settings state
   const [fullName, setFullName] = useState("");
@@ -72,7 +84,6 @@ export default function VenueSettings() {
       setVenueAddress(venue.address || "");
       setTabletVenueName(venue.name || "");
       
-      // Landing page config
       const config = venue.landing_page_config as any || {};
       setLandingVenueName(config.venue_name || venue.name || "");
       setLandingPhone(config.phone || venue.phone || "");
@@ -92,6 +103,121 @@ export default function VenueSettings() {
       setEmail(profile.email || "");
     }
   }, [profile]);
+
+  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+    if (!venue?.id) return null;
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${venue.id}/${folder}/${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from('venue-assets')
+      .upload(fileName, file, { upsert: true });
+
+    if (error) {
+      console.error('Upload error:', error);
+      toast({ title: "שגיאה בהעלאת הקובץ", variant: "destructive" });
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('venue-assets')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
+  const handleTabletLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !venue?.id) return;
+
+    setUploadingTabletLogo(true);
+    const url = await uploadFile(file, 'tablet-logo');
+    
+    if (url) {
+      await supabase
+        .from("venues")
+        .update({ logo_url: url })
+        .eq("id", venue.id);
+      
+      queryClient.invalidateQueries({ queryKey: ["venue-settings"] });
+      toast({ title: "הלוגו הועלה בהצלחה" });
+    }
+    setUploadingTabletLogo(false);
+  };
+
+  const handleTabletBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !venue?.id) return;
+
+    setUploadingTabletBanner(true);
+    const url = await uploadFile(file, 'tablet-banner');
+    
+    if (url) {
+      await supabase
+        .from("venues")
+        .update({ banner_url: url })
+        .eq("id", venue.id);
+      
+      queryClient.invalidateQueries({ queryKey: ["venue-settings"] });
+      toast({ title: "הבאנר הועלה בהצלחה" });
+    }
+    setUploadingTabletBanner(false);
+  };
+
+  const handleLandingLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !venue?.id) return;
+
+    setUploadingLandingLogo(true);
+    const url = await uploadFile(file, 'landing-logo');
+    
+    if (url) {
+      const config = venue.landing_page_config as any || {};
+      await supabase
+        .from("venues")
+        .update({ 
+          logo_url: url,
+          landing_page_config: { ...config, logo: url }
+        })
+        .eq("id", venue.id);
+      
+      queryClient.invalidateQueries({ queryKey: ["venue-settings"] });
+      toast({ title: "הלוגו הועלה בהצלחה" });
+    }
+    setUploadingLandingLogo(false);
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !venue?.id) return;
+
+    setUploadingGallery(true);
+    const config = venue.landing_page_config as any || {};
+    const existingGallery = config.gallery || [];
+    const newGalleryUrls: string[] = [];
+
+    for (const file of Array.from(files)) {
+      const url = await uploadFile(file, 'gallery');
+      if (url) newGalleryUrls.push(url);
+    }
+
+    if (newGalleryUrls.length > 0) {
+      await supabase
+        .from("venues")
+        .update({ 
+          landing_page_config: { 
+            ...config, 
+            gallery: [...existingGallery, ...newGalleryUrls] 
+          }
+        })
+        .eq("id", venue.id);
+      
+      queryClient.invalidateQueries({ queryKey: ["venue-settings"] });
+      toast({ title: `${newGalleryUrls.length} תמונות הועלו בהצלחה` });
+    }
+    setUploadingGallery(false);
+  };
 
   const updateUserSettings = useMutation({
     mutationFn: async () => {
@@ -202,8 +328,16 @@ export default function VenueSettings() {
     toast({ title: "הקישור הועתק ללוח" });
   };
 
+  const config = venue?.landing_page_config as any || {};
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Hidden file inputs */}
+      <input type="file" ref={tabletLogoRef} className="hidden" accept="image/*" onChange={handleTabletLogoUpload} />
+      <input type="file" ref={tabletBannerRef} className="hidden" accept="image/*" onChange={handleTabletBannerUpload} />
+      <input type="file" ref={landingLogoRef} className="hidden" accept="image/*" onChange={handleLandingLogoUpload} />
+      <input type="file" ref={landingGalleryRef} className="hidden" accept="image/*" multiple onChange={handleGalleryUpload} />
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#051839]">הגדרות</h1>
@@ -371,17 +505,31 @@ export default function VenueSettings() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[#051839] font-medium">העלאת לוגו</Label>
-                  <button className="w-full h-10 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                    <Upload className="w-4 h-4" />
-                    העלאת לוגו
+                  <button 
+                    onClick={() => tabletLogoRef.current?.click()}
+                    disabled={uploadingTabletLogo}
+                    className="w-full h-10 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {uploadingTabletLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {venue?.logo_url ? "החלף לוגו" : "העלאת לוגו"}
                   </button>
+                  {venue?.logo_url && (
+                    <img src={venue.logo_url} alt="Logo" className="w-12 h-12 object-contain rounded-lg mt-2" />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[#051839] font-medium">העלאת באנר פרסומי</Label>
-                  <button className="w-full h-10 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                    <Upload className="w-4 h-4" />
-                    העלאת באנר
+                  <button 
+                    onClick={() => tabletBannerRef.current?.click()}
+                    disabled={uploadingTabletBanner}
+                    className="w-full h-10 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {uploadingTabletBanner ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {venue?.banner_url ? "החלף באנר" : "העלאת באנר"}
                   </button>
+                  {venue?.banner_url && (
+                    <img src={venue.banner_url} alt="Banner" className="w-full h-12 object-cover rounded-lg mt-2" />
+                  )}
                 </div>
               </div>
               
@@ -488,17 +636,40 @@ export default function VenueSettings() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[#051839] font-medium">העלאת לוגו</Label>
-                  <button className="w-full h-20 rounded-xl border border-dashed border-gray-300 text-[#95742F] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                    <Upload className="w-5 h-5" />
-                    העלאת לוגו אולם
+                  <button 
+                    onClick={() => landingLogoRef.current?.click()}
+                    disabled={uploadingLandingLogo}
+                    className="w-full h-20 rounded-xl border border-dashed border-gray-300 text-[#95742F] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {uploadingLandingLogo ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                    {venue?.logo_url ? "החלף לוגו אולם" : "העלאת לוגו אולם"}
                   </button>
+                  {venue?.logo_url && (
+                    <img src={venue.logo_url} alt="Logo" className="w-16 h-16 object-contain rounded-lg mx-auto mt-2" />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[#051839] font-medium">העלאת תמונות אוירה</Label>
-                  <button className="w-full h-20 rounded-xl border border-dashed border-gray-300 text-[#95742F] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                    <Upload className="w-5 h-5" />
+                  <button 
+                    onClick={() => landingGalleryRef.current?.click()}
+                    disabled={uploadingGallery}
+                    className="w-full h-20 rounded-xl border border-dashed border-gray-300 text-[#95742F] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {uploadingGallery ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                     העלאת קבצי תמונות
                   </button>
+                  {config.gallery?.length > 0 && (
+                    <div className="flex gap-2 flex-wrap mt-2">
+                      {config.gallery.slice(0, 4).map((url: string, i: number) => (
+                        <img key={i} src={url} alt={`Gallery ${i}`} className="w-12 h-12 object-cover rounded-lg" />
+                      ))}
+                      {config.gallery.length > 4 && (
+                        <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center text-sm text-gray-600">
+                          +{config.gallery.length - 4}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               
