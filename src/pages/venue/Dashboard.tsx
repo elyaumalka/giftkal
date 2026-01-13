@@ -23,24 +23,47 @@ export default function VenueDashboard() {
 
       const { data: events } = await supabase
         .from("events")
-        .select(`
-          *,
-          profiles:owner_id (full_name, phone)
-        `)
+        .select("*")
         .eq("venue_id", venue.id)
         .order("event_date", { ascending: true });
 
-      const monthEvents = events?.filter((e) => {
+      if (!events || events.length === 0) {
+        return {
+          venue,
+          monthEvents: 0,
+          yearEvents: 0,
+          upcomingEvents: [],
+        };
+      }
+
+      // Fetch profiles separately
+      const ownerIds = [...new Set(events.map(e => e.owner_id).filter(Boolean))];
+      
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, phone")
+        .in("user_id", ownerIds);
+
+      // Create profiles map
+      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+
+      // Merge profiles into events
+      const eventsWithProfiles = events.map(event => ({
+        ...event,
+        profiles: profilesMap.get(event.owner_id) || null
+      }));
+
+      const monthEvents = eventsWithProfiles.filter((e) => {
         const eventDate = new Date(e.event_date);
         return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
-      }) || [];
+      });
 
-      const yearEvents = events?.filter((e) => {
+      const yearEvents = eventsWithProfiles.filter((e) => {
         const eventDate = new Date(e.event_date);
         return eventDate.getFullYear() === currentYear;
-      }) || [];
+      });
 
-      const upcomingEvents = events?.filter((e) => new Date(e.event_date) >= new Date()).slice(0, 3) || [];
+      const upcomingEvents = eventsWithProfiles.filter((e) => new Date(e.event_date) >= new Date()).slice(0, 3);
 
       return {
         venue,

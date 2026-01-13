@@ -42,16 +42,29 @@ export default function VenueEvents() {
 
       if (!venueData) return [];
 
-      const { data } = await supabase
+      const { data: eventsData } = await supabase
         .from("events")
-        .select(`
-          *,
-          profiles:owner_id (full_name, phone)
-        `)
+        .select("*")
         .eq("venue_id", venueData.id)
         .order("event_date", { ascending: false });
 
-      return data || [];
+      if (!eventsData || eventsData.length === 0) return [];
+
+      // Fetch profiles separately
+      const ownerIds = [...new Set(eventsData.map(e => e.owner_id).filter(Boolean))];
+      
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, phone")
+        .in("user_id", ownerIds);
+
+      // Merge profiles into events
+      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+      
+      return eventsData.map(event => ({
+        ...event,
+        profiles: profilesMap.get(event.owner_id) || null
+      }));
     },
   });
 
