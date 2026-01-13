@@ -5,15 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Upload, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
 type Step = 1 | 2 | 3;
 
 interface Invitation {
   id: number;
   style: string;
-  title: string;
-  content: string;
+  imageUrl: string;
 }
 
 export default function EventInvitations() {
@@ -277,7 +276,7 @@ export default function EventInvitations() {
           </div>
 
           {/* Navigation Buttons - הבא בשמאל, הקודם בימין */}
-          <div className="flex items-center justify-between pt-4">
+          <div className="flex items-center justify-between pt-4" dir="ltr">
             <button
               onClick={handleNextStep}
               className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
@@ -336,7 +335,7 @@ export default function EventInvitations() {
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-4">
+          <div className="flex items-center justify-between pt-4" dir="ltr">
             <button
               onClick={handleNextStep}
               disabled={isGenerating}
@@ -368,19 +367,19 @@ export default function EventInvitations() {
       {/* Step 3: בחירת עיצוב הזמנה מ-AI או העלאה */}
       {currentStep === 3 && (
         <div className="space-y-6">
-          {/* Generated Invitations Grid */}
+          {/* Generated Invitations Grid - תמונות */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" dir="rtl">
             {generatedInvitations.map((invitation) => (
               <div
                 key={invitation.id}
                 onClick={() => setSelectedInvitation(invitation.id)}
-                className={`relative bg-white rounded-2xl shadow-sm p-6 cursor-pointer transition-all hover:shadow-md min-h-[280px] ${
+                className={`relative bg-white rounded-2xl shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-md ${
                   selectedInvitation === invitation.id ? "ring-2 ring-[#95742F]" : ""
                 }`}
               >
                 {/* Checkbox */}
                 <div
-                  className={`absolute top-4 left-4 w-6 h-6 rounded border-2 flex items-center justify-center ${
+                  className={`absolute top-4 left-4 w-6 h-6 rounded border-2 flex items-center justify-center z-10 ${
                     selectedInvitation === invitation.id
                       ? "bg-[#95742F] border-[#95742F]"
                       : "border-gray-300 bg-white"
@@ -393,9 +392,18 @@ export default function EventInvitations() {
                   )}
                 </div>
                 
-                <div className="pt-2">
-                  <h3 className="font-bold text-[#051839] mb-3 text-lg">{invitation.style}</h3>
-                  <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">{invitation.content}</p>
+                {/* Invitation Image */}
+                <div className="aspect-[3/4]">
+                  <img 
+                    src={invitation.imageUrl} 
+                    alt={invitation.style}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                
+                {/* Style label */}
+                <div className="p-3 bg-white">
+                  <h3 className="font-bold text-[#051839] text-center">{invitation.style}</h3>
                 </div>
               </div>
             ))}
@@ -410,7 +418,7 @@ export default function EventInvitations() {
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-4">
+          <div className="flex items-center justify-between pt-4" dir="ltr">
             <button
               onClick={handleSendInvitations}
               className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
