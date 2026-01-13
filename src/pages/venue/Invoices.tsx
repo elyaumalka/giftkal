@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Download } from "lucide-react";
 
 export default function VenueInvoices() {
   const { data: invoices } = useQuery({
@@ -27,66 +26,72 @@ export default function VenueInvoices() {
     },
   });
 
-  const formatMonth = (date: string) => {
+  const formatMonthShort = (date: string) => {
     const d = new Date(date);
-    return d.toLocaleDateString("he-IL", { month: "long", year: "numeric" });
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${month}/${year}`;
+  };
+
+  const formatDate = (date: string) => {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#051839]">חשבוניות</h1>
-        <p className="text-gray-500 mt-1">צפייה והורדת חשבוניות</p>
-      </div>
-
       {/* Invoices Table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="bg-[#051839] text-white p-4">
-          <h2 className="text-lg font-semibold">היסטוריית חשבוניות</h2>
+        <div className="bg-[#051839] text-white p-6 rounded-t-2xl">
+          {/* Empty header like in design */}
         </div>
         
-        <div className="p-4">
+        <div className="p-6">
           {/* Table Header */}
           <div className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-500 mb-4 px-4">
-            <span>תאריך</span>
-            <span>סכום</span>
-            <span>עבור חודש</span>
-            <span>הורדה</span>
+            <span className="text-right">חשבונית</span>
+            <span className="text-right">עבור</span>
+            <span className="text-right">סכום התשלום</span>
+            <span className="text-right">תאריך</span>
           </div>
           
           {/* Table Rows */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             {invoices?.map((invoice: any) => (
               <div 
                 key={invoice.id} 
-                className="grid grid-cols-4 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm"
+                className="grid grid-cols-4 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm border-r-4 border-[#051839]"
               >
-                <span className="text-[#051839]">
-                  {new Date(invoice.created_at).toLocaleDateString("he-IL")}
-                </span>
-                <span className="font-medium text-[#95742F]">
-                  ₪{Number(invoice.amount).toLocaleString()}
-                </span>
-                <span className="text-gray-600">{formatMonth(invoice.for_month)}</span>
                 <span>
                   {invoice.file_url ? (
                     <a 
                       href={invoice.file_url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="w-8 h-8 rounded-full bg-[#051839] flex items-center justify-center text-white hover:bg-[#051839]/80 transition-colors"
+                      className="inline-block px-6 py-2 rounded-full bg-[#C41E3A] text-white font-medium hover:bg-[#C41E3A]/90 transition-colors text-center"
                     >
-                      <Download className="w-4 h-4" />
+                      הורדת חשבונית
                     </a>
                   ) : (
                     <button 
                       disabled 
-                      className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 cursor-not-allowed"
+                      className="inline-block px-6 py-2 rounded-full bg-[#C41E3A] text-white font-medium opacity-50 cursor-not-allowed text-center"
                     >
-                      <Download className="w-4 h-4" />
+                      הורדת חשבונית
                     </button>
                   )}
+                </span>
+                <span className="text-[#051839] font-bold text-right">
+                  {formatMonthShort(invoice.for_month)}
+                </span>
+                <span className="font-bold text-[#051839] text-right">
+                  ₪{Number(invoice.amount).toLocaleString()}
+                </span>
+                <span className="font-bold text-[#051839] text-right">
+                  {formatDate(invoice.created_at)}
                 </span>
               </div>
             ))}
