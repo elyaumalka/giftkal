@@ -4,22 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  FileText,
-  Users,
-  Settings,
-  MessageSquare,
-  LogOut,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import logo from "@/assets/logo.png";
 
+// Custom icons for venue
+import DashboardIcon from "@/assets/icons/venue/Dashboard.svg";
+import InvoicesIcon from "@/assets/icons/venue/Invoices.svg";
+import EventsIcon from "@/assets/icons/venue/Events.svg";
+import ToolsIcon from "@/assets/icons/venue/Tools.svg";
+import SettingsIcon from "@/assets/icons/venue/Settings.svg";
+
 const menuItems = [
-  { title: "דשבורד", icon: LayoutDashboard, path: "/venue" },
-  { title: "חשבוניות", icon: FileText, path: "/venue/invoices" },
-  { title: "בעלי אירועים", icon: Users, path: "/venue/events" },
-  { title: "פניות ותקלות", icon: MessageSquare, path: "/venue/support" },
-  { title: "הגדרות", icon: Settings, path: "/venue/settings" },
+  { title: "דשבורד", icon: DashboardIcon, path: "/venue" },
+  { title: "חשבוניות", icon: InvoicesIcon, path: "/venue/invoices" },
+  { title: "בעלי אירועים", icon: EventsIcon, path: "/venue/events" },
+  { title: "פניות ותקלות", icon: ToolsIcon, path: "/venue/support" },
+  { title: "הגדרות", icon: SettingsIcon, path: "/venue/settings" },
 ];
 
 export function VenueLayout() {
@@ -77,7 +77,11 @@ export function VenueLayout() {
                       : "bg-[#08275E] text-white hover:bg-[#08275E]/80"
                   )}
                 >
-                  <item.icon className="w-6 h-6 shrink-0" />
+                  <img 
+                    src={item.icon} 
+                    alt={item.title} 
+                    className="w-6 h-6 shrink-0"
+                  />
                   {!collapsed && (
                     <span className="flex-1 text-sm">{item.title}</span>
                   )}
