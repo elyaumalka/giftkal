@@ -1,28 +1,41 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Download, Send, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Download, Loader2 } from "lucide-react";
+
+type Step = 1 | 2 | 3;
+
+interface Invitation {
+  id: number;
+  style: string;
+  title: string;
+  content: string;
+}
 
 export default function EventInvitations() {
-  const [step, setStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState<Step>(1);
+  const [selectedInvitation, setSelectedInvitation] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Step 2 state
+  // Form state for step 1
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
   const [groomParents, setGroomParents] = useState("");
   const [brideParents, setBrideParents] = useState("");
   const [groomGrandparents, setGroomGrandparents] = useState("");
   const [brideGrandparents, setBrideGrandparents] = useState("");
-  const [invitationText, setInvitationText] = useState("");
+  const [introText, setIntroText] = useState("");
+  
+  // Generated invitations
+  const [generatedInvitations, setGeneratedInvitations] = useState<Invitation[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
+  // Fetch event data
   const { data: event } = useQuery({
     queryKey: ["event-invitations"],
     queryFn: async () => {
@@ -42,16 +55,78 @@ export default function EventInvitations() {
         setBrideParents(data.bride_parents || "");
         setGroomGrandparents(data.groom_grandparents || "");
         setBrideGrandparents(data.bride_grandparents || "");
-        setInvitationText(data.invitation_text || "");
+        setIntroText(data.invitation_text || "");
       }
 
       return data;
     },
   });
 
-  const saveDetails = useMutation({
+  // Fetch guests
+  const { data: guests } = useQuery({
+    queryKey: ["event-guests"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data: eventData } = await supabase
+        .from("events")
+        .select("id")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+
+      if (!eventData) return [];
+
+      const { data } = await supabase
+        .from("guests")
+        .select("*")
+        .eq("event_id", eventData.id);
+
+      return data || [];
+    },
+  });
+
+  // Generate invitations with AI
+  const generateInvitations = async () => {
+    if (!groomName || !brideName) {
+      toast({ title: "נא למלא לפחות את שמות החתן והכלה", variant: "destructive" });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-invitations", {
+        body: {
+          groomName,
+          brideName,
+          groomParents,
+          brideParents,
+          groomGrandparents,
+          brideGrandparents,
+          introText,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.invitations) {
+        setGeneratedInvitations(data.invitations);
+        setCurrentStep(2);
+        toast({ title: "ההזמנות נוצרו בהצלחה!" });
+      }
+    } catch (error: any) {
+      console.error("Error generating invitations:", error);
+      toast({ title: "שגיאה ביצירת ההזמנות", description: error.message, variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Save event data
+  const saveEventData = useMutation({
     mutationFn: async () => {
-      if (!event?.id) throw new Error("No event found");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !event?.id) throw new Error("No user or event");
 
       const { error } = await supabase
         .from("events")
@@ -62,7 +137,7 @@ export default function EventInvitations() {
           bride_parents: brideParents,
           groom_grandparents: groomGrandparents,
           bride_grandparents: brideGrandparents,
-          invitation_text: invitationText,
+          invitation_text: introText,
         })
         .eq("id", event.id);
 
@@ -70,195 +145,283 @@ export default function EventInvitations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event-invitations"] });
-      toast({ title: "הפרטים נשמרו בהצלחה" });
-      setStep(3);
     },
   });
 
-  const downloadSample = () => {
-    toast({
-      title: "מוריד קובץ דוגמא",
-      description: "הקובץ יורד...",
-    });
+  const handleNextStep = async () => {
+    if (currentStep === 1) {
+      await saveEventData.mutateAsync();
+      await generateInvitations();
+    } else if (currentStep === 2) {
+      if (!selectedInvitation) {
+        toast({ title: "נא לבחור הזמנה", variant: "destructive" });
+        return;
+      }
+      setCurrentStep(3);
+    }
   };
+
+  const handlePrevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => (prev - 1) as Step);
+    }
+  };
+
+  const handleSendInvitations = () => {
+    toast({ title: "ההזמנות נשלחו בהצלחה!", description: `נשלחו ${guests?.length || 0} הזמנות` });
+  };
+
+  const steps = [
+    { id: 1, label: "שלב א:", title: "בחירת עיצוב הזמנה" },
+    { id: 2, label: "שלב ב:", title: "בחירת מוזמנים" },
+    { id: 3, label: "שלב ג:", title: "שליחת הזמנות" },
+  ];
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold">הזמנות</h1>
-        <p className="text-muted-foreground mt-1">יצירה ושליחת הזמנות לאורחים</p>
-      </div>
-
-      {/* Steps indicator */}
-      <div className="flex items-center justify-center gap-4">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="flex items-center gap-2">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                step >= s
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
+      {/* Steps Header */}
+      <div className="flex items-center justify-center gap-4" dir="rtl">
+        {steps.map((step) => (
+          <div key={step.id} className="flex items-center gap-2">
+            <button
+              onClick={() => step.id <= currentStep && setCurrentStep(step.id as Step)}
+              className={`px-6 py-3 rounded-full font-medium transition-colors ${
+                currentStep === step.id
+                  ? "bg-white shadow-md text-[#051839]"
+                  : currentStep > step.id
+                  ? "bg-gray-200 text-[#051839]"
+                  : "bg-transparent text-gray-400"
               }`}
             >
-              {step > s ? <Check className="w-5 h-5" /> : s}
-            </div>
-            {s < 3 && (
-              <div
-                className={`w-16 h-1 rounded ${
-                  step > s ? "bg-primary" : "bg-muted"
-                }`}
-              />
-            )}
+              <span className="font-bold">{step.label}</span> {step.title}
+            </button>
           </div>
         ))}
       </div>
 
-      {/* Step 1: Upload guests */}
-      {step === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>שלב 1: העלאת רשימת מוזמנים</CardTitle>
-            <CardDescription>העלה קובץ אקסל עם רשימת המוזמנים</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center">
-              <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">גרור קובץ אקסל לכאן או לחץ לבחירת קובץ</p>
-              <Button variant="outline">
-                <Upload className="w-4 h-4 ml-2" />
-                בחר קובץ
-              </Button>
-            </div>
-            <Button variant="ghost" onClick={downloadSample}>
-              <Download className="w-4 h-4 ml-2" />
-              הורד קובץ דוגמא
-            </Button>
-            <div className="flex justify-end">
-              <Button variant="gold" onClick={() => setStep(2)}>
-                המשך לשלב הבא
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 2: Enter details */}
-      {step === 2 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>שלב 2: פרטי האירוע</CardTitle>
-            <CardDescription>הזן את פרטי החתן והכלה</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>שם החתן</Label>
-                <Input
-                  value={groomName}
-                  onChange={(e) => setGroomName(e.target.value)}
-                  placeholder="שם החתן"
-                />
-              </div>
-              <div>
-                <Label>שם הכלה</Label>
-                <Input
-                  value={brideName}
-                  onChange={(e) => setBrideName(e.target.value)}
-                  placeholder="שם הכלה"
-                />
-              </div>
-              <div>
-                <Label>הורי החתן</Label>
-                <Input
-                  value={groomParents}
-                  onChange={(e) => setGroomParents(e.target.value)}
-                  placeholder="שמות הורי החתן"
-                />
-              </div>
-              <div>
-                <Label>הורי הכלה</Label>
-                <Input
-                  value={brideParents}
-                  onChange={(e) => setBrideParents(e.target.value)}
-                  placeholder="שמות הורי הכלה"
-                />
-              </div>
-              <div>
-                <Label>סבא וסבתא החתן</Label>
-                <Input
-                  value={groomGrandparents}
-                  onChange={(e) => setGroomGrandparents(e.target.value)}
-                  placeholder="שמות סבא וסבתא החתן"
-                />
-              </div>
-              <div>
-                <Label>סבא וסבתא הכלה</Label>
-                <Input
-                  value={brideGrandparents}
-                  onChange={(e) => setBrideGrandparents(e.target.value)}
-                  placeholder="שמות סבא וסבתא הכלה"
-                />
-              </div>
-            </div>
-            <div>
-              <Label>טקסט מקדים להזמנה</Label>
-              <Textarea
-                value={invitationText}
-                onChange={(e) => setInvitationText(e.target.value)}
-                placeholder="טקסט שיופיע בהזמנה..."
-                rows={4}
+      {/* Step 1: Form */}
+      {currentStep === 1 && (
+        <div className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4" dir="rtl">
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">שם החתן</Label>
+              <Input
+                value={groomName}
+                onChange={(e) => setGroomName(e.target.value)}
+                placeholder="שם החתן"
+                className="rounded-xl border-gray-200 bg-gray-100 text-right"
               />
             </div>
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(1)}>
-                חזרה
-              </Button>
-              <Button variant="gold" onClick={() => saveDetails.mutate()}>
-                שמור והמשך
-              </Button>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">שם הכלה</Label>
+              <Input
+                value={brideName}
+                onChange={(e) => setBrideName(e.target.value)}
+                placeholder="שם הכלה"
+                className="rounded-xl border-gray-200 bg-gray-100 text-right"
+              />
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">שם אב ואם החתן</Label>
+              <Input
+                value={groomParents}
+                onChange={(e) => setGroomParents(e.target.value)}
+                placeholder="שם אב ואם החתן"
+                className="rounded-xl border-gray-200 bg-gray-100 text-right"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">שם אב ואם הכלה</Label>
+              <Input
+                value={brideParents}
+                onChange={(e) => setBrideParents(e.target.value)}
+                placeholder="שם אב ואם הכלה"
+                className="rounded-xl border-gray-200 bg-gray-100 text-right"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">שם הסבא והסבתא חתן</Label>
+              <Input
+                value={groomGrandparents}
+                onChange={(e) => setGroomGrandparents(e.target.value)}
+                placeholder="שם הסבא והסבתא חתן"
+                className="rounded-xl border-gray-200 bg-gray-100 text-right"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium">שם הסבא והסבתא כלה</Label>
+              <Input
+                value={brideGrandparents}
+                onChange={(e) => setBrideGrandparents(e.target.value)}
+                placeholder="שם הסבא והסבתא כלה"
+                className="rounded-xl border-gray-200 bg-gray-100 text-right"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2" dir="rtl">
+            <Label className="text-[#051839] font-medium">טקסט מקדים להזמנה</Label>
+            <Textarea
+              value={introText}
+              onChange={(e) => setIntroText(e.target.value)}
+              placeholder="טקסט מקדים להזמנה..."
+              className="rounded-xl border-gray-200 bg-gray-100 text-right min-h-[120px]"
+            />
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-4">
+            <button
+              onClick={handleNextStep}
+              disabled={isGenerating}
+              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  יוצר הזמנות...
+                </>
+              ) : (
+                <>
+                  לשלב הבא
+                  <ArrowLeft className="w-4 h-4" />
+                </>
+              )}
+            </button>
+            <button
+              onClick={handlePrevStep}
+              disabled
+              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium opacity-50 cursor-not-allowed"
+            >
+              <ArrowRight className="w-4 h-4" />
+              לשלב הקודם
+            </button>
+          </div>
+        </div>
       )}
 
-      {/* Step 3: Design and send */}
-      {step === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>שלב 3: עיצוב ושליחה</CardTitle>
-            <CardDescription>בחר עיצוב להזמנה ושלח לאורחים</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              {[1, 2, 3].map((design) => (
-                <div
-                  key={design}
-                  className="border-2 border-border rounded-xl p-4 cursor-pointer hover:border-primary transition-colors"
-                >
-                  <div className="aspect-[3/4] bg-muted rounded-lg mb-2 flex items-center justify-center">
-                    <span className="text-muted-foreground">עיצוב {design}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center">
-              <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">או העלה עיצוב משלך</p>
-            </div>
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(2)}>
-                חזרה
-              </Button>
-              <Button
-                variant="gold"
-                onClick={() => toast({ title: "ההזמנות נשלחו!", description: "כל האורחים יקבלו את ההזמנה" })}
+      {/* Step 2: Choose Invitation Design */}
+      {currentStep === 2 && (
+        <div className="space-y-6">
+          {/* Generated Invitations Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" dir="rtl">
+            {generatedInvitations.map((invitation) => (
+              <div
+                key={invitation.id}
+                onClick={() => setSelectedInvitation(invitation.id)}
+                className={`relative bg-white rounded-2xl shadow-sm p-6 cursor-pointer transition-all hover:shadow-md ${
+                  selectedInvitation === invitation.id ? "ring-2 ring-[#95742F]" : ""
+                }`}
               >
-                <Send className="w-4 h-4 ml-2" />
-                שלח הזמנות
-              </Button>
+                {/* Checkbox */}
+                <div
+                  className={`absolute top-4 right-4 w-6 h-6 rounded border-2 flex items-center justify-center ${
+                    selectedInvitation === invitation.id
+                      ? "bg-[#95742F] border-[#95742F]"
+                      : "border-gray-300 bg-white"
+                  }`}
+                >
+                  {selectedInvitation === invitation.id && (
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                
+                <div className="pt-6">
+                  <h3 className="font-bold text-[#051839] mb-2">{invitation.style}</h3>
+                  <p className="text-sm text-gray-600 whitespace-pre-line line-clamp-6">{invitation.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Upload own design */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center justify-center">
+            <button className="text-[#051839] font-medium flex items-center gap-2 hover:underline">
+              העלאת קובץ הזמנה מוכן
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleNextStep}
+              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
+            >
+              לשלב הבא
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handlePrevStep}
+              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
+            >
+              <ArrowRight className="w-4 h-4" />
+              לשלב הקודם
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: Send Invitations */}
+      {currentStep === 3 && (
+        <div className="space-y-6">
+          {/* Upload Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-[#051839] rounded-2xl p-6 text-white text-center space-y-2">
+              <h3 className="font-bold text-lg">העלאת קובץ שמע</h3>
+              <p className="text-sm text-gray-300">לרוצים להזמין באמצעות הודעה קולית</p>
+              <button className="mt-4 flex items-center justify-center gap-2 mx-auto text-white hover:underline">
+                <ArrowLeft className="w-4 h-4" />
+              </button>
             </div>
-          </CardContent>
-        </Card>
+            <div className="bg-[#051839] rounded-2xl p-6 text-white text-center">
+              <h3 className="font-bold text-lg flex items-center justify-center gap-2">
+                העלאת רשימת מוזמנים (אקסאל)
+                <ArrowLeft className="w-4 h-4" />
+              </h3>
+            </div>
+          </div>
+
+          {/* Text input and sample file */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-[#C41E3A] rounded-2xl p-6 text-white text-center">
+              <button className="font-bold flex items-center justify-center gap-2 mx-auto">
+                הורדת קובץ דוגמא
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="bg-gray-100 rounded-2xl p-6">
+              <p className="text-[#051839] text-center font-medium">הזנת טקסט הזמנה למערכת המענה הקולי</p>
+            </div>
+          </div>
+
+          {/* Guest count info */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
+            <p className="text-[#051839] font-medium">
+              סה"כ {guests?.length || 0} מוזמנים ברשימה
+            </p>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleSendInvitations}
+              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
+            >
+              שליחת ההזמנות
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handlePrevStep}
+              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
+            >
+              <ArrowRight className="w-4 h-4" />
+              לשלב הקודם
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
