@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import CheersIcon from "@/assets/icons/venue/Cheers.svg";
+import StatIcon from "@/assets/icons/event/StatIcon.svg";
 
 export default function EventDashboard() {
   const { data } = useQuery({
@@ -54,28 +54,28 @@ export default function EventDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Average Gift */}
         <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center shadow-sm">
-          <img src={CheersIcon} alt="Stats" className="w-12 h-12 mb-3" />
+          <img src={StatIcon} alt="Stats" className="w-12 h-12 mb-3" />
           <p className="text-4xl font-bold text-[#051839] mb-1">{data?.avgGift || 0}</p>
           <p className="text-[#051839] font-medium text-sm">ממוצע מתנה</p>
         </div>
         
         {/* Gift Givers */}
         <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center shadow-sm">
-          <img src={CheersIcon} alt="Stats" className="w-12 h-12 mb-3" />
+          <img src={StatIcon} alt="Stats" className="w-12 h-12 mb-3" />
           <p className="text-4xl font-bold text-[#051839] mb-1">{data?.giftCount || 0}</p>
           <p className="text-[#051839] font-medium text-sm">נותני מתנות</p>
         </div>
         
         {/* Total Gifts */}
         <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center shadow-sm">
-          <img src={CheersIcon} alt="Stats" className="w-12 h-12 mb-3" />
+          <img src={StatIcon} alt="Stats" className="w-12 h-12 mb-3" />
           <p className="text-4xl font-bold text-[#95742F] mb-1">₪{(data?.totalGifts || 0).toLocaleString()}</p>
           <p className="text-[#051839] font-medium text-sm">סך המתנות</p>
         </div>
         
         {/* Guest Count */}
         <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center shadow-sm">
-          <img src={CheersIcon} alt="Stats" className="w-12 h-12 mb-3" />
+          <img src={StatIcon} alt="Stats" className="w-12 h-12 mb-3" />
           <p className="text-4xl font-bold text-[#051839] mb-1">{data?.guestCount || 0}</p>
           <p className="text-[#051839] font-medium text-sm">כמות מוזמנים</p>
         </div>
