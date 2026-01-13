@@ -90,9 +90,8 @@ export default function VenueLeads() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div />
-        <h1 className="text-2xl font-bold text-[#051839]">לידים מדף הנחיתה</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-[#051839] text-right">לידים מדף הנחיתה</h1>
       </div>
 
       {/* Table */}
