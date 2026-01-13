@@ -55,7 +55,7 @@ export default function EventGifts() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Action Buttons - aligned to left */}
-      <div className="flex items-center justify-start gap-4">
+      <div className="flex items-center justify-end gap-4">
         <Button 
           onClick={handleExportExcel}
           variant="outline"
