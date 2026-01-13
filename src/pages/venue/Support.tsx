@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, MessageSquare, AlertTriangle, Eye, X, ArrowLeft } from "lucide-react";
+import { Plus, Eye, X, ArrowLeft, Filter } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,6 +16,22 @@ export default function VenueSupport() {
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: venue } = useQuery({
+    queryKey: ["venue-info"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data } = await supabase
+        .from("venues")
+        .select("id, name")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+
+      return data;
+    },
+  });
 
   const { data: tickets } = useQuery({
     queryKey: ["venue-tickets", activeTab],
@@ -39,12 +55,6 @@ export default function VenueSupport() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data: venue } = await supabase
-        .from("venues")
-        .select("id")
-        .eq("owner_id", user.id)
-        .maybeSingle();
-
       const { error } = await supabase.from("support_tickets").insert({
         user_id: user.id,
         venue_id: venue?.id,
@@ -64,70 +74,73 @@ export default function VenueSupport() {
     },
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusText = (status: string, hasResponse: boolean) => {
+    if (hasResponse) return "התקבלה תשובה";
     switch (status) {
       case "open":
-        return <span className="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700 border border-yellow-200">פתוח</span>;
+        return "פתוח";
       case "in_progress":
-        return <span className="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700 border border-blue-200">בטיפול</span>;
+        return "בטיפול";
       case "closed":
-        return <span className="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700 border border-green-200">סגור</span>;
+        return "סגור";
       default:
-        return null;
+        return status;
     }
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
+      {/* Top Row - Tabs and Actions */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#051839]">פניות ותקלות</h1>
-          <p className="text-gray-500 mt-1">פתיחת פניות חדשות וצפייה בסטטוס</p>
+        {/* Right side - Tabs */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab("inquiries")}
+            className={`px-8 py-3 rounded-full font-medium transition-colors ${
+              activeTab === "inquiries"
+                ? "bg-[#051839] text-white"
+                : "bg-white text-[#051839] border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            פניות
+          </button>
+          <button
+            onClick={() => setActiveTab("issues")}
+            className={`px-8 py-3 rounded-full font-medium transition-colors ${
+              activeTab === "issues"
+                ? "bg-[#051839] text-white"
+                : "bg-white text-[#051839] border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            תקלות
+          </button>
         </div>
-        <button 
-          onClick={() => setShowNewTicketDialog(true)}
-          className="w-10 h-10 rounded-full bg-[#051839] flex items-center justify-center text-white hover:bg-[#051839]/80 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
+
+        {/* Left side - Actions */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowNewTicketDialog(true)}
+            className="px-6 py-3 rounded-full bg-[#051839] text-white font-medium hover:bg-[#051839]/90 transition-colors flex items-center gap-2"
+          >
+            {activeTab === "inquiries" ? "פתיחת פנייה חדשה" : "פתיחת תקלה חדשה"}
+            <Plus className="w-4 h-4" />
+          </button>
+          <button className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors">
+            <Filter className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setActiveTab("inquiries")}
-          className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
-            activeTab === "inquiries"
-              ? "bg-[#051839] text-white"
-              : "bg-white text-[#051839] hover:bg-gray-100"
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          פניות
-        </button>
-        <button
-          onClick={() => setActiveTab("issues")}
-          className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
-            activeTab === "issues"
-              ? "bg-[#051839] text-white"
-              : "bg-white text-[#051839] hover:bg-gray-100"
-          }`}
-        >
-          <AlertTriangle className="w-4 h-4" />
-          תקלות
-        </button>
-      </div>
-
-      {/* Tickets Table */}
+      {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="p-4">
           {/* Table Header */}
-          <div className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-500 mb-4 px-4">
-            <span>תאריך</span>
-            <span>נושא</span>
-            <span>סטטוס</span>
-            <span>צפייה</span>
+          <div className={`grid ${activeTab === "inquiries" ? "grid-cols-5" : "grid-cols-5"} gap-4 text-sm font-medium text-gray-500 mb-4 px-4`}>
+            <span className="text-right">תאריך הפנייה</span>
+            <span className="text-right">סטטוס</span>
+            <span className="text-right">{activeTab === "inquiries" ? "מהות הפנייה" : "מהות התקלה"}</span>
+            <span className="text-right">{activeTab === "inquiries" ? "מהות הפנייה" : "שם האולם"}</span>
+            <span></span>
           </div>
           
           {/* Table Rows */}
@@ -135,19 +148,32 @@ export default function VenueSupport() {
             {tickets?.map((ticket: any) => (
               <div 
                 key={ticket.id} 
-                className="grid grid-cols-4 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm"
+                className="grid grid-cols-5 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm"
               >
-                <span className="text-[#051839]">
+                <span className="font-bold text-[#051839]">
                   {new Date(ticket.created_at).toLocaleDateString("he-IL")}
                 </span>
-                <span className="font-medium text-[#051839]">{ticket.subject}</span>
-                <span>{getStatusBadge(ticket.status)}</span>
-                <span>
+                <span className="font-bold text-[#051839]">
+                  {getStatusText(ticket.status, !!ticket.response)}
+                </span>
+                <span className="text-gray-600 truncate">
+                  {ticket.description?.substring(0, 30)}...
+                </span>
+                <span className={activeTab === "issues" ? "font-bold text-[#95742F]" : "text-gray-600 truncate"}>
+                  {activeTab === "issues" ? venue?.name || "—" : ticket.subject}
+                </span>
+                <span className="flex items-center gap-2 justify-end">
                   <button 
                     onClick={() => setSelectedTicket(ticket)}
-                    className="w-8 h-8 rounded-full bg-[#051839] flex items-center justify-center text-white hover:bg-[#051839]/80 transition-colors"
+                    className="px-4 py-2 rounded-full bg-[#C41E3A] text-white font-medium hover:bg-[#C41E3A]/90 transition-colors flex items-center gap-2"
                   >
-                    <Eye className="w-4 h-4" />
+                    צפייה בתשובה
+                  </button>
+                  <button 
+                    onClick={() => setSelectedTicket(ticket)}
+                    className="w-10 h-10 rounded-full border-2 border-[#C41E3A] flex items-center justify-center text-[#C41E3A] hover:bg-[#C41E3A]/10 transition-colors"
+                  >
+                    <Eye className="w-5 h-5" />
                   </button>
                 </span>
               </div>
@@ -155,7 +181,7 @@ export default function VenueSupport() {
             
             {!tickets?.length && (
               <div className="text-center py-8 text-gray-500">
-                אין פניות להצגה
+                אין {activeTab === "inquiries" ? "פניות" : "תקלות"} להצגה
               </div>
             )}
           </div>
@@ -238,12 +264,14 @@ export default function VenueSupport() {
               </div>
               <div>
                 <Label className="text-gray-500 text-sm">סטטוס</Label>
-                <div className="mt-1">{getStatusBadge(selectedTicket.status)}</div>
+                <p className="font-medium text-[#051839]">
+                  {getStatusText(selectedTicket.status, !!selectedTicket.response)}
+                </p>
               </div>
               {selectedTicket.response && (
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <Label className="text-gray-500 text-sm">תשובה</Label>
-                  <p className="text-[#051839]">{selectedTicket.response}</p>
+                <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                  <Label className="text-green-700 text-sm font-medium">תשובה</Label>
+                  <p className="text-green-800 mt-1">{selectedTicket.response}</p>
                 </div>
               )}
             </div>
