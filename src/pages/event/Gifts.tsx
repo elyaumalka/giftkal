@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -55,21 +54,21 @@ export default function EventGifts() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Action Buttons */}
-      <div className="flex items-center gap-4">
-        <Button 
-          onClick={handleDownloadBlessings}
-          className="bg-[#1A9A8A] hover:bg-[#1A9A8A]/90 text-white rounded-lg px-6 py-3 text-sm font-medium"
-        >
-          הורדת PDF של הברכות
-          <ArrowLeft className="w-4 h-4 mr-2" />
-        </Button>
+      {/* Action Buttons - aligned to left */}
+      <div className="flex items-center justify-start gap-4">
         <Button 
           onClick={handleExportExcel}
           variant="outline"
           className="bg-white border-gray-300 text-[#051839] rounded-lg px-6 py-3 text-sm font-medium"
         >
           ייצוא לאקסאל
+          <ArrowLeft className="w-4 h-4 mr-2" />
+        </Button>
+        <Button 
+          onClick={handleDownloadBlessings}
+          className="bg-[#1A9A8A] hover:bg-[#1A9A8A]/90 text-white rounded-lg px-6 py-3 text-sm font-medium"
+        >
+          הורדת PDF של הברכות
           <ArrowLeft className="w-4 h-4 mr-2" />
         </Button>
       </div>
@@ -80,12 +79,13 @@ export default function EventGifts() {
           {/* Title */}
           <h2 className="text-xl font-bold text-[#051839] mb-6 text-right">נותני מתנות</h2>
           
-          {/* Table Header */}
-          <div className="grid grid-cols-5 gap-4 text-sm font-medium text-gray-500 mb-4 px-4">
-            <span className="text-right">קירבה</span>
-            <span className="text-right">מס׳ תשלומים</span>
+          {/* Table Header - RTL: שם פרטי ומשפחה, סכום, מס׳ תשלומים, קירבה, כפתור */}
+          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 text-sm font-medium text-gray-500 mb-4 px-4" dir="rtl">
+            <span className="text-right">שם פרטי ומשפחה</span>
             <span className="text-right">סכום</span>
-            <span className="text-right col-span-2">שם פרטי ומשפחה</span>
+            <span className="text-right">מס׳ תשלומים</span>
+            <span className="text-right">קירבה</span>
+            <span className="w-28"></span>
           </div>
           
           {/* Table Rows */}
@@ -93,14 +93,27 @@ export default function EventGifts() {
             {gifts?.map((gift: any) => (
               <div 
                 key={gift.id} 
-                className="grid grid-cols-5 gap-4 items-center bg-gray-100 rounded-xl p-4 text-sm"
+                className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 items-center bg-gray-100 rounded-xl p-4 text-sm"
+                dir="rtl"
               >
-                <div className="text-right">
+                <span className="font-bold text-[#051839] text-right">
+                  {gift.payer_name}
+                </span>
+                <span className="font-bold text-[#051839] text-right">
+                  ₪{Number(gift.amount).toLocaleString()}
+                </span>
+                <span className="font-bold text-[#051839] text-right">
+                  {gift.installments || 1}
+                </span>
+                <span className="font-bold text-[#051839] text-right">
+                  {gift.relationship || "—"}
+                </span>
+                <div className="w-28">
                   {gift.blessing_text ? (
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button 
-                          className="bg-[#1A9A8A] hover:bg-[#1A9A8A]/90 text-white rounded-lg px-4 py-2 text-xs font-medium"
+                          className="bg-[#1A9A8A] hover:bg-[#1A9A8A]/90 text-white rounded-lg px-3 py-2 text-xs font-medium w-full"
                         >
                           צפייה בברכה
                           <ArrowLeft className="w-3 h-3 mr-1" />
@@ -113,19 +126,8 @@ export default function EventGifts() {
                         <p className="text-lg leading-relaxed text-right">{gift.blessing_text}</p>
                       </DialogContent>
                     </Dialog>
-                  ) : (
-                    <span className="font-bold text-[#051839]">{gift.relationship || "—"}</span>
-                  )}
+                  ) : null}
                 </div>
-                <span className="font-bold text-[#051839] text-right">
-                  {gift.installments || 1}
-                </span>
-                <span className="font-bold text-[#051839] text-right">
-                  ₪{Number(gift.amount).toLocaleString()}
-                </span>
-                <span className="font-bold text-[#051839] text-right col-span-2">
-                  {gift.payer_name}
-                </span>
               </div>
             ))}
             
