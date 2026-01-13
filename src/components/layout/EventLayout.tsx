@@ -8,13 +8,15 @@ import { LogOut } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 // Custom icons for event
-import DashboardIcon from "@/assets/icons/venue/Dashboard.svg";
-import SettingsIcon from "@/assets/icons/venue/Settings.svg";
+import DashboardIcon from "@/assets/icons/event/Dashboard.svg";
+import InvitationsIcon from "@/assets/icons/event/Invitations.svg";
+import GiftsIcon from "@/assets/icons/event/Gifts.svg";
+import SettingsIcon from "@/assets/icons/event/Settings.svg";
 
 const menuItems = [
   { title: "דשבורד", icon: DashboardIcon, path: "/event" },
-  { title: "הזמנות", icon: DashboardIcon, path: "/event/invitations" },
-  { title: "מתנות", icon: DashboardIcon, path: "/event/gifts" },
+  { title: "הזמנות", icon: InvitationsIcon, path: "/event/invitations" },
+  { title: "מתנות", icon: GiftsIcon, path: "/event/gifts" },
   { title: "הגדרות", icon: SettingsIcon, path: "/event/settings" },
 ];
 
