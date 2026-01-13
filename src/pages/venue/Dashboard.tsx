@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, TrendingUp, CheckCircle, XCircle, Eye } from "lucide-react";
+import CheersIcon from "@/assets/icons/venue/Cheers.svg";
 
 export default function VenueDashboard() {
   const currentMonth = new Date().getMonth();
@@ -23,7 +23,10 @@ export default function VenueDashboard() {
 
       const { data: events } = await supabase
         .from("events")
-        .select("*")
+        .select(`
+          *,
+          profiles:owner_id (full_name, phone)
+        `)
         .eq("venue_id", venue.id)
         .order("event_date", { ascending: true });
 
@@ -37,7 +40,7 @@ export default function VenueDashboard() {
         return eventDate.getFullYear() === currentYear;
       }) || [];
 
-      const upcomingEvents = events?.filter((e) => new Date(e.event_date) >= new Date()).slice(0, 5) || [];
+      const upcomingEvents = events?.filter((e) => new Date(e.event_date) >= new Date()).slice(0, 3) || [];
 
       return {
         venue,
@@ -48,52 +51,41 @@ export default function VenueDashboard() {
     },
   });
 
+  const monthName = new Date().toLocaleDateString("he-IL", { month: "numeric", year: "numeric" });
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#051839]">דשבורד</h1>
-        <p className="text-gray-500 mt-1">ברוך הבא, {venueData?.venue?.name || "בעל אולם"}</p>
-      </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-[#95742F]/10 flex items-center justify-center">
-            <Calendar className="w-7 h-7 text-[#95742F]" />
-          </div>
-          <div>
-            <p className="text-gray-500 text-sm">אירועים החודש</p>
-            <p className="text-3xl font-bold text-[#051839]">{venueData?.monthEvents || 0}</p>
-          </div>
+        {/* Monthly Events Card */}
+        <div className="bg-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center">
+          <img src={CheersIcon} alt="Events" className="w-16 h-16 mb-4" />
+          <p className="text-5xl font-bold text-[#95742F] mb-2">{venueData?.monthEvents || 0}</p>
+          <p className="text-[#051839] font-medium">סך האירועים לחודש {monthName}</p>
         </div>
         
-        <div className="bg-white rounded-2xl p-6 shadow-sm flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
-            <TrendingUp className="w-7 h-7 text-green-600" />
-          </div>
-          <div>
-            <p className="text-gray-500 text-sm">אירועים השנה</p>
-            <p className="text-3xl font-bold text-[#051839]">{venueData?.yearEvents || 0}</p>
-          </div>
+        {/* Yearly Events Card */}
+        <div className="bg-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center">
+          <img src={CheersIcon} alt="Events" className="w-16 h-16 mb-4" />
+          <p className="text-5xl font-bold text-[#051839] mb-2">{venueData?.yearEvents || 0}</p>
+          <p className="text-[#051839] font-medium">סך האירועים לשנת {currentYear}</p>
         </div>
       </div>
 
       {/* Upcoming Events Table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="bg-[#051839] text-white p-4">
-          <h2 className="text-lg font-semibold">אירועים קרובים</h2>
-        </div>
-        
-        <div className="p-4">
+        <div className="p-6">
+          {/* Title */}
+          <h2 className="text-xl font-bold text-[#051839] mb-6 text-right">אירועים קרובים</h2>
+          
           {/* Table Header */}
           <div className="grid grid-cols-6 gap-4 text-sm font-medium text-gray-500 mb-4 px-4">
-            <span>תאריך אירוע</span>
-            <span>שם בעל האירוע</span>
-            <span>טלפון</span>
-            <span>סוג האירוע</span>
-            <span>מסמכים</span>
-            <span>פעולות</span>
+            <span className="text-right">תאריך אירוע</span>
+            <span className="text-right">בעל האירוע</span>
+            <span className="text-right">טלפון</span>
+            <span className="text-right">שם האולם</span>
+            <span className="text-right">סוג האירוע</span>
+            <span className="text-right">האם כל המסמכים הושלמו בהצלחה</span>
           </div>
           
           {/* Table Rows */}
@@ -103,27 +95,31 @@ export default function VenueDashboard() {
                 key={event.id} 
                 className="grid grid-cols-6 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm"
               >
-                <span className="text-[#051839]">
+                <span className="font-bold text-[#051839]">
                   {new Date(event.event_date).toLocaleDateString("he-IL")}
                 </span>
-                <span className="font-medium text-[#051839]">
-                  {event.groom_name && event.bride_name
-                    ? `${event.groom_name} & ${event.bride_name}`
-                    : "—"}
+                <span className="font-bold text-[#051839]">
+                  {event.profiles?.full_name || event.groom_name || "—"}
                 </span>
-                <span className="text-gray-600">—</span>
-                <span className="text-gray-600">{event.event_type || "חתונה"}</span>
+                <span className="font-bold text-[#051839]">
+                  {event.profiles?.phone || "—"}
+                </span>
+                <span className="font-bold text-[#95742F]">
+                  {venueData?.venue?.name || "—"}
+                </span>
+                <span className="text-[#051839]">
+                  {event.event_type || "חתונה"}
+                </span>
                 <span>
                   {event.documents_complete ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="inline-block px-4 py-2 rounded-full bg-[#22C55E] text-white font-medium text-center">
+                      הושלמו בהצלחה
+                    </span>
                   ) : (
-                    <XCircle className="w-5 h-5 text-red-500" />
+                    <span className="inline-block px-4 py-2 rounded-full bg-[#C41E3A] text-white font-medium text-center">
+                      חסרים מסמכים
+                    </span>
                   )}
-                </span>
-                <span>
-                  <button className="w-8 h-8 rounded-full bg-[#051839] flex items-center justify-center text-white hover:bg-[#051839]/80 transition-colors">
-                    <Eye className="w-4 h-4" />
-                  </button>
                 </span>
               </div>
             ))}
