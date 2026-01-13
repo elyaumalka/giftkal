@@ -18,6 +18,7 @@ const menuItems = [
   { title: "דשבורד", icon: DashboardIcon, path: "/venue" },
   { title: "חשבוניות", icon: InvoicesIcon, path: "/venue/invoices" },
   { title: "בעלי אירועים", icon: EventsIcon, path: "/venue/events" },
+  { title: "לידים", icon: EventsIcon, path: "/venue/leads" },
   { title: "פניות ותקלות", icon: ToolsIcon, path: "/venue/support" },
   { title: "הגדרות", icon: SettingsIcon, path: "/venue/settings" },
 ];
