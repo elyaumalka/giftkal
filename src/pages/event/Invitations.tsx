@@ -276,20 +276,20 @@ export default function EventInvitations() {
           </div>
 
           {/* Navigation Buttons - הבא בשמאל, הקודם בימין */}
-          <div className="flex items-center justify-between pt-4" dir="ltr">
-            <button
-              onClick={handleNextStep}
-              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
-            >
-              לשלב הבא
-              <ArrowLeft className="w-4 h-4" />
-            </button>
+          <div className="flex items-center justify-between pt-4" dir="rtl">
             <button
               disabled
-              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium opacity-50 cursor-not-allowed"
+              className="bg-[#C41E3A] text-white rounded-lg py-2 px-6 text-sm flex items-center gap-2 transition-colors font-medium opacity-50 cursor-not-allowed"
             >
               <ArrowRight className="w-4 h-4" />
               לשלב הקודם
+            </button>
+            <button
+              onClick={handleNextStep}
+              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-lg py-2 px-6 text-sm flex items-center gap-2 transition-colors font-medium"
+            >
+              לשלב הבא
+              <ArrowLeft className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -297,49 +297,56 @@ export default function EventInvitations() {
 
       {/* Step 2: בחירת מוזמנים - העלאת קבצים */}
       {currentStep === 2 && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Upload Cards Row 1 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
-            <div className="bg-[#051839] rounded-2xl p-6 text-white text-center space-y-2 cursor-pointer hover:bg-[#08275E] transition-colors">
-              <h3 className="font-bold text-lg flex items-center justify-center gap-2">
+            <div className="bg-[#051839] rounded-xl p-4 text-white cursor-pointer hover:bg-[#08275E] transition-colors">
+              <h3 className="font-medium text-sm flex items-center justify-center gap-2">
                 העלאת קובץ שמע
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3 h-3" />
               </h3>
-              <p className="text-sm text-gray-300">לרוצים להזמין באמצעות הודעה קולית</p>
+              <p className="text-xs text-gray-300 text-center mt-1">לרוצים להזמין באמצעות הודעה קולית</p>
             </div>
-            <div className="bg-[#051839] rounded-2xl p-6 text-white text-center cursor-pointer hover:bg-[#08275E] transition-colors">
-              <h3 className="font-bold text-lg flex items-center justify-center gap-2">
+            <div className="bg-[#051839] rounded-xl p-4 text-white cursor-pointer hover:bg-[#08275E] transition-colors">
+              <h3 className="font-medium text-sm flex items-center justify-center gap-2">
                 העלאת רשימת מוזמנים (אקסאל)
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3 h-3" />
               </h3>
             </div>
           </div>
 
           {/* Upload Cards Row 2 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
-            <div className="bg-gray-100 rounded-2xl p-6">
-              <p className="text-[#051839] text-center font-medium mb-4">הזנת טקסט הזמנה למערכת המענה הקולי</p>
+            <div className="bg-gray-100 rounded-xl p-4">
+              <p className="text-[#051839] text-center font-medium text-sm mb-2">הזנת טקסט הזמנה למערכת המענה הקולי</p>
               <Textarea
                 value={voiceText}
                 onChange={(e) => setVoiceText(e.target.value)}
                 placeholder="הזן את הטקסט להזמנה קולית..."
-                className="rounded-xl border-gray-200 bg-white text-right min-h-[100px]"
+                className="rounded-lg border-gray-200 bg-white text-right min-h-[80px] text-sm"
               />
             </div>
-            <div className="bg-[#C41E3A] rounded-2xl p-6 text-white text-center flex items-center justify-center cursor-pointer hover:bg-[#C41E3A]/90 transition-colors">
-              <button className="font-bold flex items-center justify-center gap-2">
+            <div className="bg-[#C41E3A] rounded-xl p-4 text-white flex items-center justify-center cursor-pointer hover:bg-[#C41E3A]/90 transition-colors">
+              <button className="font-medium text-sm flex items-center justify-center gap-2">
                 הורדת קובץ דוגמא
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3 h-3" />
               </button>
             </div>
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-4" dir="ltr">
+          <div className="flex items-center justify-between pt-4" dir="rtl">
+            <button
+              onClick={handlePrevStep}
+              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-lg py-2 px-6 text-sm flex items-center gap-2 transition-colors font-medium"
+            >
+              <ArrowRight className="w-4 h-4" />
+              לשלב הקודם
+            </button>
             <button
               onClick={handleNextStep}
               disabled={isGenerating}
-              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium disabled:opacity-50"
+              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-lg py-2 px-6 text-sm flex items-center gap-2 transition-colors font-medium disabled:opacity-50"
             >
               {isGenerating ? (
                 <>
@@ -352,13 +359,6 @@ export default function EventInvitations() {
                   <ArrowLeft className="w-4 h-4" />
                 </>
               )}
-            </button>
-            <button
-              onClick={handlePrevStep}
-              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
-            >
-              <ArrowRight className="w-4 h-4" />
-              לשלב הקודם
             </button>
           </div>
         </div>
@@ -418,20 +418,20 @@ export default function EventInvitations() {
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-4" dir="ltr">
-            <button
-              onClick={handleSendInvitations}
-              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
-            >
-              שליחת ההזמנות
-              <ArrowLeft className="w-4 h-4" />
-            </button>
+          <div className="flex items-center justify-between pt-4" dir="rtl">
             <button
               onClick={handlePrevStep}
-              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-8 flex items-center gap-2 transition-colors font-medium"
+              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-lg py-2 px-6 text-sm flex items-center gap-2 transition-colors font-medium"
             >
               <ArrowRight className="w-4 h-4" />
               לשלב הקודם
+            </button>
+            <button
+              onClick={handleSendInvitations}
+              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-lg py-2 px-6 text-sm flex items-center gap-2 transition-colors font-medium"
+            >
+              שליחת ההזמנות
+              <ArrowLeft className="w-4 h-4" />
             </button>
           </div>
         </div>
