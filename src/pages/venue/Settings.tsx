@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ImageIcon, Copy, ExternalLink } from "lucide-react";
+import { ArrowLeft, Upload, User, Globe, Copy, ExternalLink } from "lucide-react";
 
 export default function VenueSettings() {
   const [activeTab, setActiveTab] = useState<"user" | "landing">("user");
@@ -98,7 +98,6 @@ export default function VenueSettings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !venue?.id) throw new Error("No user or venue found");
 
-      // Update profile
       await supabase
         .from("profiles")
         .update({
@@ -107,7 +106,6 @@ export default function VenueSettings() {
         })
         .eq("user_id", user.id);
 
-      // Update venue
       await supabase
         .from("venues")
         .update({
@@ -206,170 +204,195 @@ export default function VenueSettings() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-[#051839]">הגדרות</h1>
+        <p className="text-gray-500 mt-1">ניהול הגדרות האולם</p>
+      </div>
+
       {/* Tabs */}
-      <div className="flex justify-center gap-4">
-        <button
-          onClick={() => setActiveTab("landing")}
-          className={`px-8 py-3 rounded-full font-medium transition-colors ${
-            activeTab === "landing"
-              ? "bg-[#051839] text-white shadow-lg"
-              : "bg-white text-[#051839] hover:bg-gray-100"
-          }`}
-        >
-          הגדרות דף נחיתה
-        </button>
+      <div className="flex gap-2">
         <button
           onClick={() => setActiveTab("user")}
-          className={`px-8 py-3 rounded-full font-medium transition-colors ${
+          className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
             activeTab === "user"
-              ? "bg-[#051839] text-white shadow-lg"
+              ? "bg-[#051839] text-white"
               : "bg-white text-[#051839] hover:bg-gray-100"
           }`}
         >
+          <User className="w-4 h-4" />
           הגדרות משתמש
+        </button>
+        <button
+          onClick={() => setActiveTab("landing")}
+          className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
+            activeTab === "landing"
+              ? "bg-[#051839] text-white"
+              : "bg-white text-[#051839] hover:bg-gray-100"
+          }`}
+        >
+          <Globe className="w-4 h-4" />
+          הגדרות דף נחיתה
         </button>
       </div>
 
       {/* User Settings Tab */}
       {activeTab === "user" && (
-        <div className="space-y-8">
-          {/* Personal Details */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">כתובת מייל</Label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="כתובת מייל"
-                  className="rounded-full border-0 bg-white text-right h-12"
-                  disabled
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">מספר טלפון</Label>
-                <Input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="מספר טלפון"
-                  className="rounded-full border-0 bg-white text-right h-12"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">שם פרטי ומשפחה</Label>
-                <Input
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="שם פרטי ומשפחה"
-                  className="rounded-full border-0 bg-white text-right h-12"
-                />
-              </div>
+        <div className="space-y-6">
+          {/* Personal Details Card */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-[#051839] text-white p-4">
+              <h2 className="text-lg font-semibold">פרטים אישיים ופרטי האולם</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">שם פרטי ומשפחה</Label>
+                  <Input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="שם פרטי ומשפחה"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">מספר טלפון</Label>
+                  <Input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="מספר טלפון"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">כתובת מייל</Label>
+                  <Input
+                    type="email"
+                    value={email}
+                    disabled
+                    className="rounded-xl border-gray-200 text-right bg-gray-50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">שם האולם</Label>
+                  <Input
+                    value={venueName}
+                    onChange={(e) => setVenueName(e.target.value)}
+                    placeholder="שם האולם"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-[#051839] font-medium">כתובת האולם</Label>
+                  <Input
+                    value={venueAddress}
+                    onChange={(e) => setVenueAddress(e.target.value)}
+                    placeholder="כתובת האולם"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+              </div>
+              
               <button 
                 onClick={() => updateUserSettings.mutate()}
-                className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-full py-3 px-8 flex items-center justify-center gap-2 transition-colors font-medium"
+                className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-6 flex items-center justify-center gap-2 transition-colors font-medium"
               >
                 <span>שמירה</span>
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">כתובת האולם</Label>
-                <Input
-                  value={venueAddress}
-                  onChange={(e) => setVenueAddress(e.target.value)}
-                  placeholder="כתובת האולם"
-                  className="rounded-full border-0 bg-white text-right h-12"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">שם האולם</Label>
-                <Input
-                  value={venueName}
-                  onChange={(e) => setVenueName(e.target.value)}
-                  placeholder="שם האולם"
-                  className="rounded-full border-0 bg-white text-right h-12"
-                />
-              </div>
             </div>
           </div>
 
-          {/* Invoice Details */}
-          <div className="space-y-4">
-            <h3 className="text-[#051839] font-bold text-right">פרטים לחשבונית</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">כתובת מייל</Label>
-                <Input
-                  type="email"
-                  value={invoiceEmail}
-                  onChange={(e) => setInvoiceEmail(e.target.value)}
-                  placeholder="כתובת מייל"
-                  className="rounded-full border-0 bg-white text-right h-12"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">ח.פ/ע"מ</Label>
-                <Input
-                  value={businessId}
-                  onChange={(e) => setBusinessId(e.target.value)}
-                  placeholder="ח.פ/ע״מ"
-                  className="rounded-full border-0 bg-white text-right h-12"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">שם העסק</Label>
-                <Input
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="שם העסק"
-                  className="rounded-full border-0 bg-white text-right h-12"
-                />
-              </div>
+          {/* Invoice Details Card */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-[#051839] text-white p-4">
+              <h2 className="text-lg font-semibold">פרטים לחשבונית</h2>
             </div>
-            <button 
-              onClick={() => updateInvoiceSettings.mutate()}
-              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-full py-3 px-8 flex items-center justify-center gap-2 transition-colors font-medium"
-            >
-              <span>שמירה</span>
-              <ArrowLeft className="w-4 h-4" />
-            </button>
+            
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">שם העסק</Label>
+                  <Input
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    placeholder="שם העסק"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">ח.פ/ע"מ</Label>
+                  <Input
+                    value={businessId}
+                    onChange={(e) => setBusinessId(e.target.value)}
+                    placeholder="ח.פ/ע״מ"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">כתובת מייל לחשבונית</Label>
+                  <Input
+                    type="email"
+                    value={invoiceEmail}
+                    onChange={(e) => setInvoiceEmail(e.target.value)}
+                    placeholder="כתובת מייל"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => updateInvoiceSettings.mutate()}
+                className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-6 flex items-center justify-center gap-2 transition-colors font-medium"
+              >
+                <span>שמירה</span>
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          {/* Tablet Settings */}
-          <div className="space-y-4">
-            <h3 className="text-[#051839] font-bold text-right">הגדרות לטאבלטים</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">העלאת באנר פרסומי</Label>
-                <div className="bg-white rounded-full h-12 flex items-center justify-center text-gray-400">
-                  <ImageIcon className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">העלאת לוגו</Label>
-                <div className="bg-white rounded-full h-12 flex items-center justify-center text-gray-400">
-                  <ImageIcon className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#051839] font-medium text-right block">שם האולם</Label>
-                <Input
-                  value={tabletVenueName}
-                  onChange={(e) => setTabletVenueName(e.target.value)}
-                  placeholder="שם האולם"
-                  className="rounded-full border-0 bg-white text-right h-12"
-                />
-              </div>
+          {/* Tablet Settings Card */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-[#051839] text-white p-4">
+              <h2 className="text-lg font-semibold">הגדרות לטאבלטים</h2>
             </div>
-            <button 
-              onClick={() => updateTabletSettings.mutate()}
-              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-full py-3 px-8 flex items-center justify-center gap-2 transition-colors font-medium"
-            >
-              <span>שמירה</span>
-              <ArrowLeft className="w-4 h-4" />
-            </button>
+            
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">שם האולם</Label>
+                  <Input
+                    value={tabletVenueName}
+                    onChange={(e) => setTabletVenueName(e.target.value)}
+                    placeholder="שם האולם"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">העלאת לוגו</Label>
+                  <button className="w-full h-10 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    העלאת לוגו
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">העלאת באנר פרסומי</Label>
+                  <button className="w-full h-10 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                    <Upload className="w-4 h-4" />
+                    העלאת באנר
+                  </button>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => updateTabletSettings.mutate()}
+                className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-6 flex items-center justify-center gap-2 transition-colors font-medium"
+              >
+                <span>שמירה</span>
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -377,108 +400,117 @@ export default function VenueSettings() {
       {/* Landing Page Settings Tab */}
       {activeTab === "landing" && (
         <div className="space-y-6">
-          {/* Landing Page Link */}
+          {/* Landing Page Link Card */}
           {venue?.id && (
-            <div className="bg-white rounded-2xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => window.open(landingPageUrl, "_blank")}
-                  className="px-4 py-2 bg-[#051839] text-white rounded-full text-sm flex items-center gap-2"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  צפייה בדף
-                </button>
-                <button
-                  onClick={copyLink}
-                  className="px-4 py-2 bg-[#95742F] text-white rounded-full text-sm flex items-center gap-2"
-                >
-                  <Copy className="w-4 h-4" />
-                  העתק לינק
-                </button>
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-[#95742F] text-white p-4">
+                <h2 className="text-lg font-semibold">קישור לדף הנחיתה שלך</h2>
               </div>
-              <div className="text-right">
-                <p className="text-[#051839] font-medium">קישור לדף הנחיתה שלך:</p>
+              <div className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
                 <p className="text-gray-500 text-sm truncate max-w-md" dir="ltr">{landingPageUrl}</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={copyLink}
+                    className="px-4 py-2 bg-[#051839] text-white rounded-xl text-sm flex items-center gap-2 hover:bg-[#051839]/90 transition-colors"
+                  >
+                    <Copy className="w-4 h-4" />
+                    העתק לינק
+                  </button>
+                  <button
+                    onClick={() => window.open(landingPageUrl, "_blank")}
+                    className="px-4 py-2 bg-[#95742F] text-white rounded-xl text-sm flex items-center gap-2 hover:bg-[#95742F]/90 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    צפייה בדף
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-right block">שם האולם</Label>
-              <Input
-                value={landingVenueName}
-                onChange={(e) => setLandingVenueName(e.target.value)}
-                placeholder="שם האולם"
-                className="rounded-full border-0 bg-white text-right h-12"
-              />
+          {/* Landing Page Settings Card */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-[#051839] text-white p-4">
+              <h2 className="text-lg font-semibold">הגדרות דף נחיתה</h2>
             </div>
             
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-right block">מספר טלפון</Label>
-              <Input
-                value={landingPhone}
-                onChange={(e) => setLandingPhone(e.target.value)}
-                placeholder="מספר טלפון"
-                className="rounded-full border-0 bg-white text-right h-12"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-right block">מספר וואטצאפ</Label>
-              <Input
-                value={landingWhatsapp}
-                onChange={(e) => setLandingWhatsapp(e.target.value)}
-                placeholder="מספר וואטצאפ"
-                className="rounded-full border-0 bg-white text-right h-12"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-right block">כתובת מייל</Label>
-              <Input
-                type="email"
-                value={landingEmail}
-                onChange={(e) => setLandingEmail(e.target.value)}
-                placeholder="כתובת מייל"
-                className="rounded-full border-0 bg-white text-right h-12"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-right block">אודות האולם</Label>
-              <Textarea
-                value={landingAbout}
-                onChange={(e) => setLandingAbout(e.target.value)}
-                placeholder="תיאור האולם..."
-                className="rounded-2xl border-0 bg-white text-right min-h-[150px] resize-none"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-right block">העלאת לוגו</Label>
-              <div className="bg-white rounded-2xl p-6 flex items-center justify-center gap-3 text-[#95742F] cursor-pointer hover:bg-gray-50 transition-colors">
-                <span>העלאת לוגו אולם</span>
-                <ImageIcon className="w-6 h-6" />
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">שם האולם</Label>
+                  <Input
+                    value={landingVenueName}
+                    onChange={(e) => setLandingVenueName(e.target.value)}
+                    placeholder="שם האולם"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">מספר טלפון</Label>
+                  <Input
+                    value={landingPhone}
+                    onChange={(e) => setLandingPhone(e.target.value)}
+                    placeholder="מספר טלפון"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">מספר וואטצאפ</Label>
+                  <Input
+                    value={landingWhatsapp}
+                    onChange={(e) => setLandingWhatsapp(e.target.value)}
+                    placeholder="מספר וואטצאפ"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">כתובת מייל</Label>
+                  <Input
+                    type="email"
+                    value={landingEmail}
+                    onChange={(e) => setLandingEmail(e.target.value)}
+                    placeholder="כתובת מייל"
+                    className="rounded-xl border-gray-200 text-right"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-right block">העלאת תמונות אוירה</Label>
-              <div className="bg-white rounded-2xl p-6 flex items-center justify-center gap-3 text-[#95742F] cursor-pointer hover:bg-gray-50 transition-colors">
-                <span>העלאת קבצי תמונות</span>
-                <ImageIcon className="w-6 h-6" />
+              <div className="space-y-2">
+                <Label className="text-[#051839] font-medium">אודות האולם</Label>
+                <Textarea
+                  value={landingAbout}
+                  onChange={(e) => setLandingAbout(e.target.value)}
+                  placeholder="תיאור האולם..."
+                  className="rounded-xl border-gray-200 text-right min-h-[120px] resize-none"
+                />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">העלאת לוגו</Label>
+                  <button className="w-full h-20 rounded-xl border border-dashed border-gray-300 text-[#95742F] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                    <Upload className="w-5 h-5" />
+                    העלאת לוגו אולם
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium">העלאת תמונות אוירה</Label>
+                  <button className="w-full h-20 rounded-xl border border-dashed border-gray-300 text-[#95742F] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                    <Upload className="w-5 h-5" />
+                    העלאת קבצי תמונות
+                  </button>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => updateLandingPage.mutate()}
+                className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-xl py-3 px-6 flex items-center justify-center gap-2 transition-colors font-medium"
+              >
+                <span>שמירת והעלאה לאוויר</span>
+                <ArrowLeft className="w-4 h-4" />
+              </button>
             </div>
           </div>
-
-          <button 
-            onClick={() => updateLandingPage.mutate()}
-            className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-full py-3 px-8 flex items-center justify-center gap-2 transition-colors font-medium w-fit"
-          >
-            <span>שמירת והעלאה לאוויר</span>
-            <ArrowLeft className="w-4 h-4" />
-          </button>
         </div>
       )}
     </div>
