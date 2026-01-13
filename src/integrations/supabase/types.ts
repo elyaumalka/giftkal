@@ -271,6 +271,45 @@ export type Database = {
           },
         ]
       }
+      landing_page_leads: {
+        Row: {
+          created_at: string
+          email: string | null
+          event_date: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event_date?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event_date?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string

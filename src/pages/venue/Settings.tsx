@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Upload, User, Globe, ArrowLeft } from "lucide-react";
+import { ArrowLeft, ImageIcon, Copy, ExternalLink } from "lucide-react";
 
 export default function VenueSettings() {
   const [activeTab, setActiveTab] = useState<"user" | "landing">("user");
@@ -12,14 +13,26 @@ export default function VenueSettings() {
   const queryClient = useQueryClient();
 
   // User settings state
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [venueName, setVenueName] = useState("");
   const [venueAddress, setVenueAddress] = useState("");
-  const [venuePhone, setVenuePhone] = useState("");
-  const [venueEmail, setVenueEmail] = useState("");
+  
+  // Invoice settings
+  const [businessName, setBusinessName] = useState("");
+  const [businessId, setBusinessId] = useState("");
+  const [invoiceEmail, setInvoiceEmail] = useState("");
 
-  // Landing page settings
-  const [landingLogo, setLandingLogo] = useState("");
+  // Tablet settings
+  const [tabletVenueName, setTabletVenueName] = useState("");
+
+  // Landing page settings state
+  const [landingVenueName, setLandingVenueName] = useState("");
   const [landingPhone, setLandingPhone] = useState("");
+  const [landingWhatsapp, setLandingWhatsapp] = useState("");
+  const [landingEmail, setLandingEmail] = useState("");
+  const [landingAbout, setLandingAbout] = useState("");
 
   const { data: venue } = useQuery({
     queryKey: ["venue-settings"],
@@ -37,36 +50,122 @@ export default function VenueSettings() {
     },
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ["profile-settings"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      return data;
+    },
+  });
+
   useEffect(() => {
     if (venue) {
       setVenueName(venue.name || "");
       setVenueAddress(venue.address || "");
-      setVenuePhone(venue.phone || "");
-      setVenueEmail(venue.email || "");
-      setLandingLogo(venue.logo_url || "");
-      setLandingPhone(venue.phone || "");
+      setTabletVenueName(venue.name || "");
+      
+      // Landing page config
+      const config = venue.landing_page_config as any || {};
+      setLandingVenueName(config.venue_name || venue.name || "");
+      setLandingPhone(config.phone || venue.phone || "");
+      setLandingWhatsapp(config.whatsapp || venue.phone || "");
+      setLandingEmail(config.email || venue.email || "");
+      setLandingAbout(config.about || "");
+      setBusinessName(config.business_name || "");
+      setBusinessId(config.business_id || "");
+      setInvoiceEmail(config.invoice_email || venue.email || "");
     }
   }, [venue]);
 
-  const updateVenue = useMutation({
-    mutationFn: async () => {
-      if (!venue?.id) throw new Error("No venue found");
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || "");
+      setPhone(profile.phone || "");
+      setEmail(profile.email || "");
+    }
+  }, [profile]);
 
-      const { error } = await supabase
+  const updateUserSettings = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !venue?.id) throw new Error("No user or venue found");
+
+      // Update profile
+      await supabase
+        .from("profiles")
+        .update({
+          full_name: fullName,
+          phone: phone,
+        })
+        .eq("user_id", user.id);
+
+      // Update venue
+      await supabase
         .from("venues")
         .update({
           name: venueName,
           address: venueAddress,
-          phone: venuePhone,
-          email: venueEmail,
         })
         .eq("id", venue.id);
-
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["venue-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["profile-settings"] });
       toast({ title: "ההגדרות נשמרו בהצלחה" });
+    },
+  });
+
+  const updateInvoiceSettings = useMutation({
+    mutationFn: async () => {
+      if (!venue?.id) throw new Error("No venue found");
+
+      const config = venue.landing_page_config as any || {};
+      
+      await supabase
+        .from("venues")
+        .update({
+          landing_page_config: {
+            ...config,
+            business_name: businessName,
+            business_id: businessId,
+            invoice_email: invoiceEmail,
+          },
+        })
+        .eq("id", venue.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venue-settings"] });
+      toast({ title: "פרטי החשבונית נשמרו בהצלחה" });
+    },
+  });
+
+  const updateTabletSettings = useMutation({
+    mutationFn: async () => {
+      if (!venue?.id) throw new Error("No venue found");
+
+      const config = venue.landing_page_config as any || {};
+      
+      await supabase
+        .from("venues")
+        .update({
+          landing_page_config: {
+            ...config,
+            tablet_venue_name: tabletVenueName,
+          },
+        })
+        .eq("id", venue.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venue-settings"] });
+      toast({ title: "הגדרות הטאבלט נשמרו בהצלחה" });
     },
   });
 
@@ -74,16 +173,19 @@ export default function VenueSettings() {
     mutationFn: async () => {
       if (!venue?.id) throw new Error("No venue found");
 
-      const config = {
-        logo: landingLogo,
-        phone: landingPhone,
-      };
+      const config = venue.landing_page_config as any || {};
 
       const { error } = await supabase
         .from("venues")
         .update({
-          landing_page_config: config,
-          logo_url: landingLogo,
+          landing_page_config: {
+            ...config,
+            venue_name: landingVenueName,
+            phone: landingPhone,
+            whatsapp: landingWhatsapp,
+            email: landingEmail,
+            about: landingAbout,
+          },
         })
         .eq("id", venue.id);
 
@@ -91,160 +193,292 @@ export default function VenueSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["venue-settings"] });
-      toast({ title: "הגדרות דף הנחיתה נשמרו" });
+      toast({ title: "דף הנחיתה נשמר והועלה לאוויר!" });
     },
   });
 
+  const landingPageUrl = venue?.id ? `${window.location.origin}/landing/${venue.id}` : "";
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(landingPageUrl);
+    toast({ title: "הקישור הועתק ללוח" });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#051839]">הגדרות</h1>
-        <p className="text-gray-500 mt-1">ניהול הגדרות האולם</p>
-      </div>
-
       {/* Tabs */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setActiveTab("user")}
-          className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
-            activeTab === "user"
-              ? "bg-[#051839] text-white"
-              : "bg-white text-[#051839] hover:bg-gray-100"
-          }`}
-        >
-          <User className="w-4 h-4" />
-          הגדרות משתמש
-        </button>
+      <div className="flex justify-center gap-4">
         <button
           onClick={() => setActiveTab("landing")}
-          className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
+          className={`px-8 py-3 rounded-full font-medium transition-colors ${
             activeTab === "landing"
-              ? "bg-[#051839] text-white"
+              ? "bg-[#051839] text-white shadow-lg"
               : "bg-white text-[#051839] hover:bg-gray-100"
           }`}
         >
-          <Globe className="w-4 h-4" />
-          דף נחיתה
+          הגדרות דף נחיתה
+        </button>
+        <button
+          onClick={() => setActiveTab("user")}
+          className={`px-8 py-3 rounded-full font-medium transition-colors ${
+            activeTab === "user"
+              ? "bg-[#051839] text-white shadow-lg"
+              : "bg-white text-[#051839] hover:bg-gray-100"
+          }`}
+        >
+          הגדרות משתמש
         </button>
       </div>
 
-      {/* User Settings */}
+      {/* User Settings Tab */}
       {activeTab === "user" && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="bg-[#051839] text-white p-4">
-            <h2 className="text-lg font-semibold">פרטי האולם</h2>
-          </div>
-          
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-8">
+          {/* Personal Details */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label className="text-[#051839] font-medium">שם האולם</Label>
+                <Label className="text-[#051839] font-medium text-right block">כתובת מייל</Label>
                 <Input
-                  value={venueName}
-                  onChange={(e) => setVenueName(e.target.value)}
-                  placeholder="שם האולם"
-                  className="rounded-xl border-gray-200 text-center"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="כתובת מייל"
+                  className="rounded-full border-0 bg-white text-right h-12"
+                  disabled
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[#051839] font-medium">כתובת</Label>
+                <Label className="text-[#051839] font-medium text-right block">מספר טלפון</Label>
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="מספר טלפון"
+                  className="rounded-full border-0 bg-white text-right h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#051839] font-medium text-right block">שם פרטי ומשפחה</Label>
+                <Input
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="שם פרטי ומשפחה"
+                  className="rounded-full border-0 bg-white text-right h-12"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button 
+                onClick={() => updateUserSettings.mutate()}
+                className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-full py-3 px-8 flex items-center justify-center gap-2 transition-colors font-medium"
+              >
+                <span>שמירה</span>
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div className="space-y-2">
+                <Label className="text-[#051839] font-medium text-right block">כתובת האולם</Label>
                 <Input
                   value={venueAddress}
                   onChange={(e) => setVenueAddress(e.target.value)}
                   placeholder="כתובת האולם"
-                  className="rounded-xl border-gray-200 text-center"
+                  className="rounded-full border-0 bg-white text-right h-12"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[#051839] font-medium">טלפון</Label>
+                <Label className="text-[#051839] font-medium text-right block">שם האולם</Label>
                 <Input
-                  value={venuePhone}
-                  onChange={(e) => setVenuePhone(e.target.value)}
-                  placeholder="טלפון"
-                  className="rounded-xl border-gray-200 text-center"
+                  value={venueName}
+                  onChange={(e) => setVenueName(e.target.value)}
+                  placeholder="שם האולם"
+                  className="rounded-full border-0 bg-white text-right h-12"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Invoice Details */}
+          <div className="space-y-4">
+            <h3 className="text-[#051839] font-bold text-right">פרטים לחשבונית</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label className="text-[#051839] font-medium">מייל</Label>
+                <Label className="text-[#051839] font-medium text-right block">כתובת מייל</Label>
                 <Input
                   type="email"
-                  value={venueEmail}
-                  onChange={(e) => setVenueEmail(e.target.value)}
-                  placeholder="מייל"
-                  className="rounded-xl border-gray-200 text-center"
+                  value={invoiceEmail}
+                  onChange={(e) => setInvoiceEmail(e.target.value)}
+                  placeholder="כתובת מייל"
+                  className="rounded-full border-0 bg-white text-right h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#051839] font-medium text-right block">ח.פ/ע"מ</Label>
+                <Input
+                  value={businessId}
+                  onChange={(e) => setBusinessId(e.target.value)}
+                  placeholder="ח.פ/ע״מ"
+                  className="rounded-full border-0 bg-white text-right h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#051839] font-medium text-right block">שם העסק</Label>
+                <Input
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="שם העסק"
+                  className="rounded-full border-0 bg-white text-right h-12"
                 />
               </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium">לוגו האולם</Label>
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
-                  {venue?.logo_url ? (
-                    <img src={venue.logo_url} alt="Logo" className="w-full h-full object-contain" />
-                  ) : (
-                    <Upload className="w-8 h-8 text-gray-400" />
-                  )}
+            <button 
+              onClick={() => updateInvoiceSettings.mutate()}
+              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-full py-3 px-8 flex items-center justify-center gap-2 transition-colors font-medium"
+            >
+              <span>שמירה</span>
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Tablet Settings */}
+          <div className="space-y-4">
+            <h3 className="text-[#051839] font-bold text-right">הגדרות לטאבלטים</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#051839] font-medium text-right block">העלאת באנר פרסומי</Label>
+                <div className="bg-white rounded-full h-12 flex items-center justify-center text-gray-400">
+                  <ImageIcon className="w-5 h-5" />
                 </div>
-                <button className="px-4 py-2 rounded-xl border border-gray-200 text-[#051839] hover:bg-gray-50 transition-colors flex items-center gap-2">
-                  <Upload className="w-4 h-4" />
-                  העלאת לוגו
-                </button>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#051839] font-medium text-right block">העלאת לוגו</Label>
+                <div className="bg-white rounded-full h-12 flex items-center justify-center text-gray-400">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#051839] font-medium text-right block">שם האולם</Label>
+                <Input
+                  value={tabletVenueName}
+                  onChange={(e) => setTabletVenueName(e.target.value)}
+                  placeholder="שם האולם"
+                  className="rounded-full border-0 bg-white text-right h-12"
+                />
               </div>
             </div>
-            
             <button 
-              onClick={() => updateVenue.mutate()}
-              className="w-full bg-[#051839] hover:bg-[#051839]/90 text-white rounded-xl py-3 flex items-center justify-center gap-2 transition-colors"
+              onClick={() => updateTabletSettings.mutate()}
+              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-full py-3 px-8 flex items-center justify-center gap-2 transition-colors font-medium"
             >
-              <span>שמור</span>
+              <span>שמירה</span>
               <ArrowLeft className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Landing Page Settings */}
+      {/* Landing Page Settings Tab */}
       {activeTab === "landing" && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="bg-[#051839] text-white p-4">
-            <h2 className="text-lg font-semibold">הגדרות דף נחיתה</h2>
-          </div>
-          
-          <div className="p-6 space-y-6">
-            <p className="text-gray-500 text-sm">
-              דף הנחיתה מוצג לאורחים כשהם נכנסים לתת מתנה באולם שלך.
-            </p>
-            
+        <div className="space-y-6">
+          {/* Landing Page Link */}
+          {venue?.id && (
+            <div className="bg-white rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.open(landingPageUrl, "_blank")}
+                  className="px-4 py-2 bg-[#051839] text-white rounded-full text-sm flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  צפייה בדף
+                </button>
+                <button
+                  onClick={copyLink}
+                  className="px-4 py-2 bg-[#95742F] text-white rounded-full text-sm flex items-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  העתק לינק
+                </button>
+              </div>
+              <div className="text-right">
+                <p className="text-[#051839] font-medium">קישור לדף הנחיתה שלך:</p>
+                <p className="text-gray-500 text-sm truncate max-w-md" dir="ltr">{landingPageUrl}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-[#051839] font-medium">כתובת לוגו</Label>
+              <Label className="text-[#051839] font-medium text-right block">שם האולם</Label>
               <Input
-                value={landingLogo}
-                onChange={(e) => setLandingLogo(e.target.value)}
-                placeholder="https://example.com/logo.png"
-                className="rounded-xl border-gray-200 text-center"
+                value={landingVenueName}
+                onChange={(e) => setLandingVenueName(e.target.value)}
+                placeholder="שם האולם"
+                className="rounded-full border-0 bg-white text-right h-12"
               />
             </div>
             
             <div className="space-y-2">
-              <Label className="text-[#051839] font-medium">טלפון ליצירת קשר</Label>
+              <Label className="text-[#051839] font-medium text-right block">מספר טלפון</Label>
               <Input
                 value={landingPhone}
                 onChange={(e) => setLandingPhone(e.target.value)}
-                placeholder="050-1234567"
-                className="rounded-xl border-gray-200 text-center"
+                placeholder="מספר טלפון"
+                className="rounded-full border-0 bg-white text-right h-12"
               />
             </div>
-            
-            <button 
-              onClick={() => updateLandingPage.mutate()}
-              className="w-full bg-[#051839] hover:bg-[#051839]/90 text-white rounded-xl py-3 flex items-center justify-center gap-2 transition-colors"
-            >
-              <span>שמור הגדרות</span>
-              <ArrowLeft className="w-4 h-4" />
-            </button>
+
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium text-right block">מספר וואטצאפ</Label>
+              <Input
+                value={landingWhatsapp}
+                onChange={(e) => setLandingWhatsapp(e.target.value)}
+                placeholder="מספר וואטצאפ"
+                className="rounded-full border-0 bg-white text-right h-12"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium text-right block">כתובת מייל</Label>
+              <Input
+                type="email"
+                value={landingEmail}
+                onChange={(e) => setLandingEmail(e.target.value)}
+                placeholder="כתובת מייל"
+                className="rounded-full border-0 bg-white text-right h-12"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium text-right block">אודות האולם</Label>
+              <Textarea
+                value={landingAbout}
+                onChange={(e) => setLandingAbout(e.target.value)}
+                placeholder="תיאור האולם..."
+                className="rounded-2xl border-0 bg-white text-right min-h-[150px] resize-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium text-right block">העלאת לוגו</Label>
+              <div className="bg-white rounded-2xl p-6 flex items-center justify-center gap-3 text-[#95742F] cursor-pointer hover:bg-gray-50 transition-colors">
+                <span>העלאת לוגו אולם</span>
+                <ImageIcon className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium text-right block">העלאת תמונות אוירה</Label>
+              <div className="bg-white rounded-2xl p-6 flex items-center justify-center gap-3 text-[#95742F] cursor-pointer hover:bg-gray-50 transition-colors">
+                <span>העלאת קבצי תמונות</span>
+                <ImageIcon className="w-6 h-6" />
+              </div>
+            </div>
           </div>
+
+          <button 
+            onClick={() => updateLandingPage.mutate()}
+            className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-full py-3 px-8 flex items-center justify-center gap-2 transition-colors font-medium w-fit"
+          >
+            <span>שמירת והעלאה לאוויר</span>
+            <ArrowLeft className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

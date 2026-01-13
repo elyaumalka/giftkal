@@ -27,6 +27,7 @@ import VenueInvoices from "./pages/venue/Invoices";
 import VenueEvents from "./pages/venue/Events";
 import VenueSupport from "./pages/venue/Support";
 import VenueSettings from "./pages/venue/Settings";
+import VenueLeads from "./pages/venue/Leads";
 
 // Event
 import { EventLayout } from "./components/layout/EventLayout";
@@ -37,6 +38,7 @@ import EventSettings from "./pages/event/Settings";
 
 // Public
 import GiftScreen from "./pages/gift/GiftScreen";
+import VenueLanding from "./pages/landing/VenueLanding";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,7 @@ const App = () => (
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/gift/:eventId" element={<GiftScreen />} />
+          <Route path="/landing/:venueId" element={<VenueLanding />} />
 
           {/* Admin routes */}
           <Route path="/admin" element={<AdminLayout />}>
@@ -70,6 +73,7 @@ const App = () => (
             <Route index element={<VenueDashboard />} />
             <Route path="invoices" element={<VenueInvoices />} />
             <Route path="events" element={<VenueEvents />} />
+            <Route path="leads" element={<VenueLeads />} />
             <Route path="support" element={<VenueSupport />} />
             <Route path="settings" element={<VenueSettings />} />
           </Route>
