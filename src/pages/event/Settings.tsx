@@ -112,7 +112,7 @@ export default function EventSettings() {
   };
 
   const giftPageUrl = event?.id 
-    ? `${window.location.origin}/gift/${event.id}` 
+    ? `https://giftkal.com/gift/${event.id}` 
     : null;
 
   const copyToClipboard = () => {

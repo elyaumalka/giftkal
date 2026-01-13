@@ -321,7 +321,7 @@ export default function VenueSettings() {
     },
   });
 
-  const landingPageUrl = venue?.id ? `${window.location.origin}/landing/${venue.id}` : "";
+  const landingPageUrl = venue?.id ? `https://giftkal.com/landing/${venue.id}` : "";
 
   const copyLink = () => {
     navigator.clipboard.writeText(landingPageUrl);
