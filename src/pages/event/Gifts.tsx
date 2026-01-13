@@ -66,7 +66,7 @@ export default function EventGifts() {
         </Button>
         <Button 
           onClick={handleDownloadBlessings}
-          className="bg-[#1A9A8A] hover:bg-[#1A9A8A]/90 text-white rounded-lg px-6 py-3 text-sm font-medium"
+          className="bg-[#051839] hover:bg-[#08275E] text-white rounded-lg px-6 py-3 text-sm font-medium"
         >
           הורדת PDF של הברכות
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -113,7 +113,7 @@ export default function EventGifts() {
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button 
-                          className="bg-[#1A9A8A] hover:bg-[#1A9A8A]/90 text-white rounded-lg px-3 py-2 text-xs font-medium w-full"
+                          className="bg-[#051839] hover:bg-[#08275E] text-white rounded-lg px-3 py-2 text-xs font-medium w-full"
                         >
                           צפייה בברכה
                           <ArrowLeft className="w-3 h-3 mr-1" />
