@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload, AlertCircle, CheckCircle } from "lucide-react";
+import { ArrowLeft, Upload, AlertCircle, CheckCircle, Copy, Gift, ExternalLink } from "lucide-react";
 
 export default function EventSettings() {
   const { toast } = useToast();
@@ -27,6 +28,22 @@ export default function EventSettings() {
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
+        .maybeSingle();
+
+      return data;
+    },
+  });
+
+  const { data: event } = useQuery({
+    queryKey: ["my-event"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data } = await supabase
+        .from("events")
+        .select("id, groom_name, bride_name, event_date")
+        .eq("owner_id", user.id)
         .maybeSingle();
 
       return data;
@@ -94,6 +111,17 @@ export default function EventSettings() {
     return documents?.some((d: any) => d.document_type === docType);
   };
 
+  const giftPageUrl = event?.id 
+    ? `${window.location.origin}/gift/${event.id}` 
+    : null;
+
+  const copyToClipboard = () => {
+    if (giftPageUrl) {
+      navigator.clipboard.writeText(giftPageUrl);
+      toast({ title: "הקישור הועתק!", description: "שתפו אותו עם האורחים" });
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -101,6 +129,50 @@ export default function EventSettings() {
         <h1 className="text-2xl font-bold text-[#051839]">הגדרות</h1>
         <p className="text-gray-500 mt-1">ניהול פרטים אישיים ומסמכים</p>
       </div>
+
+      {/* Gift Page Link Card */}
+      {event && (
+        <div className="bg-gradient-to-br from-[#C4A35A] to-[#D4B36A] rounded-2xl shadow-lg overflow-hidden">
+          <div className="p-6 text-white">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Gift className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">קישור לעמוד המתנות</h2>
+                <p className="text-white/80 text-sm">שתפו את הקישור עם האורחים שלכם</p>
+              </div>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-4">
+              <p className="text-white/70 text-sm mb-2">הקישור שלכם:</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-white/20 rounded-lg px-4 py-3 text-white font-mono text-sm break-all" dir="ltr">
+                  {giftPageUrl}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button
+                onClick={copyToClipboard}
+                className="flex-1 bg-white text-[#C4A35A] hover:bg-white/90 rounded-xl py-3 font-bold"
+              >
+                <Copy className="w-4 h-4 ml-2" />
+                העתק קישור
+              </Button>
+              <Button
+                onClick={() => window.open(giftPageUrl!, '_blank')}
+                variant="outline"
+                className="bg-transparent border-2 border-white text-white hover:bg-white/10 rounded-xl py-3"
+              >
+                <ExternalLink className="w-4 h-4 ml-2" />
+                פתח
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Personal Details Card */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
