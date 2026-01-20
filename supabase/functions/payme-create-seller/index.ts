@@ -111,16 +111,19 @@ Deno.serve(async (req) => {
     }
 
     const body: CreateSellerRequest = await req.json();
+    console.log('Received request body:', JSON.stringify(body));
 
     // Validate required fields
     const requiredFields = [
       'eventId', 'firstName', 'lastName', 'socialId', 'birthdate', 
       'email', 'phone', 'bankCode', 'bankBranch', 'bankAccountNumber',
-      'incType', 'merchantName', 'city', 'street', 'streetNumber'
+      'incType', 'merchantName', 'merchantNameEn', 'city', 'street', 'streetNumber'
     ];
 
     for (const field of requiredFields) {
-      if (!body[field as keyof CreateSellerRequest]) {
+      const value = body[field as keyof CreateSellerRequest];
+      if (value === undefined || value === null || value === '') {
+        console.log(`Missing field: ${field}, value:`, value);
         return new Response(
           JSON.stringify({ error: `Missing required field: ${field}` }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -212,7 +215,7 @@ Deno.serve(async (req) => {
       seller_address_country: 'IL',
       seller_retail_type: 1, // Online
       seller_person_business_type: 10010, // Events
-      market_fee: '2.00', // Platform fee percentage
+      market_fee: '1.40', // Platform fee percentage
       language: 'he',
     };
 
