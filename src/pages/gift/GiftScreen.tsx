@@ -36,6 +36,7 @@ export default function GiftScreen() {
   const [payerPhone, setPayerPhone] = useState("");
   const [relationship, setRelationship] = useState("");
   const [blessing, setBlessing] = useState("");
+  const [selectedInstallments, setSelectedInstallments] = useState(1);
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentIframeUrl, setPaymentIframeUrl] = useState<string | null>(null);
@@ -204,7 +205,8 @@ export default function GiftScreen() {
           payerPhone: payerPhone || undefined,
           relationship: relationship || undefined,
           blessing: blessing || undefined,
-          blessingImageUrl: blessingImageUrl || undefined, // Send the image URL
+          blessingImageUrl: blessingImageUrl || undefined,
+          installments: selectedInstallments, // Pass selected installments
           returnUrl,
         },
       });
@@ -500,6 +502,33 @@ export default function GiftScreen() {
                     placeholder="example@email.com"
                     className="mt-1 h-12 rounded-xl border-2 border-gray-200 focus:border-[#C4A35A]"
                   />
+                </div>
+
+                {/* Installments Selection */}
+                <div>
+                  <Label className="text-[#051839] font-medium">מספר תשלומים</Label>
+                  <div className="grid grid-cols-5 gap-2 mt-2">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setSelectedInstallments(num)}
+                        className={cn(
+                          "py-3 rounded-xl font-bold text-lg transition-all duration-200 border-2",
+                          selectedInstallments === num
+                            ? "bg-gradient-to-br from-[#C4A35A] to-[#D4B36A] text-white border-[#C4A35A] shadow-md"
+                            : "bg-white border-gray-200 text-[#051839] hover:border-[#C4A35A]"
+                        )}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedInstallments > 1 && (
+                    <p className="text-sm text-gray-500 mt-2 text-center">
+                      {selectedInstallments} תשלומים של ₪{Math.ceil(finalAmount / selectedInstallments).toLocaleString()}
+                    </p>
+                  )}
                 </div>
               </div>
 

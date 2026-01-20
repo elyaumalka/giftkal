@@ -13,7 +13,8 @@ interface GenerateSaleRequest {
   payerPhone?: string;
   relationship?: string;
   blessing?: string;
-  blessingImageUrl?: string; // URL to the blessing card image
+  blessingImageUrl?: string;
+  installments?: number; // Number of installments (1-12)
   returnUrl: string;
 }
 
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body: GenerateSaleRequest = await req.json();
 
-    const { eventId, amount, payerName, payerEmail, payerPhone, relationship, blessing, blessingImageUrl, returnUrl } = body;
+    const { eventId, amount, payerName, payerEmail, payerPhone, relationship, blessing, blessingImageUrl, installments, returnUrl } = body;
 
     if (!eventId || !amount || !payerName) {
       return new Response(
@@ -102,13 +103,18 @@ Deno.serve(async (req) => {
     // Generate sale with PayMe
     const productName = `מתנה ל${event.groom_name || ''} & ${event.bride_name || ''}`;
     
+    // Format installments for PayMe: "1" for single, "105" for up to 5 installments
+    // PayMe format: first digit is min (1), second two digits are max (e.g., 05 = up to 5)
+    const maxInstallments = installments && installments > 1 ? installments : 1;
+    const installmentsValue = maxInstallments > 1 ? `1${maxInstallments.toString().padStart(2, '0')}` : '1';
+    
     const salePayload = {
       seller_payme_id: event.seller_payme_id,
       sale_price: Math.round(amount * 100), // PayMe expects price in agorot
       currency: 'ILS',
       product_name: productName,
       transaction_id: transaction.id,
-      installments: '1',
+      installments: installmentsValue,
       sale_send_notification: true,
       sale_callback_url: callbackUrl,
       sale_return_url: returnUrl,
