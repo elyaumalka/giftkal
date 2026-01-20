@@ -50,6 +50,7 @@ const formSchema = z.object({
   incType: z.number().min(0).max(3),
   incCode: z.string().optional(),
   merchantName: z.string().trim().min(2, 'שם העסק חייב להכיל לפחות 2 תווים').max(100),
+  merchantNameEn: z.string().trim().min(2, 'שם העסק באנגלית חייב להכיל לפחות 2 תווים').max(100).regex(/^[a-zA-Z0-9\s\-_]+$/, 'יש להזין רק תווים באנגלית'),
   city: z.string().trim().min(2, 'יש להזין עיר').max(50),
   street: z.string().trim().min(2, 'יש להזין רחוב').max(100),
   streetNumber: z.string().trim().min(1, 'יש להזין מספר בית').max(10),
@@ -75,6 +76,7 @@ export default function PaymeSetup() {
     incType: 0,
     incCode: '',
     merchantName: '',
+    merchantNameEn: '',
     city: '',
     street: '',
     streetNumber: '',
@@ -434,12 +436,25 @@ export default function PaymeSetup() {
                   <Label htmlFor="merchantName">שם העסק / שם מלא *</Label>
                   <Input
                     id="merchantName"
-                    value={formData.merchantName || ''}
+                    value={formData.merchantName}
                     onChange={(e) => handleChange('merchantName', e.target.value)}
-                    placeholder="השם שיופיע בחשבוניות"
+                    placeholder="השם שיופיע בחשבוניות (עברית)"
                     className={errors.merchantName ? 'border-red-500' : ''}
                   />
                   {errors.merchantName && <p className="text-red-500 text-sm mt-1">{errors.merchantName}</p>}
+                </div>
+
+                <div>
+                  <Label htmlFor="merchantNameEn">שם העסק באנגלית *</Label>
+                  <Input
+                    id="merchantNameEn"
+                    value={formData.merchantNameEn}
+                    onChange={(e) => handleChange('merchantNameEn', e.target.value.replace(/[^a-zA-Z0-9\s\-_]/g, ''))}
+                    placeholder="Business name in English"
+                    className={errors.merchantNameEn ? 'border-red-500' : ''}
+                    dir="ltr"
+                  />
+                  {errors.merchantNameEn && <p className="text-red-500 text-sm mt-1">{errors.merchantNameEn}</p>}
                 </div>
               </div>
 
