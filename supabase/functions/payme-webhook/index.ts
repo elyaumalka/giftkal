@@ -68,11 +68,13 @@ Deno.serve(async (req) => {
     }
 
     // Determine payment status based on PayMe response
+    // PayMe sends: payme_status (success/error), sale_status (completed/failed/refunded), status_code (0=success)
     let paymentStatus = 'pending';
     
-    if (status_code === 0 && (payme_status === 'success' || sale_status === 'completed')) {
+    // Check for success - PayMe sends sale_status=completed when payment succeeds
+    if (sale_status === 'completed' || (status_code === 0 && payme_status === 'success')) {
       paymentStatus = 'completed';
-    } else if (payme_status === 'failed' || sale_status === 'failed') {
+    } else if (payme_status === 'error' || payme_status === 'failed' || sale_status === 'failed') {
       paymentStatus = 'failed';
     } else if (sale_status === 'refunded') {
       paymentStatus = 'refunded';

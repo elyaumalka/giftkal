@@ -80,6 +80,44 @@ export default function GiftScreen() {
     return () => window.removeEventListener('message', handlePaymentMessage);
   }, [handlePaymentMessage]);
 
+  // Poll for transaction status when payment dialog is open
+  useEffect(() => {
+    if (!showPaymentDialog || !currentTransactionId) return;
+
+    const checkTransactionStatus = async () => {
+      try {
+        const { data: transaction } = await supabase
+          .from('transactions')
+          .select('payment_status')
+          .eq('id', currentTransactionId)
+          .maybeSingle();
+
+        console.log('Polling transaction status:', transaction?.payment_status);
+
+        if (transaction?.payment_status === 'completed') {
+          setShowPaymentDialog(false);
+          setPaymentIframeUrl(null);
+          setStep('success');
+        } else if (transaction?.payment_status === 'failed') {
+          setShowPaymentDialog(false);
+          setPaymentIframeUrl(null);
+          setPaymentError('התשלום נכשל. אנא נסו שוב.');
+          setStep('failed');
+        }
+      } catch (error) {
+        console.error('Error checking transaction status:', error);
+      }
+    };
+
+    // Check immediately
+    checkTransactionStatus();
+
+    // Then poll every 3 seconds
+    const interval = setInterval(checkTransactionStatus, 3000);
+
+    return () => clearInterval(interval);
+  }, [showPaymentDialog, currentTransactionId]);
+
   // Fetch event details - get the nearest upcoming event for venue
   const { data: event, isLoading } = useQuery({
     queryKey: ["event-public", eventId],
