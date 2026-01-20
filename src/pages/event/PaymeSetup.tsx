@@ -30,6 +30,7 @@ const BANKS = [
 
 // Business types
 const INC_TYPES = [
+  { value: 0, label: 'פרטי' },
   { value: 1, label: 'עוסק פטור' },
   { value: 2, label: 'עוסק מורשה' },
   { value: 3, label: 'חברה בע"מ' },
@@ -46,7 +47,7 @@ const formSchema = z.object({
   bankCode: z.number().min(1, 'יש לבחור בנק'),
   bankBranch: z.string().regex(/^\d{1,4}$/, 'מספר סניף לא תקין'),
   bankAccountNumber: z.string().regex(/^\d{4,12}$/, 'מספר חשבון לא תקין'),
-  incType: z.number().min(1).max(3),
+  incType: z.number().min(0).max(3),
   incCode: z.string().optional(),
   merchantName: z.string().trim().min(2, 'שם העסק חייב להכיל לפחות 2 תווים').max(100),
   city: z.string().trim().min(2, 'יש להזין עיר').max(50),
@@ -62,7 +63,7 @@ export default function PaymeSetup() {
   const { toast } = useToast();
   
   const [formData, setFormData] = useState<Partial<FormData>>({
-    incType: 1,
+    incType: 0,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'form' | 'success'>('form');
