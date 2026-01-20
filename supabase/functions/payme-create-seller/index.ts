@@ -51,6 +51,23 @@ const BANK_CODES: Record<number, string> = {
   54: 'בנק ירושלים',
 };
 
+// Hebrew to English transliteration map
+const hebrewToEnglish: Record<string, string> = {
+  'א': 'a', 'ב': 'b', 'ג': 'g', 'ד': 'd', 'ה': 'h', 'ו': 'v', 'ז': 'z',
+  'ח': 'ch', 'ט': 't', 'י': 'y', 'כ': 'k', 'ך': 'k', 'ל': 'l', 'מ': 'm',
+  'ם': 'm', 'נ': 'n', 'ן': 'n', 'ס': 's', 'ע': 'a', 'פ': 'p', 'ף': 'f',
+  'צ': 'tz', 'ץ': 'tz', 'ק': 'k', 'ר': 'r', 'ש': 'sh', 'ת': 't',
+};
+
+function transliterateHebrew(text: string): string {
+  return text.split('').map(char => {
+    if (hebrewToEnglish[char]) return hebrewToEnglish[char];
+    if (/[a-zA-Z0-9\s\-_]/.test(char)) return char;
+    if (char === ' ') return ' ';
+    return '';
+  }).join('').replace(/\s+/g, ' ').trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -185,9 +202,9 @@ Deno.serve(async (req) => {
       seller_inc: body.incType,
       seller_inc_code: body.incCode || '',
       seller_merchant_name: body.merchantName.trim(),
-      seller_merchant_name_en: body.merchantNameEn || body.merchantName.trim(),
+      seller_merchant_name_en: body.merchantNameEn || transliterateHebrew(body.merchantName.trim()),
       seller_dba: body.merchantName.trim(),
-      seller_dba_en: body.merchantNameEn || body.merchantName.trim(),
+      seller_dba_en: body.merchantNameEn || transliterateHebrew(body.merchantName.trim()),
       seller_description: body.description || `אירוע - ${body.merchantName}`,
       seller_address_city: body.city.trim(),
       seller_address_street: body.street.trim(),
