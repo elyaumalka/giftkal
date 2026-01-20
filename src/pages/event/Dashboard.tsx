@@ -1,8 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, CreditCard } from "lucide-react";
 import StatIcon from "@/assets/icons/event/StatIcon.svg";
 
 export default function EventDashboard() {
+  const navigate = useNavigate();
+
   const { data } = useQuery({
     queryKey: ["event-dashboard"],
     queryFn: async () => {
@@ -50,6 +55,33 @@ export default function EventDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* PayMe Setup Alert */}
+      {data?.event && !data.event.seller_payme_id && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-6 h-6 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-amber-800 mb-1">
+                הקימו חשבון סליקה כדי לקבל מתנות
+              </h3>
+              <p className="text-amber-700 text-sm mb-4">
+                כדי שהאורחים יוכלו לשלם במתנות באשראי, יש להקים חשבון סליקה.
+                זה לוקח כ-2 דקות.
+              </p>
+              <Button 
+                onClick={() => navigate(`/event/${data.event.id}/payme-setup`)}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                <CreditCard className="w-4 h-4 ml-2" />
+                הקמת חשבון סליקה
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Average Gift */}
