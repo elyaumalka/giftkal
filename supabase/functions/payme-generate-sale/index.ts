@@ -13,6 +13,7 @@ interface GenerateSaleRequest {
   payerPhone?: string;
   relationship?: string;
   blessing?: string;
+  blessingImageUrl?: string; // URL to the blessing card image
   returnUrl: string;
 }
 
@@ -35,7 +36,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body: GenerateSaleRequest = await req.json();
 
-    const { eventId, amount, payerName, payerEmail, payerPhone, relationship, blessing, returnUrl } = body;
+    const { eventId, amount, payerName, payerEmail, payerPhone, relationship, blessing, blessingImageUrl, returnUrl } = body;
 
     if (!eventId || !amount || !payerName) {
       return new Response(
@@ -77,6 +78,7 @@ Deno.serve(async (req) => {
         amount: amount,
         relationship: relationship || null,
         blessing_text: blessing || null,
+        receipt_url: blessingImageUrl || null, // Store the blessing image URL
         payment_status: 'pending',
       })
       .select()

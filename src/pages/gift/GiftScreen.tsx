@@ -137,7 +137,7 @@ export default function GiftScreen() {
     enabled: !!eventId,
   });
 
-  // Save blessing card as image
+  // Save blessing card as image and upload to storage
   const saveBlessingAsImage = async (): Promise<string | null> => {
     if (!blessingCardRef.current) return null;
     
@@ -147,7 +147,36 @@ export default function GiftScreen() {
         backgroundColor: null,
         useCORS: true,
       });
-      return canvas.toDataURL("image/png");
+      
+      // Convert canvas to blob
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((b) => resolve(b), "image/png", 0.95);
+      });
+      
+      if (!blob) return null;
+      
+      // Generate unique filename
+      const fileName = `blessings/${eventId}/${Date.now()}-${payerName.replace(/\s+/g, '_')}.png`;
+      
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .upload(fileName, blob, {
+          contentType: "image/png",
+          upsert: false,
+        });
+      
+      if (error) {
+        console.error("Error uploading blessing image:", error);
+        return null;
+      }
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("documents")
+        .getPublicUrl(fileName);
+      
+      return urlData.publicUrl;
     } catch (error) {
       console.error("Error saving blessing card:", error);
       return null;
@@ -159,7 +188,7 @@ export default function GiftScreen() {
     mutationFn: async () => {
       const amount = selectedAmount || Number(customAmount);
       
-      // Save blessing card as image first
+      // Save blessing card as image first and get the URL
       const blessingImageUrl = await saveBlessingAsImage();
       
       // Build return URL with success/failure params
@@ -175,6 +204,7 @@ export default function GiftScreen() {
           payerPhone: payerPhone || undefined,
           relationship: relationship || undefined,
           blessing: blessing || undefined,
+          blessingImageUrl: blessingImageUrl || undefined, // Send the image URL
           returnUrl,
         },
       });
