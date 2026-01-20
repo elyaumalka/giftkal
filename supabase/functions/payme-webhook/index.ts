@@ -16,9 +16,19 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // PayMe sends callback data as JSON
-    const callbackData = await req.json();
-    console.log('PayMe webhook received:', JSON.stringify(callbackData));
+    // PayMe sends callback data as form-urlencoded OR JSON
+    const contentType = req.headers.get('content-type') || '';
+    let callbackData: Record<string, string | number | undefined>;
+
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const text = await req.text();
+      console.log('PayMe webhook received (form-urlencoded):', text);
+      const params = new URLSearchParams(text);
+      callbackData = Object.fromEntries(params.entries());
+    } else {
+      callbackData = await req.json();
+      console.log('PayMe webhook received (JSON):', JSON.stringify(callbackData));
+    }
 
     // Extract relevant fields from PayMe callback
     const {
@@ -28,7 +38,7 @@ Deno.serve(async (req) => {
       payme_status,
       sale_status,
       status_code,
-    } = callbackData;
+    } = callbackData as Record<string, string | number | undefined>;
 
     if (!transaction_id && !payme_sale_id) {
       console.error('No transaction identifier in callback');
