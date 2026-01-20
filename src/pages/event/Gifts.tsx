@@ -109,7 +109,7 @@ export default function EventGifts() {
                   {gift.relationship || "—"}
                 </span>
                 <div className="w-28">
-                  {gift.blessing_text ? (
+                {gift.blessing_text || gift.receipt_url ? (
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button 
@@ -119,21 +119,29 @@ export default function EventGifts() {
                           <ArrowLeft className="w-3 h-3 mr-1" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-lg">
-                        <DialogHeader>
-                          <DialogTitle className="text-right">ברכה מ{gift.payer_name}</DialogTitle>
+                      <DialogContent className="max-w-2xl p-0 overflow-hidden" dir="rtl">
+                        <DialogHeader className="bg-[#051839] text-white p-6">
+                          <DialogTitle className="text-right text-xl font-bold">
+                            ברכה מ{gift.payer_name}
+                          </DialogTitle>
                         </DialogHeader>
-                        {gift.receipt_url ? (
-                          <div className="flex justify-center">
-                            <img 
-                              src={gift.receipt_url} 
-                              alt="ברכה מעוצבת" 
-                              className="max-w-full rounded-xl shadow-lg"
-                            />
-                          </div>
-                        ) : (
-                          <p className="text-lg leading-relaxed text-right">{gift.blessing_text}</p>
-                        )}
+                        <div className="p-6">
+                          {gift.receipt_url ? (
+                            <div className="flex justify-center">
+                              <img 
+                                src={gift.receipt_url} 
+                                alt="ברכה מעוצבת" 
+                                className="max-w-full max-h-[60vh] rounded-xl shadow-lg object-contain"
+                              />
+                            </div>
+                          ) : gift.blessing_text ? (
+                            <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
+                              <p className="text-lg leading-relaxed text-right text-[#051839] whitespace-pre-wrap">
+                                {gift.blessing_text}
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
                       </DialogContent>
                     </Dialog>
                   ) : null}
