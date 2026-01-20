@@ -717,8 +717,8 @@ export default function GiftScreen() {
                   src={paymentIframeUrl}
                   className="w-full h-full border-0"
                   title="PayMe Payment"
-                  allow="payment"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+                  allow="payment *"
+                  referrerPolicy="no-referrer-when-downgrade"
                 />
               ) : (
                 <div className="flex items-center justify-center h-full">
