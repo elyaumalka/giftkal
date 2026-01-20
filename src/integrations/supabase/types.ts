@@ -140,6 +140,7 @@ export type Database = {
           invitation_text: string | null
           owner_id: string
           payment_completed: boolean | null
+          seller_payme_id: string | null
           updated_at: string
           venue_id: string | null
         }
@@ -161,6 +162,7 @@ export type Database = {
           invitation_text?: string | null
           owner_id: string
           payment_completed?: boolean | null
+          seller_payme_id?: string | null
           updated_at?: string
           venue_id?: string | null
         }
@@ -182,6 +184,7 @@ export type Database = {
           invitation_text?: string | null
           owner_id?: string
           payment_completed?: boolean | null
+          seller_payme_id?: string | null
           updated_at?: string
           venue_id?: string | null
         }
@@ -558,6 +561,9 @@ export type Database = {
           payer_email: string | null
           payer_name: string
           payer_phone: string | null
+          payme_sale_id: string | null
+          payme_transaction_id: string | null
+          payment_status: string | null
           receipt_url: string | null
           relationship: string | null
           transaction_date: string
@@ -573,6 +579,9 @@ export type Database = {
           payer_email?: string | null
           payer_name: string
           payer_phone?: string | null
+          payme_sale_id?: string | null
+          payme_transaction_id?: string | null
+          payment_status?: string | null
           receipt_url?: string | null
           relationship?: string | null
           transaction_date?: string
@@ -588,6 +597,9 @@ export type Database = {
           payer_email?: string | null
           payer_name?: string
           payer_phone?: string | null
+          payme_sale_id?: string | null
+          payme_transaction_id?: string | null
+          payment_status?: string | null
           receipt_url?: string | null
           relationship?: string | null
           transaction_date?: string
