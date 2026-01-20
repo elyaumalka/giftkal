@@ -35,6 +35,7 @@ import EventDashboard from "./pages/event/Dashboard";
 import EventInvitations from "./pages/event/Invitations";
 import EventGifts from "./pages/event/Gifts";
 import EventSettings from "./pages/event/Settings";
+import PaymeSetup from "./pages/event/PaymeSetup";
 
 // Public
 import GiftScreen from "./pages/gift/GiftScreen";
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/gift/:eventId" element={<GiftScreen />} />
+          <Route path="/event/:eventId/payme-setup" element={<PaymeSetup />} />
           <Route path="/landing/:venueId" element={<VenueLanding />} />
 
           {/* Admin routes */}
