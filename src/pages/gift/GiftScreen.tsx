@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Heart, CreditCard, Check, ArrowLeft, Sparkles, Loader2 } from "lucide-react";
+import { Gift, Heart, CreditCard, Check, ArrowLeft, Sparkles, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
@@ -37,10 +38,13 @@ export default function GiftScreen() {
   const [blessing, setBlessing] = useState("");
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentIframeUrl, setPaymentIframeUrl] = useState<string | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
 
-  // Check if returning from PayMe payment
+  // Check if returning from PayMe payment (fallback for popup blockers)
   useEffect(() => {
     const paymentStatus = searchParams.get('payment_status');
     const transactionId = searchParams.get('transaction_id');
@@ -52,6 +56,29 @@ export default function GiftScreen() {
       setStep('failed');
     }
   }, [searchParams]);
+
+  // Listen for messages from PayMe iframe
+  const handlePaymentMessage = useCallback((event: MessageEvent) => {
+    // PayMe sends messages when payment is complete
+    console.log('Received message from iframe:', event.data);
+    
+    // Check for PayMe specific messages
+    if (event.data?.type === 'payme_success' || event.data?.status === 'success') {
+      setShowPaymentDialog(false);
+      setPaymentIframeUrl(null);
+      setStep('success');
+    } else if (event.data?.type === 'payme_failed' || event.data?.status === 'failed') {
+      setShowPaymentDialog(false);
+      setPaymentIframeUrl(null);
+      setPaymentError('התשלום נכשל. אנא נסו שוב.');
+      setStep('failed');
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('message', handlePaymentMessage);
+    return () => window.removeEventListener('message', handlePaymentMessage);
+  }, [handlePaymentMessage]);
 
   // Fetch event details - get the nearest upcoming event for venue
   const { data: event, isLoading } = useQuery({
@@ -125,9 +152,12 @@ export default function GiftScreen() {
       return response.data;
     },
     onSuccess: (data) => {
-      // Redirect to PayMe payment page
+      // Open PayMe payment page in iframe dialog
       if (data.saleUrl) {
-        window.location.href = data.saleUrl;
+        setPaymentIframeUrl(data.saleUrl);
+        setCurrentTransactionId(data.transactionId);
+        setShowPaymentDialog(true);
+        setStep("payment"); // Reset step so user can see the dialog
       }
     },
     onError: (error: Error) => {
@@ -611,6 +641,96 @@ export default function GiftScreen() {
           <p>מופעל על ידי Giftkal</p>
         </div>
       </div>
+
+      {/* PayMe Payment Iframe Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={(open) => {
+        if (!open) {
+          // User closed dialog - check if payment was completed
+          setShowPaymentDialog(false);
+          setPaymentIframeUrl(null);
+          // Optional: Could check transaction status here
+        }
+      }}>
+        <DialogContent className="max-w-lg w-full h-[90vh] max-h-[700px] p-0 overflow-hidden" dir="rtl">
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-[#051839] to-[#0A2F5C]">
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                תשלום מאובטח
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="text-white hover:bg-white/20"
+                onClick={() => {
+                  setShowPaymentDialog(false);
+                  setPaymentIframeUrl(null);
+                }}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            {/* Iframe */}
+            <div className="flex-1 relative bg-white">
+              {paymentIframeUrl ? (
+                <iframe
+                  src={paymentIframeUrl}
+                  className="w-full h-full border-0"
+                  title="PayMe Payment"
+                  allow="payment"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#C4A35A]" />
+                </div>
+              )}
+            </div>
+
+            {/* Footer with check status button */}
+            <div className="p-4 border-t bg-gray-50">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">
+                  אחרי השלמת התשלום, לחצו על הכפתור
+                </p>
+                <Button
+                  onClick={async () => {
+                    // Check transaction status
+                    if (currentTransactionId) {
+                      const { data: transaction } = await supabase
+                        .from('transactions')
+                        .select('payment_status')
+                        .eq('id', currentTransactionId)
+                        .maybeSingle();
+                      
+                      if (transaction?.payment_status === 'completed') {
+                        setShowPaymentDialog(false);
+                        setPaymentIframeUrl(null);
+                        setStep('success');
+                      } else if (transaction?.payment_status === 'failed') {
+                        setShowPaymentDialog(false);
+                        setPaymentIframeUrl(null);
+                        setStep('failed');
+                      } else {
+                        toast({
+                          title: "ממתין לאישור",
+                          description: "התשלום עדיין בתהליך, נסו שוב בעוד רגע",
+                        });
+                      }
+                    }
+                  }}
+                  className="bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white"
+                >
+                  <Check className="w-4 h-4 ml-2" />
+                  סיימתי לשלם
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
