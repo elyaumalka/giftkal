@@ -62,8 +62,22 @@ export default function PaymeSetup() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [formData, setFormData] = useState<Partial<FormData>>({
+  const [formData, setFormData] = useState<FormData>({
+    firstName: '',
+    lastName: '',
+    socialId: '',
+    birthdate: '',
+    email: '',
+    phone: '',
+    bankCode: 0,
+    bankBranch: '',
+    bankAccountNumber: '',
     incType: 0,
+    incCode: '',
+    merchantName: '',
+    city: '',
+    street: '',
+    streetNumber: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'form' | 'success'>('form');
@@ -336,7 +350,7 @@ export default function PaymeSetup() {
                 <div>
                   <Label htmlFor="bankCode">בנק *</Label>
                   <Select 
-                    value={formData.bankCode?.toString()} 
+                    value={formData.bankCode > 0 ? formData.bankCode.toString() : ''} 
                     onValueChange={(v) => handleChange('bankCode', parseInt(v))}
                   >
                     <SelectTrigger className={errors.bankCode ? 'border-red-500' : ''}>
