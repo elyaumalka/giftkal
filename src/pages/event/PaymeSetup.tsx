@@ -191,7 +191,7 @@ export default function PaymeSetup() {
           <CardContent>
             <Button 
               className="w-full" 
-              onClick={() => navigate(`/event/${eventId}/dashboard`)}
+              onClick={() => navigate('/event')}
             >
               חזרה לדאשבורד
             </Button>
@@ -224,7 +224,7 @@ export default function PaymeSetup() {
             </div>
             <Button 
               className="w-full" 
-              onClick={() => navigate(`/event/${eventId}/dashboard`)}
+              onClick={() => navigate('/event')}
             >
               חזרה לדאשבורד
             </Button>
