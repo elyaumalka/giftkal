@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,9 +41,9 @@ import PaymeSetup from "./pages/event/PaymeSetup";
 import GiftScreen from "./pages/gift/GiftScreen";
 import VenueLanding from "./pages/landing/VenueLanding";
 
-const App = () => {
-  const [queryClient] = useState(() => new QueryClient());
-  
+const queryClient = new QueryClient();
+
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -97,6 +96,6 @@ const App = () => {
     </TooltipProvider>
   </QueryClientProvider>
   );
-};
+}
 
 export default App;
