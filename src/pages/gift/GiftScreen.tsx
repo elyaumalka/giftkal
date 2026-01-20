@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,14 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Heart, CreditCard, Check, ArrowLeft, Sparkles } from "lucide-react";
+import { Gift, Heart, CreditCard, Check, ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
 
 const GIFT_AMOUNTS = [100, 200, 300, 500, 1000];
 
-type Step = "amount" | "payment" | "blessing" | "success";
+type Step = "amount" | "payment" | "blessing" | "processing" | "success" | "failed";
 
 // Blessing card designs
 const BLESSING_DESIGNS = [
@@ -26,6 +26,7 @@ const BLESSING_DESIGNS = [
 
 export default function GiftScreen() {
   const { eventId } = useParams();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<Step>("amount");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
@@ -35,8 +36,22 @@ export default function GiftScreen() {
   const [relationship, setRelationship] = useState("");
   const [blessing, setBlessing] = useState("");
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
+
+  // Check if returning from PayMe payment
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment_status');
+    const transactionId = searchParams.get('transaction_id');
+    
+    if (paymentStatus === 'success' && transactionId) {
+      setStep('success');
+    } else if (paymentStatus === 'failed') {
+      setPaymentError('התשלום נכשל. אנא נסו שוב.');
+      setStep('failed');
+    }
+  }, [searchParams]);
 
   // Fetch event details - get the nearest upcoming event for venue
   const { data: event, isLoading } = useQuery({
@@ -74,6 +89,59 @@ export default function GiftScreen() {
     }
   };
 
+  // PayMe payment mutation
+  const initiatePayment = useMutation({
+    mutationFn: async () => {
+      const amount = selectedAmount || Number(customAmount);
+      
+      // Save blessing card as image first
+      const blessingImageUrl = await saveBlessingAsImage();
+      
+      // Build return URL with success/failure params
+      const baseUrl = window.location.origin;
+      const returnUrl = `${baseUrl}/gift/${eventId}?payment_status=success&transaction_id={transaction_id}`;
+      
+      const response = await supabase.functions.invoke('payme-generate-sale', {
+        body: {
+          eventId,
+          amount,
+          payerName,
+          payerEmail: payerEmail || undefined,
+          payerPhone: payerPhone || undefined,
+          relationship: relationship || undefined,
+          blessing: blessing || undefined,
+          returnUrl,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'שגיאה ביצירת התשלום');
+      }
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.error || 'שגיאה ביצירת התשלום');
+      }
+
+      return response.data;
+    },
+    onSuccess: (data) => {
+      // Redirect to PayMe payment page
+      if (data.saleUrl) {
+        window.location.href = data.saleUrl;
+      }
+    },
+    onError: (error: Error) => {
+      setPaymentError(error.message);
+      toast({
+        title: "שגיאה",
+        description: error.message,
+        variant: "destructive",
+      });
+      setStep("payment");
+    },
+  });
+
+  // Legacy transaction creation (for when PayMe is not configured)
   const createTransaction = useMutation({
     mutationFn: async () => {
       // Save blessing card as image first
@@ -90,13 +158,14 @@ export default function GiftScreen() {
         relationship,
         blessing_text: blessing,
         receipt_url: blessingImageUrl, // Store blessing image URL here
+        payment_status: 'completed', // Legacy: no payment processing
       });
       if (error) throw error;
     },
     onSuccess: () => {
       setStep("success");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "שגיאה",
         description: error.message,
@@ -108,12 +177,19 @@ export default function GiftScreen() {
   const finalAmount = selectedAmount || Number(customAmount);
 
   const handlePayment = () => {
-    // In production, integrate with PayPlus/Meshulam
+    // Navigate to blessing step first
     setStep("blessing");
   };
 
   const handleSubmit = () => {
-    createTransaction.mutate();
+    // Check if event has PayMe configured
+    if (event?.seller_payme_id) {
+      setStep("processing");
+      initiatePayment.mutate();
+    } else {
+      // Fallback to legacy mode without payment processing
+      createTransaction.mutate();
+    }
   };
 
   if (isLoading) {
@@ -439,18 +515,59 @@ export default function GiftScreen() {
                 <Button
                   onClick={handleSubmit}
                   className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
-                  disabled={createTransaction.isPending}
+                  disabled={createTransaction.isPending || initiatePayment.isPending}
                 >
-                  {createTransaction.isPending ? (
+                  {(createTransaction.isPending || initiatePayment.isPending) ? (
                     <>
-                      <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                      שולח...
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      מעבד...
                     </>
+                  ) : event?.seller_payme_id ? (
+                    `שלם ₪${finalAmount} ושלח ברכה`
                   ) : (
                     "שלח ברכה"
                   )}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Step: Processing Payment */}
+          {step === "processing" && (
+            <div className="p-6 md:p-8 space-y-6 animate-fade-in text-center">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#C4A35A] to-[#D4B36A] flex items-center justify-center mx-auto shadow-xl">
+                <Loader2 className="w-12 h-12 text-white animate-spin" />
+              </div>
+              
+              <div>
+                <h2 className="text-2xl font-bold text-[#051839]">מעבד את התשלום...</h2>
+                <p className="text-[#5A4A2A] mt-2">
+                  מעבירים אתכם לדף התשלום המאובטח
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step: Payment Failed */}
+          {step === "failed" && (
+            <div className="p-6 md:p-8 space-y-6 animate-fade-in text-center">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center mx-auto shadow-xl">
+                <span className="text-4xl text-white">✕</span>
+              </div>
+              
+              <div>
+                <h2 className="text-2xl font-bold text-[#051839]">התשלום נכשל</h2>
+                <p className="text-[#5A4A2A] mt-2">
+                  {paymentError || 'אירעה שגיאה בעיבוד התשלום'}
+                </p>
+              </div>
+
+              <Button
+                onClick={() => setStep("payment")}
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
+              >
+                נסה שוב
+              </Button>
             </div>
           )}
 
@@ -471,13 +588,13 @@ export default function GiftScreen() {
                   המתנה והברכה נשלחו בהצלחה
                 </p>
                 <p className="text-[#5A4A2A]/70">
-                  ל{event.groom_name} ו{event.bride_name}
+                  ל{event?.groom_name} ו{event?.bride_name}
                 </p>
               </div>
               
               <div className="bg-gradient-to-br from-[#C4A35A]/10 to-[#D4B36A]/10 p-6 rounded-2xl border border-[#C4A35A]/20">
                 <p className="text-sm text-[#5A4A2A]">סכום המתנה</p>
-                <p className="text-4xl font-bold text-[#C4A35A] mt-1">₪{finalAmount}</p>
+                <p className="text-4xl font-bold text-[#C4A35A] mt-1">₪{finalAmount || searchParams.get('amount') || ''}</p>
               </div>
 
               <div className="pt-4">
