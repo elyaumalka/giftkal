@@ -110,6 +110,8 @@ export default function PayMeHostedFields({
   disabled = false,
 }: PayMeHostedFieldsProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [fieldsReady, setFieldsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardType, setCardType] = useState<string | null>(null);
   const [fieldStates, setFieldStates] = useState({
@@ -121,6 +123,7 @@ export default function PayMeHostedFields({
 
   const instanceRef = useRef<PayMeInstance | null>(null);
   const mountedRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Check if form is valid
   const isFormValid = fieldStates.cardNumber.isValid && 
@@ -145,15 +148,12 @@ export default function PayMeHostedFields({
     },
   };
 
-  // Initialize PayMe SDK
+  // Load PayMe SDK script
   useEffect(() => {
-    // Don't run if no API key or already mounted
-    if (!apiKey || mountedRef.current) return;
-    mountedRef.current = true;
+    if (sdkLoaded || !apiKey) return;
 
-    const loadPayMeSDK = async () => {
+    const loadScript = async () => {
       try {
-        // Load the SDK script if not already loaded
         if (!window.PayMe) {
           await new Promise<void>((resolve, reject) => {
             const script = document.createElement('script');
@@ -165,7 +165,7 @@ export default function PayMeHostedFields({
           });
         }
 
-        // Wait for SDK to be fully initialized (check with polling)
+        // Wait for SDK to be fully initialized
         let attempts = 0;
         while (!window.PayMe?.create && attempts < 50) {
           await new Promise(resolve => setTimeout(resolve, 100));
@@ -176,6 +176,35 @@ export default function PayMeHostedFields({
           throw new Error('PayMe SDK not available after loading');
         }
 
+        setSdkLoaded(true);
+      } catch (err) {
+        console.error('Failed to load PayMe SDK:', err);
+        setError('שגיאה בטעינת מערכת התשלום');
+        setIsLoading(false);
+      }
+    };
+
+    loadScript();
+  }, [apiKey, sdkLoaded]);
+
+  // Initialize fields after SDK loaded and DOM is ready
+  useEffect(() => {
+    if (!sdkLoaded || !apiKey || mountedRef.current || !containerRef.current) return;
+    
+    // Check if containers exist in DOM
+    const cardNumberContainer = document.getElementById('payme-card-number');
+    const expirationContainer = document.getElementById('payme-card-expiration');
+    const cvcContainer = document.getElementById('payme-card-cvc');
+    
+    if (!cardNumberContainer || !expirationContainer || !cvcContainer) {
+      console.log('Waiting for containers...');
+      return;
+    }
+    
+    mountedRef.current = true;
+
+    const initializeFields = async () => {
+      try {
         // Create PayMe instance
         const instance = await window.PayMe.create(apiKey, {
           testMode,
@@ -187,7 +216,7 @@ export default function PayMeHostedFields({
         // Get hosted fields manager
         const fields = instance.hostedFields();
 
-        // Create and mount fields
+        // Create fields
         const cardNumber = fields.create('cardNumber', {
           placeholder: 'מספר כרטיס',
           messages: {
@@ -255,13 +284,14 @@ export default function PayMeHostedFields({
           setCardType(e.cardType || null);
         });
 
-        // Mount fields
+        // Mount fields to containers
         await Promise.all([
           cardNumber.mount('#payme-card-number'),
           cardExpiration.mount('#payme-card-expiration'),
           cvc.mount('#payme-card-cvc'),
         ]);
 
+        setFieldsReady(true);
         setIsLoading(false);
       } catch (err) {
         console.error('PayMe SDK initialization error:', err);
@@ -270,13 +300,12 @@ export default function PayMeHostedFields({
       }
     };
 
-    loadPayMeSDK();
+    initializeFields();
 
     return () => {
-      // Cleanup - reset mounted ref when unmounting
       mountedRef.current = false;
     };
-  }, [apiKey, testMode]);
+  }, [sdkLoaded, apiKey, testMode, fieldStyles]);
 
   // Handle form submission
   const handleSubmit = useCallback(async () => {
@@ -343,22 +372,24 @@ export default function PayMeHostedFields({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <Loader2 className="w-10 h-10 text-[#C4A35A] animate-spin" />
-        <p className="text-[#5A4A2A]">טוען מערכת תשלום מאובטחת...</p>
-      </div>
-    );
-  }
-
+  // Always render containers - show loading overlay when not ready
   return (
-    <div className="space-y-6">
-      {/* Security Badge */}
-      <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-        <Lock className="w-4 h-4" />
-        <span>תשלום מאובטח SSL</span>
-      </div>
+    <div className="space-y-6" ref={containerRef}>
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <Loader2 className="w-10 h-10 text-[#C4A35A] animate-spin" />
+          <p className="text-[#5A4A2A]">טוען מערכת תשלום מאובטחת...</p>
+        </div>
+      )}
+
+      {/* Security Badge - only show when loaded */}
+      {!isLoading && (
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+          <Lock className="w-4 h-4" />
+          <span>תשלום מאובטח SSL</span>
+        </div>
+      )}
 
       {/* Error Display */}
       {error && (
@@ -368,8 +399,8 @@ export default function PayMeHostedFields({
         </div>
       )}
 
-      {/* Card Fields */}
-      <div className="space-y-4">
+      {/* Card Fields - always in DOM but hidden during loading */}
+      <div className={cn("space-y-4", isLoading && "opacity-0 h-0 overflow-hidden")}>
         {/* Card Number */}
         <div>
           <Label className="text-[#051839] font-medium flex items-center gap-2">
@@ -433,29 +464,33 @@ export default function PayMeHostedFields({
         </div>
       </div>
 
-      {/* Submit Button */}
-      <Button
-        onClick={handleSubmit}
-        disabled={!isFormValid || isProcessing || disabled}
-        className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isProcessing ? (
-          <>
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            מעבד תשלום...
-          </>
-        ) : (
-          <>
-            <Lock className="w-5 h-5 mr-2" />
-            שלם ₪{amount.toLocaleString()}
-          </>
-        )}
-      </Button>
+      {/* Submit Button - only show when loaded */}
+      {!isLoading && (
+        <>
+          <Button
+            onClick={handleSubmit}
+            disabled={!isFormValid || isProcessing || disabled}
+            className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                מעבד תשלום...
+              </>
+            ) : (
+              <>
+                <Lock className="w-5 h-5 mr-2" />
+                שלם ₪{amount.toLocaleString()}
+              </>
+            )}
+          </Button>
 
-      {/* PayMe Branding */}
-      <div className="text-center text-xs text-gray-400">
-        מאובטח על ידי PayMe
-      </div>
+          {/* PayMe Branding */}
+          <div className="text-center text-xs text-gray-400">
+            מאובטח על ידי PayMe
+          </div>
+        </>
+      )}
     </div>
   );
 }
