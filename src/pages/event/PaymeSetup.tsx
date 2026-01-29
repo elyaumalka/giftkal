@@ -85,18 +85,19 @@ export default function PaymeSetup() {
   const [step, setStep] = useState<'form' | 'success'>('form');
 
   // Check if event already has seller
-  const { data: event, isLoading: eventLoading } = useQuery({
+  const { data: event, isLoading: eventLoading, error: eventError } = useQuery({
     queryKey: ['event-payme', eventId],
     queryFn: async () => {
+      if (!eventId) return null;
       const { data, error } = await supabase
         .from('events')
         .select('id, groom_name, bride_name, seller_payme_id, owner_id')
         .eq('id', eventId)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: !!eventId,
+    enabled: !!eventId && eventId.length === 36, // Basic UUID validation
   });
 
   const createSeller = useMutation({
