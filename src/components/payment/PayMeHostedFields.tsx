@@ -147,7 +147,8 @@ export default function PayMeHostedFields({
 
   // Initialize PayMe SDK
   useEffect(() => {
-    if (mountedRef.current) return;
+    // Don't run if no API key or already mounted
+    if (!apiKey || mountedRef.current) return;
     mountedRef.current = true;
 
     const loadPayMeSDK = async () => {
@@ -164,8 +165,16 @@ export default function PayMeHostedFields({
           });
         }
 
-        // Wait a bit for SDK to initialize
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for SDK to be fully initialized (check with polling)
+        let attempts = 0;
+        while (!window.PayMe?.create && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        if (!window.PayMe?.create) {
+          throw new Error('PayMe SDK not available after loading');
+        }
 
         // Create PayMe instance
         const instance = await window.PayMe.create(apiKey, {
@@ -264,7 +273,8 @@ export default function PayMeHostedFields({
     loadPayMeSDK();
 
     return () => {
-      // Cleanup if needed
+      // Cleanup - reset mounted ref when unmounting
+      mountedRef.current = false;
     };
   }, [apiKey, testMode]);
 
