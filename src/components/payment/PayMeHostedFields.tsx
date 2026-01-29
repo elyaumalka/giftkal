@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader2, CreditCard, Lock, AlertCircle } from "lucide-react";
@@ -130,8 +130,8 @@ export default function PayMeHostedFields({
                       fieldStates.cardExpiration.isValid && 
                       fieldStates.cvc.isValid;
 
-  // Field styling for hosted fields
-  const fieldStyles = {
+  // Field styling for hosted fields - memoized to prevent re-initialization
+  const fieldStyles = useMemo(() => ({
     base: {
       'color': '#051839',
       'font-size': '16px',
@@ -146,7 +146,7 @@ export default function PayMeHostedFields({
     valid: {
       'color': '#059669',
     },
-  };
+  }), []);
 
   // Load PayMe SDK script
   useEffect(() => {
@@ -247,20 +247,31 @@ export default function PayMeHostedFields({
         // Setup event listeners
         const setupFieldEvents = (field: HostedField, fieldName: keyof typeof fieldStates) => {
           field.on('focus', () => {
+            console.log(`[PayMe] ${fieldName} focus`);
             setFieldStates(prev => ({
               ...prev,
               [fieldName]: { ...prev[fieldName], isFocused: true },
             }));
           });
 
-          field.on('blur', () => {
+          field.on('blur', (e: FieldEvent) => {
+            console.log(`[PayMe] ${fieldName} blur, isValid:`, e.isValid);
             setFieldStates(prev => ({
               ...prev,
-              [fieldName]: { ...prev[fieldName], isFocused: false },
+              [fieldName]: { ...prev[fieldName], isFocused: false, isValid: e.isValid, hasValue: true },
             }));
           });
 
           field.on('validity-changed', (e: FieldEvent) => {
+            console.log(`[PayMe] ${fieldName} validity-changed, isValid:`, e.isValid, 'message:', e.message);
+            setFieldStates(prev => ({
+              ...prev,
+              [fieldName]: { ...prev[fieldName], isValid: e.isValid, hasValue: true },
+            }));
+          });
+
+          field.on('change', (e: FieldEvent) => {
+            console.log(`[PayMe] ${fieldName} change, isValid:`, e.isValid);
             setFieldStates(prev => ({
               ...prev,
               [fieldName]: { ...prev[fieldName], isValid: e.isValid, hasValue: true },
