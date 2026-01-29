@@ -12,10 +12,11 @@ import { Gift, Heart, CreditCard, Check, ArrowLeft, Sparkles, Loader2, X } from 
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
+import PayMeHostedFields from "@/components/payment/PayMeHostedFields";
 
 const GIFT_AMOUNTS = [100, 200, 300, 500, 1000];
 
-type Step = "amount" | "payment" | "blessing" | "processing" | "success" | "failed";
+type Step = "amount" | "details" | "blessing" | "card-payment" | "processing" | "success" | "failed";
 
 // Blessing card designs
 const BLESSING_DESIGNS = [
@@ -39,9 +40,9 @@ export default function GiftScreen() {
   const [selectedInstallments, setSelectedInstallments] = useState(1);
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [paymentIframeUrl, setPaymentIframeUrl] = useState<string | null>(null);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
+  const [paymeApiKey, setPaymeApiKey] = useState<string | null>(null);
+  const [paymeTestMode, setPaymeTestMode] = useState(true);
+  const [blessingImageUrl, setBlessingImageUrl] = useState<string | null>(null);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
 
@@ -58,68 +59,23 @@ export default function GiftScreen() {
     }
   }, [searchParams]);
 
-  // Listen for messages from PayMe iframe
-  const handlePaymentMessage = useCallback((event: MessageEvent) => {
-    // PayMe sends messages when payment is complete
-    console.log('Received message from iframe:', event.data);
-    
-    // Check for PayMe specific messages
-    if (event.data?.type === 'payme_success' || event.data?.status === 'success') {
-      setShowPaymentDialog(false);
-      setPaymentIframeUrl(null);
-      setStep('success');
-    } else if (event.data?.type === 'payme_failed' || event.data?.status === 'failed') {
-      setShowPaymentDialog(false);
-      setPaymentIframeUrl(null);
-      setPaymentError('התשלום נכשל. אנא נסו שוב.');
-      setStep('failed');
-    }
-  }, []);
-
+  // Fetch PayMe API key
   useEffect(() => {
-    window.addEventListener('message', handlePaymentMessage);
-    return () => window.removeEventListener('message', handlePaymentMessage);
-  }, [handlePaymentMessage]);
-
-  // Poll for transaction status when payment dialog is open
-  useEffect(() => {
-    if (!showPaymentDialog || !currentTransactionId) return;
-
-    const checkTransactionStatus = async () => {
+    const fetchPaymeKey = async () => {
       try {
-        const { data: transaction } = await supabase
-          .from('transactions')
-          .select('payment_status')
-          .eq('id', currentTransactionId)
-          .maybeSingle();
-
-        console.log('Polling transaction status:', transaction?.payment_status);
-
-        if (transaction?.payment_status === 'completed') {
-          setShowPaymentDialog(false);
-          setPaymentIframeUrl(null);
-          setStep('success');
-        } else if (transaction?.payment_status === 'failed') {
-          setShowPaymentDialog(false);
-          setPaymentIframeUrl(null);
-          setPaymentError('התשלום נכשל. אנא נסו שוב.');
-          setStep('failed');
+        const { data, error } = await supabase.functions.invoke('get-payme-key');
+        if (data?.clientKey) {
+          setPaymeApiKey(data.clientKey);
+          setPaymeTestMode(data.testMode ?? true);
         }
       } catch (error) {
-        console.error('Error checking transaction status:', error);
+        console.error('Failed to fetch PayMe key:', error);
       }
     };
+    fetchPaymeKey();
+  }, []);
 
-    // Check immediately
-    checkTransactionStatus();
-
-    // Then poll every 3 seconds
-    const interval = setInterval(checkTransactionStatus, 3000);
-
-    return () => clearInterval(interval);
-  }, [showPaymentDialog, currentTransactionId]);
-
-  // Fetch event details - get the nearest upcoming event for venue
+  // Fetch event details
   const { data: event, isLoading } = useQuery({
     queryKey: ["event-public", eventId],
     queryFn: async () => {
@@ -184,20 +140,14 @@ export default function GiftScreen() {
     }
   };
 
-  // PayMe payment mutation
-  const initiatePayment = useMutation({
-    mutationFn: async () => {
+  // Charge token mutation (for Hosted Fields)
+  const chargeToken = useMutation({
+    mutationFn: async (token: string) => {
       const amount = selectedAmount || Number(customAmount);
       
-      // Save blessing card as image first and get the URL
-      const blessingImageUrl = await saveBlessingAsImage();
-      
-      // Build return URL with success/failure params
-      const baseUrl = window.location.origin;
-      const returnUrl = `${baseUrl}/gift/${eventId}?payment_status=success&transaction_id={transaction_id}`;
-      
-      const response = await supabase.functions.invoke('payme-generate-sale', {
+      const response = await supabase.functions.invoke('payme-charge-token', {
         body: {
+          token,
           eventId,
           amount,
           payerName,
@@ -206,29 +156,22 @@ export default function GiftScreen() {
           relationship: relationship || undefined,
           blessing: blessing || undefined,
           blessingImageUrl: blessingImageUrl || undefined,
-          installments: selectedInstallments, // Pass selected installments
-          returnUrl,
+          installments: selectedInstallments,
         },
       });
 
       if (response.error) {
-        throw new Error(response.error.message || 'שגיאה ביצירת התשלום');
+        throw new Error(response.error.message || 'שגיאה בביצוע התשלום');
       }
 
       if (!response.data?.success) {
-        throw new Error(response.data?.error || 'שגיאה ביצירת התשלום');
+        throw new Error(response.data?.error || 'שגיאה בביצוע התשלום');
       }
 
       return response.data;
     },
-    onSuccess: (data) => {
-      // Open PayMe payment page in iframe dialog
-      if (data.saleUrl) {
-        setPaymentIframeUrl(data.saleUrl);
-        setCurrentTransactionId(data.transactionId);
-        setShowPaymentDialog(true);
-        setStep("payment"); // Reset step so user can see the dialog
-      }
+    onSuccess: () => {
+      setStep("success");
     },
     onError: (error: Error) => {
       setPaymentError(error.message);
@@ -237,7 +180,6 @@ export default function GiftScreen() {
         description: error.message,
         variant: "destructive",
       });
-      setStep("payment");
     },
   });
 
@@ -245,7 +187,7 @@ export default function GiftScreen() {
   const createTransaction = useMutation({
     mutationFn: async () => {
       // Save blessing card as image first
-      const blessingImageUrl = await saveBlessingAsImage();
+      const imageUrl = await saveBlessingAsImage();
       
       const amount = selectedAmount || Number(customAmount);
       const { error } = await supabase.from("transactions").insert({
@@ -257,8 +199,8 @@ export default function GiftScreen() {
         amount,
         relationship,
         blessing_text: blessing,
-        receipt_url: blessingImageUrl, // Store blessing image URL here
-        payment_status: 'completed', // Legacy: no payment processing
+        receipt_url: imageUrl,
+        payment_status: 'completed',
       });
       if (error) throw error;
     },
@@ -276,20 +218,39 @@ export default function GiftScreen() {
 
   const finalAmount = selectedAmount || Number(customAmount);
 
-  const handlePayment = () => {
-    // Navigate to blessing step first
+  const handleProceedToBlessing = () => {
     setStep("blessing");
   };
 
-  const handleSubmit = () => {
-    // Check if event has PayMe configured
-    if (event?.seller_payme_id) {
-      setStep("processing");
-      initiatePayment.mutate();
+  const handleProceedToPayment = async () => {
+    // Save blessing image first
+    setStep("processing");
+    const imageUrl = await saveBlessingAsImage();
+    setBlessingImageUrl(imageUrl);
+    
+    // Check if Hosted Fields is available
+    if (event?.seller_payme_id && paymeApiKey) {
+      setStep("card-payment");
+    } else if (event?.seller_payme_id) {
+      // Fallback - no API key available
+      toast({
+        title: "שגיאה",
+        description: "מערכת התשלום לא זמינה כרגע",
+        variant: "destructive",
+      });
+      setStep("blessing");
     } else {
-      // Fallback to legacy mode without payment processing
+      // No PayMe configured - legacy mode
       createTransaction.mutate();
     }
+  };
+
+  const handleTokenize = (token: string) => {
+    chargeToken.mutate(token);
+  };
+
+  const handlePaymentError = (error: string) => {
+    setPaymentError(error);
   };
 
   if (isLoading) {
@@ -439,24 +400,24 @@ export default function GiftScreen() {
               <Button
                 className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white shadow-lg"
                 disabled={!finalAmount || finalAmount <= 0}
-                onClick={() => setStep("payment")}
+                onClick={() => setStep("details")}
               >
-                המשך לתשלום
+                המשך
                 <ArrowLeft className="w-5 h-5 mr-2" />
               </Button>
             </div>
           )}
 
-          {/* Step: Payment */}
-          {step === "payment" && (
+          {/* Step: Payer Details */}
+          {step === "details" && (
             <div className="p-6 md:p-8 space-y-6 animate-fade-in">
               <div className="text-center">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#051839] to-[#0A2F5C] flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <CreditCard className="w-8 h-8 text-white" />
+                  <Heart className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-[#051839]">פרטי תשלום</h2>
+                <h2 className="text-2xl font-bold text-[#051839]">פרטי השולח</h2>
                 <div className="inline-block bg-[#C4A35A]/10 px-4 py-2 rounded-full mt-2">
-                  <span className="text-[#5A4A2A]">סכום לתשלום: </span>
+                  <span className="text-[#5A4A2A]">סכום המתנה: </span>
                   <span className="font-bold text-[#C4A35A] text-xl">₪{finalAmount}</span>
                 </div>
               </div>
@@ -541,11 +502,11 @@ export default function GiftScreen() {
                   חזרה
                 </Button>
                 <Button
-                  onClick={handlePayment}
+                  onClick={handleProceedToBlessing}
                   disabled={!payerName}
                   className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
                 >
-                  שלם ₪{finalAmount}
+                  המשך לברכה
                 </Button>
               </div>
             </div>
@@ -634,28 +595,57 @@ export default function GiftScreen() {
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => setStep("payment")}
+                  onClick={() => setStep("details")}
                   className="flex-1 h-12 rounded-xl border-2"
                 >
                   חזרה
                 </Button>
                 <Button
-                  onClick={handleSubmit}
+                  onClick={handleProceedToPayment}
                   className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
-                  disabled={createTransaction.isPending || initiatePayment.isPending}
+                  disabled={createTransaction.isPending}
                 >
-                  {(createTransaction.isPending || initiatePayment.isPending) ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      מעבד...
-                    </>
-                  ) : event?.seller_payme_id ? (
-                    `שלם ₪${finalAmount} ושלח ברכה`
-                  ) : (
-                    "שלח ברכה"
-                  )}
+                  {event?.seller_payme_id ? `שלם ₪${finalAmount}` : "שלח ברכה"}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Step: Card Payment with Hosted Fields */}
+          {step === "card-payment" && paymeApiKey && (
+            <div className="p-6 md:p-8 space-y-6 animate-fade-in">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#051839] to-[#0A2F5C] flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <CreditCard className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-[#051839]">תשלום מאובטח</h2>
+                <div className="inline-block bg-[#C4A35A]/10 px-4 py-2 rounded-full mt-2">
+                  <span className="text-[#5A4A2A]">סכום לתשלום: </span>
+                  <span className="font-bold text-[#C4A35A] text-xl">₪{finalAmount}</span>
+                </div>
+              </div>
+
+              <PayMeHostedFields
+                apiKey={paymeApiKey}
+                testMode={paymeTestMode}
+                amount={finalAmount}
+                payerName={payerName}
+                payerEmail={payerEmail}
+                payerPhone={payerPhone}
+                productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
+                onTokenize={handleTokenize}
+                onError={handlePaymentError}
+                disabled={chargeToken.isPending}
+              />
+
+              <Button
+                variant="outline"
+                onClick={() => setStep("blessing")}
+                className="w-full h-12 rounded-xl border-2"
+                disabled={chargeToken.isPending}
+              >
+                חזרה
+              </Button>
             </div>
           )}
 
@@ -667,9 +657,9 @@ export default function GiftScreen() {
               </div>
               
               <div>
-                <h2 className="text-2xl font-bold text-[#051839]">מעבד את התשלום...</h2>
+                <h2 className="text-2xl font-bold text-[#051839]">מעבד...</h2>
                 <p className="text-[#5A4A2A] mt-2">
-                  מעבירים אתכם לדף התשלום המאובטח
+                  שומר את הברכה שלכם
                 </p>
               </div>
             </div>
@@ -690,7 +680,7 @@ export default function GiftScreen() {
               </div>
 
               <Button
-                onClick={() => setStep("payment")}
+                onClick={() => setStep("card-payment")}
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
               >
                 נסה שוב
@@ -738,96 +728,6 @@ export default function GiftScreen() {
           <p>מופעל על ידי Giftkal</p>
         </div>
       </div>
-
-      {/* PayMe Payment Iframe Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={(open) => {
-        if (!open) {
-          // User closed dialog - check if payment was completed
-          setShowPaymentDialog(false);
-          setPaymentIframeUrl(null);
-          // Optional: Could check transaction status here
-        }
-      }}>
-        <DialogContent className="max-w-lg w-full h-[90vh] max-h-[700px] p-0 overflow-hidden" dir="rtl">
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-[#051839] to-[#0A2F5C]">
-              <h3 className="text-white font-bold flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                תשלום מאובטח
-              </h3>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="text-white hover:bg-white/20"
-                onClick={() => {
-                  setShowPaymentDialog(false);
-                  setPaymentIframeUrl(null);
-                }}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-            
-            {/* Iframe */}
-            <div className="flex-1 relative bg-white">
-              {paymentIframeUrl ? (
-                <iframe
-                  src={paymentIframeUrl}
-                  className="w-full h-full border-0"
-                  title="PayMe Payment"
-                  allow="payment *"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#C4A35A]" />
-                </div>
-              )}
-            </div>
-
-            {/* Footer with check status button */}
-            <div className="p-4 border-t bg-gray-50">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">
-                  אחרי השלמת התשלום, לחצו על הכפתור
-                </p>
-                <Button
-                  onClick={async () => {
-                    // Check transaction status
-                    if (currentTransactionId) {
-                      const { data: transaction } = await supabase
-                        .from('transactions')
-                        .select('payment_status')
-                        .eq('id', currentTransactionId)
-                        .maybeSingle();
-                      
-                      if (transaction?.payment_status === 'completed') {
-                        setShowPaymentDialog(false);
-                        setPaymentIframeUrl(null);
-                        setStep('success');
-                      } else if (transaction?.payment_status === 'failed') {
-                        setShowPaymentDialog(false);
-                        setPaymentIframeUrl(null);
-                        setStep('failed');
-                      } else {
-                        toast({
-                          title: "ממתין לאישור",
-                          description: "התשלום עדיין בתהליך, נסו שוב בעוד רגע",
-                        });
-                      }
-                    }
-                  }}
-                  className="bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white"
-                >
-                  <Check className="w-4 h-4 ml-2" />
-                  סיימתי לשלם
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
