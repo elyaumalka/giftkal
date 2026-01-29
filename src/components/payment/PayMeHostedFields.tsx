@@ -383,14 +383,6 @@ export default function PayMeHostedFields({
         </div>
       )}
 
-      {/* Test Mode Badge */}
-      {!isLoading && testMode && (
-        <div className="bg-amber-100 border border-amber-300 rounded-lg p-3 flex items-center justify-center gap-2">
-          <span className="text-amber-800 font-semibold text-sm">🧪 TEST MODE IS ON</span>
-          <span className="text-amber-600 text-xs">- לא יתבצעו חיובים אמיתיים</span>
-        </div>
-      )}
-
       {/* Security Badge - only show when loaded */}
       {!isLoading && (
         <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
