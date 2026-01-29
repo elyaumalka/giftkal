@@ -7,6 +7,7 @@ import NotFound from "./pages/NotFound";
 
 // Auth
 import Login from "./pages/auth/Login";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -54,6 +55,7 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/gift/:eventId" element={<GiftScreen />} />
           <Route path="/event/:eventId/payme-setup" element={<PaymeSetup />} />
           <Route path="/landing/:venueId" element={<VenueLanding />} />
