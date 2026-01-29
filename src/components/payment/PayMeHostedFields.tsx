@@ -278,10 +278,11 @@ export default function PayMeHostedFields({
             }));
           });
 
-          field.on('keyup', () => {
+          field.on('keyup', (e: FieldEvent) => {
+            console.log(`[PayMe] ${fieldName} keyup, isValid:`, e.isValid);
             setFieldStates(prev => ({
               ...prev,
-              [fieldName]: { ...prev[fieldName], hasValue: true },
+              [fieldName]: { ...prev[fieldName], isValid: e.isValid, hasValue: true },
             }));
           });
         };
