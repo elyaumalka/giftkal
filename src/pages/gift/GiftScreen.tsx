@@ -112,8 +112,13 @@ export default function GiftScreen() {
       
       if (!blob) return null;
       
-      // Generate unique filename
-      const fileName = `blessings/${eventId}/${Date.now()}-${payerName.replace(/\s+/g, '_')}.png`;
+      // Generate unique filename - use only ASCII characters for Supabase Storage compatibility
+      const safePayerName = payerName
+        .replace(/[^\w\s-]/g, '') // Remove non-word characters except spaces and dashes
+        .replace(/\s+/g, '_')     // Replace spaces with underscores
+        .substring(0, 50)         // Limit length
+        || 'guest';               // Fallback if empty
+      const fileName = `blessings/${eventId}/${Date.now()}-${safePayerName}.png`;
       
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
