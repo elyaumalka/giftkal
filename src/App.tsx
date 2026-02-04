@@ -9,6 +9,9 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
 
+// Landing
+import HomePage from "./pages/landing/HomePage";
+
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -53,7 +56,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/gift/:eventId" element={<GiftScreen />} />
