@@ -75,7 +75,7 @@ const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#051839] via-[#0a2d5c] to-[#051839]" />
+      <div className="absolute inset-0 bg-sidebar" />
       
       {/* Glassmorphism overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-white/10" />
@@ -333,7 +333,7 @@ const SocialProofSection = () => {
   const guestsCounter = useCounter(50000, 2000);
 
   return (
-    <section className="py-20 bg-gradient-to-br from-[#051839] via-[#0a2d5c] to-[#051839] text-white">
+    <section className="py-20 bg-sidebar text-white">
       <div className="container mx-auto px-4">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
           המספרים <span className="text-gradient-gold">מדברים</span>
@@ -619,7 +619,7 @@ const CTASection = () => {
 // Footer
 const Footer = () => {
   return (
-    <footer className="bg-secondary py-12">
+    <footer className="bg-sidebar py-12">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Logo & Description */}
