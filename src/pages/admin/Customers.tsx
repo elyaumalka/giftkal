@@ -85,8 +85,8 @@ export default function Customers() {
       const ownerIds = data.map(v => v.owner_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name")
-        .in("id", ownerIds);
+        .select("user_id, full_name")
+        .in("user_id", ownerIds);
       
       // Get transaction totals per venue
       const venueIds = data.map(v => v.id);
@@ -106,7 +106,7 @@ export default function Customers() {
         
         return {
           ...venue,
-          ownerName: profiles?.find(p => p.id === venue.owner_id)?.full_name || "לא ידוע",
+          ownerName: profiles?.find(p => p.user_id === venue.owner_id)?.full_name || "לא ידוע",
           deviceCount: venue.devices?.length || 0,
           venueCount: 1,
           totalTransactions,
