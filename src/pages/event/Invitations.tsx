@@ -12,6 +12,7 @@ import { useAudioHandler } from "@/components/invitations/useAudioHandler";
 import html2canvas from "html2canvas";
 
 type Step = 1 | 2 | 3;
+type EventType = "חתונה" | "אירוסין" | "בר מצווה" | "בת מצווה" | "ברית" | "אחר";
 
 export default function EventInvitations() {
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -20,21 +21,25 @@ export default function EventInvitations() {
   const queryClient = useQueryClient();
   const templateRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Form state for step 1
+  // Form state
+  const [eventType, setEventType] = useState<EventType>("חתונה");
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
+  const [childName, setChildName] = useState("");
+  const [familyName, setFamilyName] = useState("");
   const [groomParents, setGroomParents] = useState("");
   const [brideParents, setBrideParents] = useState("");
-  const [groomGrandparents, setGroomGrandparents] = useState("");
-  const [brideGrandparents, setBrideGrandparents] = useState("");
+  const [receptionTime, setReceptionTime] = useState("");
+  const [ceremonyTime, setCeremonyTime] = useState("");
   const [introText, setIntroText] = useState("");
+  const [notes, setNotes] = useState("");
+  const [venueName, setVenueName] = useState("");
+  const [venueLocation, setVenueLocation] = useState("");
   const [voiceText, setVoiceText] = useState("");
-  
-  // File input refs
+
   const excelInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch event data
   const { data: event } = useQuery({
     queryKey: ["event-invitations"],
     queryFn: async () => {
@@ -43,7 +48,7 @@ export default function EventInvitations() {
 
       const { data } = await supabase
         .from("events")
-        .select("*")
+        .select("*, venues(name, address)")
         .eq("owner_id", user.id)
         .maybeSingle();
 
@@ -52,48 +57,35 @@ export default function EventInvitations() {
         setBrideName(data.bride_name || "");
         setGroomParents(data.groom_parents || "");
         setBrideParents(data.bride_parents || "");
-        setGroomGrandparents(data.groom_grandparents || "");
-        setBrideGrandparents(data.bride_grandparents || "");
         setIntroText(data.invitation_text || "");
+        if (data.event_type) setEventType(data.event_type as EventType);
+        // Load venue info
+        const v = data.venues as any;
+        if (v) {
+          setVenueName(v.name || "");
+          setVenueLocation(v.address || "");
+        }
       }
 
       return data;
     },
   });
 
-  // Fetch guests
   const { data: guests, refetch: refetchGuests } = useQuery({
     queryKey: ["event-guests"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
-
-      const { data: eventData } = await supabase
-        .from("events")
-        .select("id")
-        .eq("owner_id", user.id)
-        .maybeSingle();
-
+      const { data: eventData } = await supabase.from("events").select("id").eq("owner_id", user.id).maybeSingle();
       if (!eventData) return [];
-
-      const { data } = await supabase
-        .from("guests")
-        .select("*")
-        .eq("event_id", eventData.id);
-
+      const { data } = await supabase.from("guests").select("*").eq("event_id", eventData.id);
       return data || [];
     },
   });
 
-  // Excel handler
-  const { downloadSampleExcel, handleExcelUpload } = useExcelHandler(event?.id, () => {
-    refetchGuests();
-  });
-
-  // Audio handler
+  const { downloadSampleExcel, handleExcelUpload } = useExcelHandler(event?.id, () => refetchGuests());
   const { audioFile, audioUrl, isUploading, handleAudioUpload, removeAudio } = useAudioHandler(event?.id);
 
-  // Save event data
   const saveEventData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !event?.id) return;
@@ -101,67 +93,45 @@ export default function EventInvitations() {
     await supabase
       .from("events")
       .update({
+        event_type: eventType,
         groom_name: groomName,
         bride_name: brideName,
         groom_parents: groomParents,
         bride_parents: brideParents,
-        groom_grandparents: groomGrandparents,
-        bride_grandparents: brideGrandparents,
         invitation_text: introText,
       })
       .eq("id", event.id);
   };
 
   const handleNextStep = async () => {
-    if (currentStep === 1) {
-      await saveEventData();
-      setCurrentStep(2);
-    } else if (currentStep === 2) {
-      setCurrentStep(3);
-    }
+    if (currentStep === 1) { await saveEventData(); setCurrentStep(2); }
+    else if (currentStep === 2) { setCurrentStep(3); }
   };
 
   const handlePrevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => (prev - 1) as Step);
-    }
+    if (currentStep > 1) setCurrentStep((prev) => (prev - 1) as Step);
   };
 
   const handleExcelFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      handleExcelUpload(file);
-    }
+    if (file) handleExcelUpload(file);
   };
 
   const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      handleAudioUpload(file);
-    }
+    if (file) handleAudioUpload(file);
   };
 
   const downloadInvitation = async () => {
-    if (selectedTemplate === null) {
-      toast({ title: "נא לבחור תבנית הזמנה", variant: "destructive" });
-      return;
-    }
-
+    if (selectedTemplate === null) { toast({ title: "נא לבחור תבנית הזמנה", variant: "destructive" }); return; }
     const templateRef = templateRefs.current[selectedTemplate];
     if (!templateRef) return;
-
     try {
-      const canvas = await html2canvas(templateRef, {
-        scale: 2,
-        backgroundColor: null,
-        useCORS: true,
-      });
-
+      const canvas = await html2canvas(templateRef, { scale: 2, backgroundColor: null, useCORS: true });
       const link = document.createElement("a");
-      link.download = `הזמנה_${groomName}_${brideName}.png`;
+      link.download = `הזמנה.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
-
       toast({ title: "ההזמנה הורדה בהצלחה!" });
     } catch (error) {
       console.error("Error downloading invitation:", error);
@@ -170,28 +140,45 @@ export default function EventInvitations() {
   };
 
   const handleSendInvitations = () => {
-    if (selectedTemplate === null) {
-      toast({ title: "נא לבחור תבנית הזמנה", variant: "destructive" });
-      return;
-    }
+    if (selectedTemplate === null) { toast({ title: "נא לבחור תבנית הזמנה", variant: "destructive" }); return; }
     toast({ title: "ההזמנות נשלחו בהצלחה!", description: `נשלחו ${guests?.length || 0} הזמנות` });
   };
 
+  const isWeddingType = eventType === "חתונה" || eventType === "אירוסין";
+  const isBarBatMitzvah = eventType === "בר מצווה" || eventType === "בת מצווה";
+
   const templateData = {
+    eventType,
     groomName,
     brideName,
+    childName,
+    familyName,
     groomParents,
     brideParents,
-    groomGrandparents,
-    brideGrandparents,
+    groomGrandparents: "",
+    brideGrandparents: "",
+    receptionTime,
+    ceremonyTime,
     eventDate: event?.event_date ? new Date(event.event_date).toLocaleDateString("he-IL") : "",
     introText,
+    notes,
+    venueName,
+    venueLocation,
   };
 
   const steps = [
     { id: 1, label: "שלב א:", title: "פרטי האירוע" },
     { id: 2, label: "שלב ב:", title: "בחירת מוזמנים" },
     { id: 3, label: "שלב ג:", title: "בחירת עיצוב" },
+  ];
+
+  const eventTypes: { value: EventType; label: string }[] = [
+    { value: "חתונה", label: "חתונה" },
+    { value: "אירוסין", label: "אירוסין" },
+    { value: "בר מצווה", label: "בר מצווה" },
+    { value: "בת מצווה", label: "בת מצווה" },
+    { value: "ברית", label: "ברית" },
+    { value: "אחר", label: "אחר" },
   ];
 
   return (
@@ -215,67 +202,109 @@ export default function EventInvitations() {
         ))}
       </div>
 
-      {/* Step 1: Form - פרטי האירוע */}
+      {/* Step 1: פרטי האירוע */}
       {currentStep === 1 && (
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4" dir="rtl">
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-sm">שם החתן</Label>
-              <Input
-                value={groomName}
-                onChange={(e) => setGroomName(e.target.value)}
-                placeholder="שם החתן"
-                className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-sm">שם הכלה</Label>
-              <Input
-                value={brideName}
-                onChange={(e) => setBrideName(e.target.value)}
-                placeholder="שם הכלה"
-                className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-sm">הורי החתן</Label>
-              <Input
-                value={groomParents}
-                onChange={(e) => setGroomParents(e.target.value)}
-                placeholder="שם אב ואם החתן"
-                className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-sm">הורי הכלה</Label>
-              <Input
-                value={brideParents}
-                onChange={(e) => setBrideParents(e.target.value)}
-                placeholder="שם אב ואם הכלה"
-                className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-sm">סבי החתן</Label>
-              <Input
-                value={groomGrandparents}
-                onChange={(e) => setGroomGrandparents(e.target.value)}
-                placeholder="שם הסבא והסבתא חתן"
-                className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[#051839] font-medium text-sm">סבי הכלה</Label>
-              <Input
-                value={brideGrandparents}
-                onChange={(e) => setBrideGrandparents(e.target.value)}
-                placeholder="שם הסבא והסבתא כלה"
-                className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm"
-              />
+        <div className="bg-white rounded-xl shadow-sm p-6 space-y-5" dir="rtl">
+          {/* Event Type Selector */}
+          <div className="space-y-2">
+            <Label className="text-[#051839] font-medium text-sm">סוג אירוע</Label>
+            <div className="flex flex-wrap gap-2">
+              {eventTypes.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => setEventType(t.value)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                    eventType === t.value
+                      ? "bg-[#051839] text-white border-[#051839]"
+                      : "bg-gray-50 text-[#051839] border-gray-200 hover:bg-gray-100"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="space-y-2" dir="rtl">
+          {/* Dynamic Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {isWeddingType && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">שם החתן</Label>
+                  <Input value={groomName} onChange={(e) => setGroomName(e.target.value)} placeholder="שם החתן" className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">שם הכלה</Label>
+                  <Input value={brideName} onChange={(e) => setBrideName(e.target.value)} placeholder="שם הכלה" className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">הורי החתן</Label>
+                  <Input value={groomParents} onChange={(e) => setGroomParents(e.target.value)} placeholder="שם אב ואם החתן" className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">הורי הכלה</Label>
+                  <Input value={brideParents} onChange={(e) => setBrideParents(e.target.value)} placeholder="שם אב ואם הכלה" className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">שעת קבלת פנים</Label>
+                  <Input type="time" value={receptionTime} onChange={(e) => setReceptionTime(e.target.value)} className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">שעת חופה</Label>
+                  <Input type="time" value={ceremonyTime} onChange={(e) => setCeremonyTime(e.target.value)} className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+              </>
+            )}
+
+            {isBarBatMitzvah && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">
+                    {eventType === "בר מצווה" ? "שם חתן הבר מצווה" : "שם הילדה"}
+                  </Label>
+                  <Input value={childName} onChange={(e) => setChildName(e.target.value)} placeholder={eventType === "בר מצווה" ? "שם חתן הבר מצווה" : "שם בת המצווה"} className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">שם המשפחה המזמינה</Label>
+                  <Input value={familyName} onChange={(e) => setFamilyName(e.target.value)} placeholder="שם המשפחה" className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">שעת קבלת פנים</Label>
+                  <Input type="time" value={receptionTime} onChange={(e) => setReceptionTime(e.target.value)} className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+              </>
+            )}
+
+            {(eventType === "ברית" || eventType === "אחר") && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">שם הילד/ה</Label>
+                  <Input value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="שם הילד/ה" className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">שם המשפחה המזמינה</Label>
+                  <Input value={familyName} onChange={(e) => setFamilyName(e.target.value)} placeholder="שם המשפחה" className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#051839] font-medium text-sm">שעת האירוע</Label>
+                  <Input type="time" value={receptionTime} onChange={(e) => setReceptionTime(e.target.value)} className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+                </div>
+              </>
+            )}
+
+            {/* Venue fields - always shown */}
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium text-sm">שם האולם</Label>
+              <Input value={venueName} onChange={(e) => setVenueName(e.target.value)} placeholder="שם האולם / מקום האירוע" className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[#051839] font-medium text-sm">מיקום האולם</Label>
+              <Input value={venueLocation} onChange={(e) => setVenueLocation(e.target.value)} placeholder="כתובת האולם" className="rounded-lg border-gray-200 bg-gray-50 text-right text-sm" />
+            </div>
+          </div>
+
+          {/* Intro text */}
+          <div className="space-y-2">
             <Label className="text-[#051839] font-medium text-sm">טקסט מקדים להזמנה</Label>
             <Textarea
               value={introText}
@@ -285,19 +314,24 @@ export default function EventInvitations() {
             />
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-4" dir="rtl">
-            <button
-              disabled
-              className="bg-[#C41E3A] text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 opacity-50 cursor-not-allowed"
-            >
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label className="text-[#051839] font-medium text-sm">הערות</Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="הערות נוספות להזמנה..."
+              className="rounded-lg border-gray-200 bg-gray-50 text-right min-h-[60px] text-sm"
+            />
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between pt-4">
+            <button disabled className="bg-[#C41E3A] text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 opacity-50 cursor-not-allowed">
               <ArrowRight className="w-4 h-4" />
               לשלב הקודם
             </button>
-            <button
-              onClick={handleNextStep}
-              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors"
-            >
+            <button onClick={handleNextStep} className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors">
               לשלב הבא
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -309,18 +343,8 @@ export default function EventInvitations() {
       {currentStep === 2 && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
-            {/* העלאת קובץ שמע */}
-            <div 
-              onClick={() => audioInputRef.current?.click()}
-              className="bg-[#051839] rounded-xl p-4 text-white cursor-pointer hover:bg-[#08275E] transition-colors"
-            >
-              <input
-                ref={audioInputRef}
-                type="file"
-                accept="audio/*"
-                onChange={handleAudioFileChange}
-                className="hidden"
-              />
+            <div onClick={() => audioInputRef.current?.click()} className="bg-[#051839] rounded-xl p-4 text-white cursor-pointer hover:bg-[#08275E] transition-colors">
+              <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioFileChange} className="hidden" />
               <div className="flex items-center justify-center gap-2">
                 <Music className="w-5 h-5" />
                 <h3 className="font-medium text-sm">העלאת קובץ שמע</h3>
@@ -330,25 +354,12 @@ export default function EventInvitations() {
                 <div className="mt-2 flex items-center justify-center gap-2 text-green-400 text-xs">
                   <Check className="w-4 h-4" />
                   <span>{audioFile.name}</span>
-                  <button onClick={(e) => { e.stopPropagation(); removeAudio(); }} className="text-red-400 hover:text-red-300">
-                    <X className="w-4 h-4" />
-                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); removeAudio(); }} className="text-red-400 hover:text-red-300"><X className="w-4 h-4" /></button>
                 </div>
               )}
             </div>
-
-            {/* העלאת אקסל */}
-            <div 
-              onClick={() => excelInputRef.current?.click()}
-              className="bg-[#051839] rounded-xl p-4 text-white cursor-pointer hover:bg-[#08275E] transition-colors"
-            >
-              <input
-                ref={excelInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleExcelFileChange}
-                className="hidden"
-              />
+            <div onClick={() => excelInputRef.current?.click()} className="bg-[#051839] rounded-xl p-4 text-white cursor-pointer hover:bg-[#08275E] transition-colors">
+              <input ref={excelInputRef} type="file" accept=".xlsx,.xls" onChange={handleExcelFileChange} className="hidden" />
               <div className="flex items-center justify-center gap-2">
                 <FileSpreadsheet className="w-5 h-5" />
                 <h3 className="font-medium text-sm">העלאת רשימת מוזמנים</h3>
@@ -358,22 +369,11 @@ export default function EventInvitations() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
-            {/* טקסט למערכת קולית */}
             <div className="bg-gray-100 rounded-xl p-4">
               <p className="text-[#051839] font-medium text-sm mb-2">טקסט להזמנה קולית</p>
-              <Textarea
-                value={voiceText}
-                onChange={(e) => setVoiceText(e.target.value)}
-                placeholder="הזן את הטקסט להזמנה קולית..."
-                className="rounded-lg border-gray-200 bg-white text-right min-h-[70px] text-sm"
-              />
+              <Textarea value={voiceText} onChange={(e) => setVoiceText(e.target.value)} placeholder="הזן את הטקסט להזמנה קולית..." className="rounded-lg border-gray-200 bg-white text-right min-h-[70px] text-sm" />
             </div>
-
-            {/* הורדת קובץ דוגמה */}
-            <div 
-              onClick={downloadSampleExcel}
-              className="bg-[#C41E3A] rounded-xl p-4 text-white flex items-center justify-center cursor-pointer hover:bg-[#C41E3A]/90 transition-colors"
-            >
+            <div onClick={downloadSampleExcel} className="bg-[#C41E3A] rounded-xl p-4 text-white flex items-center justify-center cursor-pointer hover:bg-[#C41E3A]/90 transition-colors">
               <div className="flex items-center gap-2">
                 <Download className="w-5 h-5" />
                 <span className="font-medium text-sm">הורדת קובץ דוגמה</span>
@@ -381,28 +381,18 @@ export default function EventInvitations() {
             </div>
           </div>
 
-          {/* מידע על מוזמנים */}
           {guests && guests.length > 0 && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center" dir="rtl">
-              <p className="text-green-700 font-medium">
-                נמצאו {guests.length} מוזמנים ברשימה
-              </p>
+              <p className="text-green-700 font-medium">נמצאו {guests.length} מוזמנים ברשימה</p>
             </div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex items-center justify-between pt-4" dir="rtl">
-            <button
-              onClick={handlePrevStep}
-              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors"
-            >
+            <button onClick={handlePrevStep} className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors">
               <ArrowRight className="w-4 h-4" />
               לשלב הקודם
             </button>
-            <button
-              onClick={handleNextStep}
-              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors"
-            >
+            <button onClick={handleNextStep} className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors">
               לשלב הבא
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -413,7 +403,6 @@ export default function EventInvitations() {
       {/* Step 3: בחירת עיצוב */}
       {currentStep === 3 && (
         <div className="space-y-4">
-          {/* Templates Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto p-1" dir="rtl">
             {templates.map((template, index) => {
               const TemplateComponent = template.Component;
@@ -421,34 +410,16 @@ export default function EventInvitations() {
                 <div
                   key={template.id}
                   onClick={() => setSelectedTemplate(index)}
-                  className={`relative bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-md ${
-                    selectedTemplate === index ? "ring-2 ring-[#95742F]" : ""
-                  }`}
+                  className={`relative bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-md ${selectedTemplate === index ? "ring-2 ring-[#95742F]" : ""}`}
                 >
-                  {/* Checkbox */}
-                  <div
-                    className={`absolute top-3 left-3 w-5 h-5 rounded border-2 flex items-center justify-center z-10 ${
-                      selectedTemplate === index
-                        ? "bg-[#95742F] border-[#95742F]"
-                        : "border-gray-300 bg-white"
-                    }`}
-                  >
-                    {selectedTemplate === index && (
-                      <Check className="w-3 h-3 text-white" />
-                    )}
+                  <div className={`absolute top-3 left-3 w-5 h-5 rounded border-2 flex items-center justify-center z-10 ${selectedTemplate === index ? "bg-[#95742F] border-[#95742F]" : "border-gray-300 bg-white"}`}>
+                    {selectedTemplate === index && <Check className="w-3 h-3 text-white" />}
                   </div>
-                  
-                  {/* Template Preview - scaled down */}
                   <div className="relative overflow-hidden" style={{ height: "280px" }}>
-                    <div 
-                      ref={(el) => { templateRefs.current[index] = el; }}
-                      className="absolute top-0 left-1/2 -translate-x-1/2 scale-[0.5] origin-top"
-                    >
+                    <div ref={(el) => { templateRefs.current[index] = el; }} className="absolute top-0 left-1/2 -translate-x-1/2 scale-[0.5] origin-top">
                       <TemplateComponent data={templateData} />
                     </div>
                   </div>
-                  
-                  {/* Template Name */}
                   <div className="p-3 bg-white border-t">
                     <h3 className="font-medium text-[#051839] text-center text-sm">{template.name}</h3>
                   </div>
@@ -457,12 +428,8 @@ export default function EventInvitations() {
             })}
           </div>
 
-          {/* Download & Upload */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
-            <button
-              onClick={downloadInvitation}
-              className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
-            >
+            <button onClick={downloadInvitation} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
               <Download className="w-5 h-5 text-[#051839]" />
               <span className="text-[#051839] font-medium text-sm">הורדת ההזמנה כתמונה</span>
             </button>
@@ -472,19 +439,12 @@ export default function EventInvitations() {
             </div>
           </div>
 
-          {/* Navigation Buttons */}
           <div className="flex items-center justify-between pt-4" dir="rtl">
-            <button
-              onClick={handlePrevStep}
-              className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors"
-            >
+            <button onClick={handlePrevStep} className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors">
               <ArrowRight className="w-4 h-4" />
               לשלב הקודם
             </button>
-            <button
-              onClick={handleSendInvitations}
-              className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors"
-            >
+            <button onClick={handleSendInvitations} className="bg-[#95742F] hover:bg-[#95742F]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors">
               שליחת ההזמנות
               <ArrowLeft className="w-4 h-4" />
             </button>
