@@ -193,6 +193,7 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
   const [searchQuery, setSearchQuery] = useState("");
   const [blessingText, setBlessingText] = useState<string | null>(null);
   const [blessingFrom, setBlessingFrom] = useState<string>("");
+  const [blessingImageUrl, setBlessingImageUrl] = useState<string | null>(null);
 
   const filteredTransactions = transactions.filter((t) =>
     t.payer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -304,6 +305,7 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
                 if (transaction.blessing_text) {
                   setBlessingText(transaction.blessing_text);
                   setBlessingFrom(transaction.payer_name);
+                  setBlessingImageUrl(transaction.receipt_url || null);
                 }
               }}
               disabled={!transaction.blessing_text}
@@ -324,12 +326,22 @@ function TransactionsPopup({ event, transactions, onClose }: TransactionsPopupPr
 
       {/* Blessing Dialog */}
       {blessingText && (
-        <Dialog open={!!blessingText} onOpenChange={() => setBlessingText(null)}>
-          <DialogContent>
-            <div className="text-center space-y-4">
-              <h3 className="text-xl font-bold">ברכה מ{blessingFrom}</h3>
-              <p className="text-lg leading-relaxed">{blessingText}</p>
-            </div>
+        <Dialog open={!!blessingText} onOpenChange={() => { setBlessingText(null); setBlessingImageUrl(null); }}>
+          <DialogContent className="max-w-md p-0 overflow-hidden">
+            {blessingImageUrl ? (
+              <div className="flex flex-col items-center">
+                <img 
+                  src={blessingImageUrl} 
+                  alt={`ברכה מ${blessingFrom}`}
+                  className="w-full rounded-lg"
+                />
+              </div>
+            ) : (
+              <div className="text-center space-y-4 p-6">
+                <h3 className="text-xl font-bold">ברכה מ{blessingFrom}</h3>
+                <p className="text-lg leading-relaxed">{blessingText}</p>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       )}
