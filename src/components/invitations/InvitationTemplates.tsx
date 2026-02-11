@@ -1,15 +1,22 @@
 import React, { forwardRef } from "react";
 
-interface InvitationData {
+export interface InvitationData {
+  eventType?: string;
   groomName: string;
   brideName: string;
+  childName?: string;
+  familyName?: string;
   groomParents: string;
   brideParents: string;
   groomGrandparents: string;
   brideGrandparents: string;
+  receptionTime?: string;
+  ceremonyTime?: string;
   eventDate?: string;
   venueName?: string;
+  venueLocation?: string;
   introText: string;
+  notes?: string;
 }
 
 interface TemplateProps {
@@ -71,11 +78,19 @@ const Grandparents = ({ data, color }: { data: InvitationData; color: string }) 
     </div>
   ) : null;
 
-const DateBlock = ({ date, venue, bg, color, rounded = false }: { date?: string; venue?: string; bg?: string; color: string; rounded?: boolean }) => (
+const DateBlock = ({ date, venue, venueLocation, receptionTime, ceremonyTime, bg, color, rounded = false }: { date?: string; venue?: string; venueLocation?: string; receptionTime?: string; ceremonyTime?: string; bg?: string; color: string; rounded?: boolean }) => (
   <div className={`mt-4 px-6 py-2 ${rounded ? "rounded-full" : ""}`} style={{ backgroundColor: bg, color }}>
     <p className="text-base font-semibold">{date || "תאריך האירוע"}</p>
+    {receptionTime && <p className="text-xs mt-0.5 opacity-90">קבלת פנים: {receptionTime}</p>}
+    {ceremonyTime && <p className="text-xs mt-0.5 opacity-90">חופה: {ceremonyTime}</p>}
     {venue && <p className="text-xs mt-0.5 opacity-80">{venue}</p>}
+    {venueLocation && <p className="text-[10px] mt-0.5 opacity-70">{venueLocation}</p>}
   </div>
+);
+
+// Shorthand DateBlock that auto-extracts from data
+const DB = ({ data, bg, color, rounded }: { data: InvitationData; bg?: string; color: string; rounded?: boolean }) => (
+  <DateBlock date={data.eventDate} venue={data.venueName} venueLocation={data.venueLocation} receptionTime={data.receptionTime} ceremonyTime={data.ceremonyTime} bg={bg} color={color} rounded={rounded} />
 );
 
 // ====== TEXT OVERLAY - central positioning ======
@@ -99,7 +114,7 @@ export const Template1 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, re
       <div className="w-16 h-px my-3" style={{ backgroundColor: "#C4A35A" }} />
       <Parents data={data} color="#5A4A3A" />
       <Grandparents data={data} color="#7A6A5A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#8B4B5B" color="#fff" rounded />
+      <DB data={data} bg="#8B4B5B" color="#fff" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -111,7 +126,7 @@ export const Template2 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, re
       <p className="text-xs mb-3 italic" style={{ color: "#6A4A4A" }}>{data.introText || "בשמחה ובהתרגשות"}</p>
       <Names g={data.groomName} b={data.brideName} color="#4A2A3A" size="4xl" sep="♥" sepColor="#D4A0B0" />
       <Parents data={data} color="#6A4A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="rgba(196,163,90,0.9)" color="#fff" />
+      <DB data={data} bg="rgba(196,163,90,0.9)" color="#fff" />
     </Overlay>
   </InvBg>
 ));
@@ -125,7 +140,7 @@ export const Template3 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, re
       <Names g={data.groomName} b={data.brideName} color="#2A2A1A" size="4xl" sep="❖" sepColor="#C4A35A" />
       <Parents data={data} color="#4A4A4A" />
       <Grandparents data={data} color="#6A6A6A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#fff" />
+      <DB data={data} bg="#C4A35A" color="#fff" />
     </Overlay>
   </InvBg>
 ));
@@ -141,6 +156,7 @@ export const Template4 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, re
       <div className="mt-4 border-2 px-8 py-2" style={{ borderColor: "#C4A35A" }}>
         <p className="text-base font-bold" style={{ color: "#2A2A1A" }}>{data.eventDate || "תאריך האירוע"}</p>
         {data.venueName && <p className="text-xs mt-0.5" style={{ color: "#5A5A5A" }}>{data.venueName}</p>}
+        {data.venueLocation && <p className="text-[10px] mt-0.5" style={{ color: "#7A7A7A" }}>{data.venueLocation}</p>}
       </div>
     </Overlay>
   </InvBg>
@@ -155,7 +171,7 @@ export const Template5 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, re
       <Names g={data.groomName} b={data.brideName} color="#4A1A2A" size="4xl" sepColor="#C4A35A" />
       <Parents data={data} color="#5A3A3A" />
       <Grandparents data={data} color="#7A5A5A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#4A1A2A" color="#E8D4D4" rounded />
+      <DB data={data} bg="#4A1A2A" color="#E8D4D4" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -167,7 +183,7 @@ export const Template6 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, re
       <Names g={data.groomName} b={data.brideName} color="#3A0A1A" size="3xl" sep="✦" sepColor="#C4A35A" />
       <p className="text-xs mt-3 max-w-[240px]" style={{ color: "#6A4A4A" }}>{data.introText || "מתכבדים להזמינכם"}</p>
       <Parents data={data} color="#6A4A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#fff" />
+      <DB data={data} bg="#C4A35A" color="#fff" />
     </Overlay>
   </InvBg>
 ));
@@ -184,6 +200,7 @@ export const Template7 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, re
       <div className="mt-4 border px-8 py-2" style={{ borderColor: "#C4A35A" }}>
         <p className="text-base" style={{ color: "#C4A35A" }}>{data.eventDate || "תאריך האירוע"}</p>
         {data.venueName && <p className="text-xs mt-0.5" style={{ color: "#8AABDA" }}>{data.venueName}</p>}
+        {data.venueLocation && <p className="text-[10px] mt-0.5" style={{ color: "#6A8BAA" }}>{data.venueLocation}</p>}
       </div>
     </Overlay>
   </InvBg>
@@ -196,7 +213,7 @@ export const Template8 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, re
       <Names g={data.groomName} b={data.brideName} color="#E8D4A8" size="4xl" sep="&" sepColor="#C4A35A" />
       <p className="text-xs mt-3 max-w-[240px]" style={{ color: "#A0B8D8" }}>{data.introText || "מזמינים אתכם לחגוג"}</p>
       <Parents data={data} color="#A0B8D8" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#051839" />
+      <DB data={data} bg="#C4A35A" color="#051839" />
     </Overlay>
   </InvBg>
 ));
@@ -210,7 +227,7 @@ export const Template9 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, re
       <Names g={data.groomName} b={data.brideName} color="#3A2A1A" size="3xl" sep="🌿" sepColor="#7A8A5A" />
       <Parents data={data} color="#5A4A3A" />
       <Grandparents data={data} color="#7A6A5A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#5A4A3A" color="#F0E8D8" rounded />
+      <DB data={data} bg="#5A4A3A" color="#F0E8D8" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -222,7 +239,7 @@ export const Template10 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#4A3A2A" size="4xl" sep="♡" sepColor="#9A7ABA" />
       <p className="text-xs mt-2" style={{ color: "#6A5A4A" }}>{data.introText || "בשמחה מזמינים"}</p>
       <Parents data={data} color="#6A5A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#9A7ABA" color="#fff" rounded />
+      <DB data={data} bg="#9A7ABA" color="#fff" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -250,7 +267,7 @@ export const Template12 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <div className="w-20 h-px my-3" style={{ backgroundColor: "#C4A35A" }} />
       <p className="text-xs max-w-[240px]" style={{ color: "#C8C8D0" }}>{data.introText || "בשמחה רבה"}</p>
       <Parents data={data} color="#A8A8B8" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#0A0A0A" />
+      <DB data={data} bg="#C4A35A" color="#0A0A0A" />
     </Overlay>
   </InvBg>
 ));
@@ -264,7 +281,7 @@ export const Template13 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#4A3A6A" size="4xl" sep="♡" sepColor="#B090D0" />
       <Parents data={data} color="#6A5A8A" />
       <Grandparents data={data} color="#8A7AAA" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#6A5A8A" color="#fff" rounded />
+      <DB data={data} bg="#6A5A8A" color="#fff" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -292,7 +309,7 @@ export const Template15 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#2A2A2A" size="4xl" sep="✦" sepColor="#C4A35A" />
       <Parents data={data} color="#5A5A5A" />
       <Grandparents data={data} color="#8A8A8A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#fff" />
+      <DB data={data} bg="#C4A35A" color="#fff" />
     </Overlay>
   </InvBg>
 ));
@@ -321,7 +338,7 @@ export const Template17 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#4A2A3A" size="4xl" sep="♥" sepColor="#C08090" />
       <Parents data={data} color="#5A4A3A" />
       <Grandparents data={data} color="#7A6A5A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#6A4A5A" color="#F8E8F0" rounded />
+      <DB data={data} bg="#6A4A5A" color="#F8E8F0" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -333,7 +350,7 @@ export const Template18 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#3A1A2A" size="3xl" sep="❀" sepColor="#C08090" />
       <p className="text-xs mt-3" style={{ color: "#6A5A4A" }}>{data.introText || "בשמחה"}</p>
       <Parents data={data} color="#6A5A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#fff" />
+      <DB data={data} bg="#C4A35A" color="#fff" />
     </Overlay>
   </InvBg>
 ));
@@ -347,7 +364,7 @@ export const Template19 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#1A3A2A" size="4xl" sep="🌺" sepColor="#C4A35A" />
       <Parents data={data} color="#3A5A3A" />
       <Grandparents data={data} color="#5A7A5A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#1A5A3A" color="#F0F8F0" rounded />
+      <DB data={data} bg="#1A5A3A" color="#F0F8F0" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -359,7 +376,7 @@ export const Template20 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#2A4A2A" size="3xl" sep="&" sepColor="#C4A35A" />
       <p className="text-xs mt-3" style={{ color: "#4A6A4A" }}>{data.introText || "מזמינים בשמחה"}</p>
       <Parents data={data} color="#4A6A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#fff" />
+      <DB data={data} bg="#C4A35A" color="#fff" />
     </Overlay>
   </InvBg>
 ));
@@ -373,7 +390,7 @@ export const Template21 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#2A3A1A" size="4xl" sep="🌿" sepColor="#5A7A4A" />
       <Parents data={data} color="#4A5A3A" />
       <Grandparents data={data} color="#6A7A5A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#3A5A2A" color="#F0F8E8" rounded />
+      <DB data={data} bg="#3A5A2A" color="#F0F8E8" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -400,7 +417,7 @@ export const Template23 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <p className="text-xs mb-3" style={{ color: "#6A3A1A" }}>{data.introText || "בשמחה מזמינים אתכם"}</p>
       <Names g={data.groomName} b={data.brideName} color="#4A2A0A" size="4xl" sep="☀" sepColor="#C48A3A" />
       <Parents data={data} color="#6A3A1A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#6A3A1A" color="#F8E8D0" rounded />
+      <DB data={data} bg="#6A3A1A" color="#F8E8D0" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -412,7 +429,7 @@ export const Template24 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#5A2A0A" size="3xl" sep="✿" sepColor="#C48A3A" />
       <p className="text-xs mt-3" style={{ color: "#7A4A2A" }}>{data.introText || "מזמינים בחום"}</p>
       <Parents data={data} color="#7A4A2A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C48A3A" color="#fff" />
+      <DB data={data} bg="#C48A3A" color="#fff" />
     </Overlay>
   </InvBg>
 ));
@@ -426,7 +443,7 @@ export const Template25 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#3A2A1A" size="4xl" sep="עב״ג" sepColor="#6A4A2A" />
       <Parents data={data} color="#5A4A3A" />
       <Grandparents data={data} color="#7A6A5A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#5A3A1A" color="#F0E8D0" />
+      <DB data={data} bg="#5A3A1A" color="#F0E8D0" />
     </Overlay>
   </InvBg>
 ));
@@ -457,7 +474,7 @@ export const Template27 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <div className="text-5xl font-black leading-tight mb-3" style={{ color: "#3A2A2A" }}>{data.brideName || "הכלה"}</div>
       <div className="w-full max-w-[200px] h-0.5 my-2" style={{ backgroundColor: "#C4A35A" }} />
       <Parents data={data} color="#6A4A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#3A2A2A" color="#F8E8E8" />
+      <DB data={data} bg="#3A2A2A" color="#F8E8E8" />
     </Overlay>
   </InvBg>
 ));
@@ -471,7 +488,7 @@ export const Template28 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#2A1A0A" size="5xl" sep="עב״ג" sepColor="#C4A35A" />
       <Parents data={data} color="#5A4A2A" />
       <Grandparents data={data} color="#7A6A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#fff" />
+      <DB data={data} bg="#C4A35A" color="#fff" />
     </Overlay>
   </InvBg>
 ));
@@ -486,7 +503,7 @@ export const Template29 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       </div>
       <div className="text-5xl font-extralight tracking-wider mb-3" style={{ color: "#E8D4B4" }}>{data.brideName || "הכלה"}</div>
       <Parents data={data} color="#8AABDA" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#051839" rounded />
+      <DB data={data} bg="#C4A35A" color="#051839" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -505,7 +522,7 @@ export const Template30 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <div className="text-5xl font-bold mb-3" style={{ color: "#C4A35A", letterSpacing: "0.1em" }}>{data.brideName || "הכלה"}</div>
       <Parents data={data} color="#A0A0B0" />
       <Grandparents data={data} color="#808090" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#000" />
+      <DB data={data} bg="#C4A35A" color="#000" />
     </Overlay>
   </InvBg>
 ));
@@ -519,7 +536,7 @@ export const Template31 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#3A3A2A" size="3xl" sep="♥" sepColor="#C4A35A" />
       <Parents data={data} color="#5A5A4A" />
       <Grandparents data={data} color="#7A7A6A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#2A2A1A" color="#F8F0E0" rounded />
+      <DB data={data} bg="#2A2A1A" color="#F8F0E0" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -532,7 +549,7 @@ export const Template32 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#C4A35A" size="4xl" sep="❖" sepColor="#8A6A5A" />
       <Parents data={data} color="#5A4A3A" />
       <Grandparents data={data} color="#7A6A5A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#fff" />
+      <DB data={data} bg="#C4A35A" color="#fff" />
     </Overlay>
   </InvBg>
 ));
@@ -546,7 +563,7 @@ export const Template33 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <div className="text-5xl font-extralight mb-3" style={{ color: "#3A1A1A" }}>{data.brideName || "הכלה"}</div>
       <p className="text-xs mt-2" style={{ color: "#5A3A3A" }}>{data.introText || "מזמינים בשמחה"}</p>
       <Parents data={data} color="#5A3A3A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="rgba(196,163,90,0.9)" color="#fff" rounded />
+      <DB data={data} bg="rgba(196,163,90,0.9)" color="#fff" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -562,6 +579,7 @@ export const Template34 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <div className="mt-4 bg-white/70 backdrop-blur-sm px-8 py-2 rounded-xl border" style={{ borderColor: "rgba(140,112,176,0.4)" }}>
         <p className="text-base" style={{ color: "#4A3A6A" }}>{data.eventDate || "תאריך האירוע"}</p>
         {data.venueName && <p className="text-xs mt-0.5" style={{ color: "#6A5A8A" }}>{data.venueName}</p>}
+        {data.venueLocation && <p className="text-[10px] mt-0.5" style={{ color: "#8A7A9A" }}>{data.venueLocation}</p>}
       </div>
     </Overlay>
   </InvBg>
@@ -575,7 +593,7 @@ export const Template35 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#C4A35A" size="4xl" sep="❖" sepColor="#1A4A2A" />
       <Parents data={data} color="#2A5A3A" />
       <Grandparents data={data} color="#4A6A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#0A3A1A" />
+      <DB data={data} bg="#C4A35A" color="#0A3A1A" />
     </Overlay>
   </InvBg>
 ));
@@ -589,7 +607,7 @@ export const Template36 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#1A2A0A" size="4xl" sep="עב״ג" sepColor="#5A7A3A" />
       <Parents data={data} color="#3A4A2A" />
       <Grandparents data={data} color="#5A6A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#3A5A2A" color="#F0F8E8" />
+      <DB data={data} bg="#3A5A2A" color="#F0F8E8" />
     </Overlay>
   </InvBg>
 ));
@@ -603,7 +621,7 @@ export const Template37 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#3A1A0A" size="5xl" sep="עב״ג" sepColor="#8A6A3A" />
       <Parents data={data} color="#5A3A1A" />
       <Grandparents data={data} color="#7A5A3A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#6A4A2A" color="#F0E8D0" />
+      <DB data={data} bg="#6A4A2A" color="#F0E8D0" />
     </Overlay>
   </InvBg>
 ));
@@ -616,7 +634,7 @@ export const Template38 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <div className="w-20 h-px my-3" style={{ backgroundColor: "#8A6ABA" }} />
       <p className="text-xs max-w-[240px]" style={{ color: "#5A4A3A" }}>{data.introText || "בשמחה"}</p>
       <Parents data={data} color="#6A5A4A" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#5A4A3A" color="#F0E8D8" rounded />
+      <DB data={data} bg="#5A4A3A" color="#F0E8D8" rounded />
     </Overlay>
   </InvBg>
 ));
@@ -645,7 +663,7 @@ export const Template40 = forwardRef<HTMLDivElement, TemplateProps>(({ data }, r
       <Names g={data.groomName} b={data.brideName} color="#C4A35A" size="5xl" sep="עב״ג" sepColor="#8AABDA" />
       <Parents data={data} color="#8AABDA" />
       <Grandparents data={data} color="#6A8BAA" />
-      <DateBlock date={data.eventDate} venue={data.venueName} bg="#C4A35A" color="#051839" />
+      <DB data={data} bg="#C4A35A" color="#051839" />
     </Overlay>
   </InvBg>
 ));
