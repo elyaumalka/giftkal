@@ -4,6 +4,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentList } from "@/components/dashboard/RecentList";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -211,30 +212,38 @@ export default function AdminDashboard() {
                     <Eye className="w-5 h-5 text-muted-foreground" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>פרטי הפנייה</DialogTitle>
-                  </DialogHeader>
-                  <div className="p-6 space-y-4" dir="rtl">
-                    <div className="flex justify-between items-start">
-                      <p className="text-sm text-muted-foreground">שם</p>
-                      <p className="font-bold text-secondary">{inquiry.profile?.full_name || "לא ידוע"}</p>
+                <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+                  <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+                    <div className="w-5" />
+                    <h2 className="text-lg font-semibold">פרטי הפנייה</h2>
+                    <Eye className="w-5 h-5" />
+                  </div>
+                  <div className="bg-white p-6 space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הפונה</Label>
+                        <p className="text-center font-bold">{inquiry.profile?.full_name || "לא ידוע"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">נושא</Label>
+                        <p className="text-center font-bold">{inquiry.subject}</p>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-start">
-                      <p className="text-sm text-muted-foreground">טלפון</p>
-                      <p className="font-medium">{inquiry.profile?.phone || "-"}</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                        <p className="text-center font-bold">{inquiry.profile?.phone || "—"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">אימייל</Label>
+                        <p className="text-center font-bold">{inquiry.profile?.email || "—"}</p>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-start">
-                      <p className="text-sm text-muted-foreground">אימייל</p>
-                      <p className="font-medium">{inquiry.profile?.email || "-"}</p>
-                    </div>
-                    <div className="flex justify-between items-start">
-                      <p className="text-sm text-muted-foreground">נושא</p>
-                      <p className="font-bold text-secondary">{inquiry.subject}</p>
-                    </div>
-                    <div className="flex justify-between items-start">
-                      <p className="text-sm text-muted-foreground">תיאור</p>
-                      <p className="font-medium max-w-[70%] text-left">{inquiry.description}</p>
+                    <div>
+                      <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור הפנייה</Label>
+                      <div className="bg-[#f5f5f5] rounded-xl p-4 text-center">
+                        {inquiry.description}
+                      </div>
                     </div>
                   </div>
                 </DialogContent>
@@ -296,30 +305,38 @@ export default function AdminDashboard() {
                       <Eye className="w-5 h-5 text-muted-foreground" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>פרטי התקלה</DialogTitle>
-                    </DialogHeader>
-                    <div className="p-6 space-y-4" dir="rtl">
-                      <div className="flex justify-between items-start">
-                        <p className="text-sm text-muted-foreground">שם הפונה</p>
-                        <p className="font-bold text-secondary">{issue.profile?.full_name || "לא ידוע"}</p>
+                  <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+                    <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+                      <div className="w-5" />
+                      <h2 className="text-lg font-semibold">פרטי התקלה</h2>
+                      <Eye className="w-5 h-5" />
+                    </div>
+                    <div className="bg-white p-6 space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הפונה</Label>
+                          <p className="text-center font-bold">{issue.profile?.full_name || "לא ידוע"}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-sm mb-2 block text-center">אולם</Label>
+                          <p className="text-center font-bold text-[#c9a54e]">{issue.venues?.name || "—"}</p>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-start">
-                        <p className="text-sm text-muted-foreground">אולם</p>
-                        <p className="font-bold text-secondary">{issue.venues?.name}</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת</Label>
+                          <p className="text-center font-bold">{issue.venues?.address || "—"}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-sm mb-2 block text-center">נושא התקלה</Label>
+                          <p className="text-center font-bold">{issue.subject}</p>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-start">
-                        <p className="text-sm text-muted-foreground">כתובת</p>
-                        <p className="font-medium">{issue.venues?.address}</p>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <p className="text-sm text-muted-foreground">נושא התקלה</p>
-                        <p className="font-bold text-secondary">{issue.subject}</p>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <p className="text-sm text-muted-foreground">תיאור</p>
-                        <p className="font-medium max-w-[70%] text-left">{issue.description}</p>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור</Label>
+                        <div className="bg-[#f5f5f5] rounded-xl p-4 text-center">
+                          {issue.description}
+                        </div>
                       </div>
                     </div>
                   </DialogContent>
