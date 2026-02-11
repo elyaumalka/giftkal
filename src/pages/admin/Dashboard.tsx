@@ -1,28 +1,27 @@
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { RecentList } from "@/components/dashboard/RecentList";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Eye, X, ChevronLeft } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 // Import stat icons (colored for dashboard)
 import StatLeadsIcon from "@/assets/icons/stat-leads.svg";
 import StatEventsIcon from "@/assets/icons/stat-events.svg";
-import StatCustomersIcon from "@/assets/icons/stat-customers.svg";
 import StatTransactionsIcon from "@/assets/icons/stat-transactions.svg";
 import StatToolsIcon from "@/assets/icons/stat-tools.svg";
 
 export default function AdminDashboard() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
+  const [selectedIssue, setSelectedIssue] = useState<any>(null);
 
   // Fetch stats
   const { data: stats } = useQuery({
@@ -46,7 +45,7 @@ export default function AdminDashboard() {
     },
   });
 
-  // Fetch recent inquiries with profile data via raw query
+  // Fetch recent inquiries
   const { data: recentInquiries } = useQuery({
     queryKey: ["recent-inquiries-with-profiles"],
     queryFn: async () => {
@@ -59,7 +58,6 @@ export default function AdminDashboard() {
       
       if (!data) return [];
       
-      // Get profile data for each ticket
       const userIds = data.map(t => t.user_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
@@ -73,7 +71,7 @@ export default function AdminDashboard() {
     },
   });
 
-  // Fetch recent issues with venue and profile data
+  // Fetch recent issues
   const { data: recentIssues } = useQuery({
     queryKey: ["recent-issues-with-profiles"],
     queryFn: async () => {
@@ -89,7 +87,6 @@ export default function AdminDashboard() {
       
       if (!data) return [];
       
-      // Get profile data for each ticket
       const userIds = data.map(t => t.user_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
@@ -116,7 +113,6 @@ export default function AdminDashboard() {
       
       if (!data) return [];
       
-      // Get profile data for assigned users
       const userIds = data.map(t => t.user_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
@@ -136,12 +132,6 @@ export default function AdminDashboard() {
     queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    await supabase.from("tasks").delete().eq("id", taskId);
-    queryClient.invalidateQueries({ queryKey: ["recent-tasks"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-  };
-
   const handleCloseTicket = async (ticketId: string) => {
     await supabase.from("support_tickets").update({ status: "closed" }).eq("id", ticketId);
     queryClient.invalidateQueries({ queryKey: ["recent-inquiries-with-profiles"] });
@@ -152,246 +142,246 @@ export default function AdminDashboard() {
     <div className="space-y-8 animate-fade-in">
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <StatCard
-          title="לידים"
-          value={stats?.leads || 0}
-          icon={StatLeadsIcon}
-        />
-        <StatCard
-          title="אולמות אירועים"
-          value={stats?.venues || 0}
-          icon={StatEventsIcon}
-        />
-        <StatCard
-          title="בעלי אירועים"
-          value={stats?.events || 0}
-          icon={StatEventsIcon}
-        />
-        <StatCard
-          title="עסקאות"
-          value={stats?.transactions || 0}
-          icon={StatTransactionsIcon}
-        />
-        <StatCard
-          title="משימות פתוחות"
-          value={stats?.openTasks || 0}
-          icon={StatToolsIcon}
-        />
+        <StatCard title="לידים" value={stats?.leads || 0} icon={StatLeadsIcon} />
+        <StatCard title="אולמות אירועים" value={stats?.venues || 0} icon={StatEventsIcon} />
+        <StatCard title="בעלי אירועים" value={stats?.events || 0} icon={StatEventsIcon} />
+        <StatCard title="עסקאות" value={stats?.transactions || 0} icon={StatTransactionsIcon} />
+        <StatCard title="משימות פתוחות" value={stats?.openTasks || 0} icon={StatToolsIcon} />
       </div>
 
-      {/* Recent Inquiries - פניות אחרונות */}
-      <RecentList
-        title="פניות אחרונות"
-        viewAllPath="/admin/support"
-        viewAllText="לכל הפניות"
-        isEmpty={!recentInquiries?.length}
-      >
-        <div className="space-y-2">
+      {/* ===== פניות אחרונות ===== */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate("/admin/support")}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            לכל הפניות
+          </button>
+          <h2 className="text-xl font-bold text-secondary">פניות אחרונות</h2>
+        </div>
+
+        {/* Table Header */}
+        <div className="grid grid-cols-[1fr_1fr_1.5fr_2fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+          <span>שם הפונה</span>
+          <span>טלפון</span>
+          <span>כתובת מייל</span>
+          <span>מהות הפנייה</span>
+          <span className="w-10"></span>
+        </div>
+
+        {/* Rows */}
+        <div className="space-y-3">
           {recentInquiries?.map((inquiry) => (
             <div
               key={inquiry.id}
-              className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+              className="grid grid-cols-[1fr_1fr_1.5fr_2fr_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
             >
-              <div className="flex items-center gap-6 flex-1">
-                <span className="font-medium text-secondary min-w-[100px]">
-                  {inquiry.profile?.full_name || "לא ידוע"}
-                </span>
-                <span className="text-muted-foreground min-w-[100px]">
-                  {inquiry.profile?.phone || "-"}
-                </span>
-                <span className="text-muted-foreground min-w-[160px]">
-                  {inquiry.profile?.email || "-"}
-                </span>
-                <span className="text-muted-foreground flex-1 truncate">
-                  {inquiry.description}
-                </span>
-              </div>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="shrink-0">
-                    <Eye className="w-5 h-5 text-muted-foreground" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
-                  <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
-                    <div className="w-5" />
-                    <h2 className="text-lg font-semibold">פרטי הפנייה</h2>
-                    <Eye className="w-5 h-5" />
-                  </div>
-                  <div className="bg-white p-6 space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הפונה</Label>
-                        <p className="text-center font-bold">{inquiry.profile?.full_name || "לא ידוע"}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground text-sm mb-2 block text-center">נושא</Label>
-                        <p className="text-center font-bold">{inquiry.subject}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
-                        <p className="text-center font-bold">{inquiry.profile?.phone || "—"}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground text-sm mb-2 block text-center">אימייל</Label>
-                        <p className="text-center font-bold">{inquiry.profile?.email || "—"}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור הפנייה</Label>
-                      <div className="bg-[#f5f5f5] rounded-xl p-4 text-center">
-                        {inquiry.description}
-                      </div>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <span className="text-center font-bold">{inquiry.profile?.full_name || "לא ידוע"}</span>
+              <span className="text-center font-bold">{inquiry.profile?.phone || "—"}</span>
+              <span className="text-center font-bold">{inquiry.profile?.email || "—"}</span>
+              <span className="text-center text-muted-foreground truncate">{inquiry.subject}</span>
+              <button
+                onClick={() => setSelectedInquiry(inquiry)}
+                className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
+              >
+                <Eye className="w-5 h-5" />
+              </button>
             </div>
           ))}
-        </div>
-      </RecentList>
 
-      {/* Recent Issues - תקלות אחרונות */}
-      <RecentList
-        title="תקלות אחרונות"
-        viewAllPath="/admin/support?tab=issues"
-        viewAllText="לכל התקלות"
-        isEmpty={!recentIssues?.length}
-      >
-        <div className="space-y-2">
+          {!recentInquiries?.length && (
+            <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+              אין פניות להצגה
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Inquiry View Dialog */}
+      <Dialog open={!!selectedInquiry} onOpenChange={() => setSelectedInquiry(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setSelectedInquiry(null)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">פרטי הפנייה</h2>
+            <Eye className="w-5 h-5" />
+          </div>
+          {selectedInquiry && (
+            <div className="bg-white p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הפונה</Label>
+                  <p className="text-center font-bold">{selectedInquiry.profile?.full_name || "לא ידוע"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">נושא</Label>
+                  <p className="text-center font-bold">{selectedInquiry.subject}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור הפנייה</Label>
+                <div className="bg-[#f5f5f5] rounded-xl p-4 text-center">
+                  {selectedInquiry.description}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== תקלות אחרונות ===== */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate("/admin/support?tab=issues")}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            לכל התקלות
+          </button>
+          <h2 className="text-xl font-bold text-secondary">תקלות אחרונות</h2>
+        </div>
+
+        {/* Table Header */}
+        <div className="grid grid-cols-[1fr_1fr_1fr_1.5fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+          <span>שם הלקוח</span>
+          <span>כתובת</span>
+          <span>שם האולם</span>
+          <span>מהות התקלה</span>
+          <span className="w-20"></span>
+          <span className="w-24"></span>
+          <span className="w-10"></span>
+        </div>
+
+        {/* Rows */}
+        <div className="space-y-3">
           {recentIssues?.map((issue) => (
             <div
               key={issue.id}
-              className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+              className="grid grid-cols-[1fr_1fr_1fr_1.5fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
             >
-              <div className="flex items-center gap-6 flex-1">
-                <span className="font-medium text-secondary min-w-[100px]">
-                  {issue.profile?.full_name || "לא ידוע"}
-                </span>
-                <span className="text-muted-foreground min-w-[150px]">
-                  {issue.venues?.address || "-"}
-                </span>
-                <span className="text-secondary font-medium min-w-[120px]">
-                  {issue.venues?.name || "-"}
-                </span>
-                <span className="text-muted-foreground flex-1">
-                  {issue.subject}
-                </span>
-                <Badge variant={issue.status === "open" ? "destructive" : "secondary"} className="min-w-[60px] justify-center">
-                  {issue.status === "open" ? "פתוח" : "סגור"}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-muted-foreground"
-                >
-                  מענה
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-muted-foreground"
-                  onClick={() => handleCloseTicket(issue.id)}
-                >
-                  סגירת הפנייה
-                </Button>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Eye className="w-5 h-5 text-muted-foreground" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
-                    <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
-                      <div className="w-5" />
-                      <h2 className="text-lg font-semibold">פרטי התקלה</h2>
-                      <Eye className="w-5 h-5" />
-                    </div>
-                    <div className="bg-white p-6 space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הפונה</Label>
-                          <p className="text-center font-bold">{issue.profile?.full_name || "לא ידוע"}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground text-sm mb-2 block text-center">אולם</Label>
-                          <p className="text-center font-bold text-[#c9a54e]">{issue.venues?.name || "—"}</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת</Label>
-                          <p className="text-center font-bold">{issue.venues?.address || "—"}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground text-sm mb-2 block text-center">נושא התקלה</Label>
-                          <p className="text-center font-bold">{issue.subject}</p>
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור</Label>
-                        <div className="bg-[#f5f5f5] rounded-xl p-4 text-center">
-                          {issue.description}
-                        </div>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
+              <span className="text-center font-bold">{issue.profile?.full_name || "לא ידוע"}</span>
+              <span className="text-center font-bold">{issue.venues?.address || "—"}</span>
+              <span className="text-center font-bold text-[#c9a54e]">{issue.venues?.name || "—"}</span>
+              <span className="text-center text-muted-foreground truncate">{issue.subject}</span>
+              <button className="px-4 py-2 rounded-full bg-[#c9a54e] text-white font-medium hover:bg-[#b8943d] transition-colors">
+                מענה
+              </button>
+              <button
+                onClick={() => handleCloseTicket(issue.id)}
+                className="px-4 py-2 rounded-full bg-[#1a2942] text-white font-medium hover:bg-[#243a56] transition-colors"
+              >
+                סגירת הפנייה
+              </button>
+              <button
+                onClick={() => setSelectedIssue(issue)}
+                className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
+              >
+                <Eye className="w-5 h-5" />
+              </button>
             </div>
           ))}
-        </div>
-      </RecentList>
 
-      {/* Tasks - משימות לביצוע */}
-      <RecentList
-        title="משימות לביצוע"
-        viewAllPath="/admin/leads"
-        viewAllText="לכל המשימות"
-        isEmpty={!recentTasks?.length}
-      >
-        <div className="space-y-2">
+          {!recentIssues?.length && (
+            <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+              אין תקלות להצגה
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Issue View Dialog */}
+      <Dialog open={!!selectedIssue} onOpenChange={() => setSelectedIssue(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setSelectedIssue(null)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">פרטי התקלה</h2>
+            <Eye className="w-5 h-5" />
+          </div>
+          {selectedIssue && (
+            <div className="bg-white p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הפונה</Label>
+                  <p className="text-center font-bold">{selectedIssue.profile?.full_name || "לא ידוע"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">אולם</Label>
+                  <p className="text-center font-bold text-[#c9a54e]">{selectedIssue.venues?.name || "—"}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת</Label>
+                  <p className="text-center font-bold">{selectedIssue.venues?.address || "—"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">נושא התקלה</Label>
+                  <p className="text-center font-bold">{selectedIssue.subject}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור</Label>
+                <div className="bg-[#f5f5f5] rounded-xl p-4 text-center">
+                  {selectedIssue.description}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== משימות לביצוע ===== */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate("/admin/leads")}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            לכל המשימות
+          </button>
+          <h2 className="text-xl font-bold text-secondary">משימות לביצוע</h2>
+        </div>
+
+        <div className="space-y-3">
           {recentTasks?.map((task) => (
             <div
               key={task.id}
-              className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+              className="flex items-center justify-between bg-white rounded-2xl px-6 py-5 shadow-sm"
             >
               <div className="flex items-center gap-6 flex-1">
-                <span className="text-muted-foreground flex-1">
-                  {task.description}
-                </span>
-                <span className="font-medium text-secondary min-w-[100px]">
+                <span className="text-muted-foreground flex-1">{task.description}</span>
+                <span className="font-bold text-secondary min-w-[100px] text-center">
                   {task.profile?.full_name || "לא משויך"}
                 </span>
-                <span className="text-muted-foreground min-w-[100px]">
+                <span className="text-muted-foreground min-w-[100px] text-center">
                   {task.due_date ? new Date(task.due_date).toLocaleDateString("he-IL") : "-"}
                 </span>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-sidebar-accent border-sidebar-accent hover:bg-sidebar-accent hover:text-white"
+                <button
                   onClick={() => handleCompleteTask(task.id)}
+                  className="px-4 py-2 rounded-full bg-[#c9a54e] text-white font-medium hover:bg-[#b8943d] transition-colors"
                 >
                   סימון כבוצע
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => handleDeleteTask(task.id)}
-                >
-                  מחיקה
-                </Button>
+                </button>
               </div>
             </div>
           ))}
+
+          {!recentTasks?.length && (
+            <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+              אין משימות להצגה
+            </div>
+          )}
         </div>
-      </RecentList>
+      </div>
     </div>
   );
 }
