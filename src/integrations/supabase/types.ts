@@ -206,8 +206,11 @@ export type Database = {
           full_name: string
           id: string
           invitation_sent: boolean | null
+          number_of_guests: number
           phone: string | null
           relationship: string | null
+          rsvp_date: string | null
+          rsvp_status: string
         }
         Insert: {
           created_at?: string
@@ -216,8 +219,11 @@ export type Database = {
           full_name: string
           id?: string
           invitation_sent?: boolean | null
+          number_of_guests?: number
           phone?: string | null
           relationship?: string | null
+          rsvp_date?: string | null
+          rsvp_status?: string
         }
         Update: {
           created_at?: string
@@ -226,8 +232,11 @@ export type Database = {
           full_name?: string
           id?: string
           invitation_sent?: boolean | null
+          number_of_guests?: number
           phone?: string | null
           relationship?: string | null
+          rsvp_date?: string | null
+          rsvp_status?: string
         }
         Relationships: [
           {
