@@ -456,6 +456,8 @@ interface LeadDetailsPopupProps {
 
 function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
   const [newTask, setNewTask] = useState("");
+  const [newTaskDate, setNewTaskDate] = useState("");
+  const [newTaskTime, setNewTaskTime] = useState("");
   const [newNote, setNewNote] = useState("");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
@@ -464,15 +466,19 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
 
   const addTask = useMutation({
     mutationFn: async () => {
+      const dueDate = newTaskDate || null;
       const { error } = await supabase.from("tasks").insert({
         lead_id: lead.id,
-        description: newTask,
+        description: newTask + (newTaskTime ? ` (${newTaskTime})` : ""),
+        due_date: dueDate,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       setNewTask("");
+      setNewTaskDate("");
+      setNewTaskTime("");
       setIsAddTaskOpen(false);
       toast({ title: "המשימה נוספה בהצלחה" });
       onRefresh();
@@ -496,11 +502,11 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
     },
   });
 
-  const completeTask = useMutation({
-    mutationFn: async (taskId: string) => {
+  const toggleTask = useMutation({
+    mutationFn: async ({ taskId, currentState }: { taskId: string; currentState: boolean }) => {
       const { error } = await supabase
         .from("tasks")
-        .update({ is_completed: true })
+        .update({ is_completed: !currentState })
         .eq("id", taskId);
       if (error) throw error;
     },
@@ -521,11 +527,11 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
     },
   });
 
-  const completeNote = useMutation({
-    mutationFn: async (noteId: string) => {
+  const toggleNote = useMutation({
+    mutationFn: async ({ noteId, currentState }: { noteId: string; currentState: boolean }) => {
       const { error } = await supabase
         .from("notes")
-        .update({ is_completed: true })
+        .update({ is_completed: !currentState })
         .eq("id", noteId);
       if (error) throw error;
     },
@@ -546,8 +552,10 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
     },
   });
 
-  const openTasks = lead.tasks?.filter((t: any) => !t.is_completed) || [];
-  const openNotes = lead.notes?.filter((n: any) => !n.is_completed) || [];
+  const allTasks = lead.tasks || [];
+  const allNotes = lead.notes || [];
+  const openTasksCount = allTasks.filter((t: any) => !t.is_completed).length;
+  const openNotesCount = allNotes.filter((n: any) => !n.is_completed).length;
 
   return (
     <div className="bg-[#e5e5e5] min-h-[500px]">
@@ -614,18 +622,26 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
         <div className="bg-[#dbeafe] rounded-2xl p-4">
           <div className="flex items-center justify-between mb-4">
             <span className="font-bold text-lg">משימות לביצוע</span>
-            <span className="font-bold text-xl">{openTasks.length}</span>
+            <span className="font-bold text-xl">{openTasksCount}</span>
           </div>
           <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {openTasks.map((task: any) => (
-              <div key={task.id} className="bg-white rounded-xl p-4 space-y-2">
+            {allTasks.map((task: any) => (
+              <div key={task.id} className={`bg-white rounded-xl p-4 space-y-2 ${task.is_completed ? "opacity-60" : ""}`}>
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-sm">
+                  <p className={`font-bold text-sm ${task.is_completed ? "line-through text-green-600" : ""}`}>
                     {new Date(task.created_at).toLocaleDateString("he-IL")}
                   </p>
-                  <p className="text-sm text-muted-foreground">מהות המשימה</p>
+                  <div className="flex items-center gap-2">
+                    {task.is_completed && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">בוצע ✓</span>}
+                    <p className="text-sm text-muted-foreground">מהות המשימה</p>
+                  </div>
                 </div>
-                <p className="text-sm">{task.description}</p>
+                {task.due_date && (
+                  <p className="text-xs text-muted-foreground">
+                    תאריך יעד: {new Date(task.due_date).toLocaleDateString("he-IL")}
+                  </p>
+                )}
+                <p className={`text-sm ${task.is_completed ? "line-through" : ""}`}>{task.description}</p>
                 <div className="flex items-center gap-2 pt-2">
                   <Button
                     size="sm"
@@ -637,16 +653,16 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => completeTask.mutate(task.id)}
-                    className="rounded-full px-4 border-[#1a2942] text-[#1a2942]"
+                    onClick={() => toggleTask.mutate({ taskId: task.id, currentState: !!task.is_completed })}
+                    className={`rounded-full px-4 ${task.is_completed ? "border-green-600 text-green-600" : "border-[#1a2942] text-[#1a2942]"}`}
                   >
-                    סימון כבוצע
+                    {task.is_completed ? "בטל סימון" : "סימון כבוצע"}
                   </Button>
                 </div>
               </div>
             ))}
-            {!openTasks.length && (
-              <p className="text-center text-muted-foreground py-4">אין משימות פתוחות</p>
+            {!allTasks.length && (
+              <p className="text-center text-muted-foreground py-4">אין משימות</p>
             )}
           </div>
         </div>
@@ -655,15 +671,18 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
         <div className="bg-[#dbeafe] rounded-2xl p-4">
           <div className="flex items-center justify-between mb-4">
             <span className="font-bold text-lg">הערות</span>
-            <span className="font-bold text-xl">{openNotes.length}</span>
+            <span className="font-bold text-xl">{openNotesCount}</span>
           </div>
           <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {openNotes.map((note: any) => (
-              <div key={note.id} className="bg-white rounded-xl p-4 space-y-2">
-                <p className="font-bold text-sm">
-                  {new Date(note.created_at).toLocaleDateString("he-IL")}
-                </p>
-                <p className="text-sm">{note.content}</p>
+            {allNotes.map((note: any) => (
+              <div key={note.id} className={`bg-white rounded-xl p-4 space-y-2 ${note.is_completed ? "opacity-60" : ""}`}>
+                <div className="flex items-center justify-between">
+                  <p className={`font-bold text-sm ${note.is_completed ? "line-through text-green-600" : ""}`}>
+                    {new Date(note.created_at).toLocaleDateString("he-IL")}
+                  </p>
+                  {note.is_completed && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">בוצע ✓</span>}
+                </div>
+                <p className={`text-sm ${note.is_completed ? "line-through" : ""}`}>{note.content}</p>
                 <div className="flex items-center gap-2 pt-2">
                   <Button
                     size="sm"
@@ -675,15 +694,15 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => completeNote.mutate(note.id)}
-                    className="rounded-full px-4 border-[#1a2942] text-[#1a2942]"
+                    onClick={() => toggleNote.mutate({ noteId: note.id, currentState: !!note.is_completed })}
+                    className={`rounded-full px-4 ${note.is_completed ? "border-green-600 text-green-600" : "border-[#1a2942] text-[#1a2942]"}`}
                   >
-                    סימון כבוצע
+                    {note.is_completed ? "בטל סימון" : "סימון כבוצע"}
                   </Button>
                 </div>
               </div>
             ))}
-            {!openNotes.length && (
+            {!allNotes.length && (
               <p className="text-center text-muted-foreground py-4">אין הערות</p>
             )}
           </div>
@@ -709,6 +728,28 @@ function LeadDetailsPopup({ lead, onClose, onRefresh }: LeadDetailsPopupProps) {
                 onChange={(e) => setNewTask(e.target.value)}
                 className="text-center"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תאריך יעד</Label>
+                <Input
+                  type="date"
+                  variant="form"
+                  value={newTaskDate}
+                  onChange={(e) => setNewTaskDate(e.target.value)}
+                  className="text-center"
+                />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שעה</Label>
+                <Input
+                  type="time"
+                  variant="form"
+                  value={newTaskTime}
+                  onChange={(e) => setNewTaskTime(e.target.value)}
+                  className="text-center"
+                />
+              </div>
             </div>
             <Button 
               onClick={() => addTask.mutate()} 
