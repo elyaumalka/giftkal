@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Button } from "@/components/ui/button";
-import { Eye, X, ChevronLeft } from "lucide-react";
+import { Eye, X, ChevronLeft, Send } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -20,8 +22,11 @@ import StatToolsIcon from "@/assets/icons/stat-tools.svg";
 export default function AdminDashboard() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [selectedIssue, setSelectedIssue] = useState<any>(null);
+  const [respondTicket, setRespondTicket] = useState<any>(null);
+  const [responseText, setResponseText] = useState("");
 
   // Fetch stats
   const { data: stats } = useQuery({
@@ -136,6 +141,25 @@ export default function AdminDashboard() {
     await supabase.from("support_tickets").update({ status: "closed" }).eq("id", ticketId);
     queryClient.invalidateQueries({ queryKey: ["recent-inquiries-with-profiles"] });
     queryClient.invalidateQueries({ queryKey: ["recent-issues-with-profiles"] });
+    toast({ title: "הפנייה נסגרה בהצלחה" });
+  };
+
+  const handleRespondToTicket = async () => {
+    if (!respondTicket || !responseText.trim()) return;
+    await supabase
+      .from("support_tickets")
+      .update({ response: responseText, status: "in_progress" })
+      .eq("id", respondTicket.id);
+    queryClient.invalidateQueries({ queryKey: ["recent-inquiries-with-profiles"] });
+    queryClient.invalidateQueries({ queryKey: ["recent-issues-with-profiles"] });
+    setRespondTicket(null);
+    setResponseText("");
+    toast({ title: "התשובה נשלחה בהצלחה" });
+  };
+
+  const openRespondDialog = (ticket: any) => {
+    setRespondTicket(ticket);
+    setResponseText(ticket.response || "");
   };
 
   return (
@@ -267,15 +291,22 @@ export default function AdminDashboard() {
               <span className="text-center font-bold">{issue.venues?.address || "—"}</span>
               <span className="text-center font-bold text-[#c9a54e]">{issue.venues?.name || "—"}</span>
               <span className="text-center text-muted-foreground truncate">{issue.subject}</span>
-              <button className="px-4 py-2 rounded-full bg-[#c9a54e] text-white font-medium hover:bg-[#b8943d] transition-colors">
+              <button
+                onClick={() => openRespondDialog(issue)}
+                className="px-4 py-2 rounded-full bg-[#c9a54e] text-white font-medium hover:bg-[#b8943d] transition-colors"
+              >
                 מענה
               </button>
-              <button
-                onClick={() => handleCloseTicket(issue.id)}
-                className="px-4 py-2 rounded-full bg-[#1a2942] text-white font-medium hover:bg-[#243a56] transition-colors"
-              >
-                סגירת הפנייה
-              </button>
+              {issue.status === "closed" ? (
+                <span className="px-4 py-2 rounded-full bg-green-600 text-white font-medium w-24 text-center">סגור ✓</span>
+              ) : (
+                <button
+                  onClick={() => handleCloseTicket(issue.id)}
+                  className="px-4 py-2 rounded-full bg-[#1a2942] text-white font-medium hover:bg-[#243a56] transition-colors"
+                >
+                  סגירת הפנייה
+                </button>
+              )}
               <button
                 onClick={() => setSelectedIssue(issue)}
                 className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
@@ -331,6 +362,57 @@ export default function AdminDashboard() {
                   {selectedIssue.description}
                 </div>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Respond Dialog */}
+      <Dialog open={!!respondTicket} onOpenChange={() => setRespondTicket(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setRespondTicket(null)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">מענה לפנייה</h2>
+            <Send className="w-5 h-5" />
+          </div>
+          {respondTicket && (
+            <div className="bg-white p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הפונה</Label>
+                  <p className="text-center font-bold">{respondTicket.profile?.full_name || "לא ידוע"}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm mb-2 block text-center">נושא</Label>
+                  <p className="text-center font-bold">{respondTicket.subject}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תיאור הפנייה</Label>
+                <div className="bg-[#f5f5f5] rounded-xl p-4 text-center">
+                  {respondTicket.description}
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תשובה</Label>
+                <Textarea
+                  value={responseText}
+                  onChange={(e) => setResponseText(e.target.value)}
+                  placeholder="הקלד תשובה..."
+                  rows={4}
+                  className="bg-[#f5f5f5] border-0 rounded-xl text-center"
+                />
+              </div>
+              <Button
+                onClick={handleRespondToTicket}
+                disabled={!responseText.trim()}
+                className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
+              >
+                <span>←</span>
+                שלח תשובה
+              </Button>
             </div>
           )}
         </DialogContent>
