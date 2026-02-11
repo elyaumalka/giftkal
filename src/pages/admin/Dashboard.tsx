@@ -62,12 +62,12 @@ export default function AdminDashboard() {
       const userIds = data.map(t => t.user_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, phone, email")
-        .in("id", userIds);
+        .select("user_id, full_name, phone, email")
+        .in("user_id", userIds);
       
       return data.map(ticket => ({
         ...ticket,
-        profile: profiles?.find(p => p.id === ticket.user_id) || null
+        profile: profiles?.find(p => p.user_id === ticket.user_id) || null
       }));
     },
   });
@@ -92,12 +92,12 @@ export default function AdminDashboard() {
       const userIds = data.map(t => t.user_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, phone, email")
-        .in("id", userIds);
+        .select("user_id, full_name, phone, email")
+        .in("user_id", userIds);
       
       return data.map(ticket => ({
         ...ticket,
-        profile: profiles?.find(p => p.id === ticket.user_id) || null
+        profile: profiles?.find(p => p.user_id === ticket.user_id) || null
       }));
     },
   });
@@ -119,12 +119,12 @@ export default function AdminDashboard() {
       const userIds = data.map(t => t.user_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name")
-        .in("id", userIds);
+        .select("user_id, full_name")
+        .in("user_id", userIds);
       
       return data.map(task => ({
         ...task,
-        profile: profiles?.find(p => p.id === task.user_id) || null
+        profile: profiles?.find(p => p.user_id === task.user_id) || null
       }));
     },
   });
