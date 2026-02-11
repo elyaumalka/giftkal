@@ -211,30 +211,30 @@ export default function AdminDashboard() {
                     <Eye className="w-5 h-5 text-muted-foreground" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-lg">
                   <DialogHeader>
                     <DialogTitle>פרטי הפנייה</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
+                  <div className="p-6 space-y-4" dir="rtl">
+                    <div className="flex justify-between items-start">
                       <p className="text-sm text-muted-foreground">שם</p>
-                      <p className="font-medium">{inquiry.profile?.full_name || "לא ידוע"}</p>
+                      <p className="font-bold text-secondary">{inquiry.profile?.full_name || "לא ידוע"}</p>
                     </div>
-                    <div>
+                    <div className="flex justify-between items-start">
                       <p className="text-sm text-muted-foreground">טלפון</p>
-                      <p>{inquiry.profile?.phone || "-"}</p>
+                      <p className="font-medium">{inquiry.profile?.phone || "-"}</p>
                     </div>
-                    <div>
+                    <div className="flex justify-between items-start">
                       <p className="text-sm text-muted-foreground">אימייל</p>
-                      <p>{inquiry.profile?.email || "-"}</p>
+                      <p className="font-medium">{inquiry.profile?.email || "-"}</p>
                     </div>
-                    <div>
+                    <div className="flex justify-between items-start">
                       <p className="text-sm text-muted-foreground">נושא</p>
-                      <p className="font-medium">{inquiry.subject}</p>
+                      <p className="font-bold text-secondary">{inquiry.subject}</p>
                     </div>
-                    <div>
+                    <div className="flex justify-between items-start">
                       <p className="text-sm text-muted-foreground">תיאור</p>
-                      <p>{inquiry.description}</p>
+                      <p className="font-medium max-w-[70%] text-left">{inquiry.description}</p>
                     </div>
                   </div>
                 </DialogContent>
@@ -296,30 +296,30 @@ export default function AdminDashboard() {
                       <Eye className="w-5 h-5 text-muted-foreground" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-lg">
                     <DialogHeader>
                       <DialogTitle>פרטי התקלה</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
+                    <div className="p-6 space-y-4" dir="rtl">
+                      <div className="flex justify-between items-start">
                         <p className="text-sm text-muted-foreground">שם הפונה</p>
-                        <p className="font-medium">{issue.profile?.full_name || "לא ידוע"}</p>
+                        <p className="font-bold text-secondary">{issue.profile?.full_name || "לא ידוע"}</p>
                       </div>
-                      <div>
+                      <div className="flex justify-between items-start">
                         <p className="text-sm text-muted-foreground">אולם</p>
-                        <p className="font-medium">{issue.venues?.name}</p>
+                        <p className="font-bold text-secondary">{issue.venues?.name}</p>
                       </div>
-                      <div>
+                      <div className="flex justify-between items-start">
                         <p className="text-sm text-muted-foreground">כתובת</p>
-                        <p>{issue.venues?.address}</p>
+                        <p className="font-medium">{issue.venues?.address}</p>
                       </div>
-                      <div>
+                      <div className="flex justify-between items-start">
                         <p className="text-sm text-muted-foreground">נושא התקלה</p>
-                        <p className="font-medium">{issue.subject}</p>
+                        <p className="font-bold text-secondary">{issue.subject}</p>
                       </div>
-                      <div>
+                      <div className="flex justify-between items-start">
                         <p className="text-sm text-muted-foreground">תיאור</p>
-                        <p>{issue.description}</p>
+                        <p className="font-medium max-w-[70%] text-left">{issue.description}</p>
                       </div>
                     </div>
                   </DialogContent>
