@@ -358,7 +358,7 @@ export default function Leads() {
         <DialogContent className="max-w-4xl p-0 overflow-hidden" hideCloseButton>
           {selectedLead && (
             <LeadDetailsPopup
-              lead={selectedLead}
+              lead={leads?.find(l => l.id === selectedLead.id) || selectedLead}
               onClose={() => setIsViewLeadOpen(false)}
               onRefresh={() => refetch()}
             />
