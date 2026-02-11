@@ -416,42 +416,7 @@ export default function PaymeSetup() {
                 </div>
               </div>
 
-              {/* Business Details Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-lg font-semibold">
-                  <CreditCard className="w-5 h-5" />
-                  <h3>פרטי סליקה</h3>
-                </div>
-                
-                <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
-                  סוג עוסק: <span className="font-medium text-foreground">פרטי</span>
-                </div>
-
-                <div>
-                  <Label htmlFor="merchantName">שם מלא *</Label>
-                  <Input
-                    id="merchantName"
-                    value={formData.merchantName}
-                    readOnly
-                    className="bg-muted/30"
-                    placeholder="ימולא אוטומטית מהשם למעלה"
-                  />
-                  {errors.merchantName && <p className="text-red-500 text-sm mt-1">{errors.merchantName}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="merchantNameEn">שם מלא באנגלית *</Label>
-                  <Input
-                    id="merchantNameEn"
-                    value={formData.merchantNameEn}
-                    readOnly
-                    className="bg-muted/30"
-                    placeholder="ימולא אוטומטית"
-                    dir="ltr"
-                  />
-                  {errors.merchantNameEn && <p className="text-red-500 text-sm mt-1">{errors.merchantNameEn}</p>}
-                </div>
-              </div>
+              {/* merchantName and merchantNameEn are auto-filled and sent hidden */}
 
               {/* Address Section */}
               <div className="space-y-4">
