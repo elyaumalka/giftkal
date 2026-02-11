@@ -160,6 +160,7 @@ export default function EventInvitations() {
     receptionTime,
     ceremonyTime,
     eventDate: event?.event_date ? new Date(event.event_date).toLocaleDateString("he-IL") : "",
+    eventDateRaw: event?.event_date || "",
     introText,
     notes,
     venueName,
