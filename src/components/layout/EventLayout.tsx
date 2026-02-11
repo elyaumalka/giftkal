@@ -13,9 +13,12 @@ import InvitationsIcon from "@/assets/icons/event/Invitations.svg";
 import GiftsIcon from "@/assets/icons/event/Gifts.svg";
 import SettingsIcon from "@/assets/icons/event/Settings.svg";
 
+import StatIcon from "@/assets/icons/event/StatIcon.svg";
+
 const menuItems = [
   { title: "דשבורד", icon: DashboardIcon, path: "/event" },
   { title: "הזמנות", icon: InvitationsIcon, path: "/event/invitations" },
+  { title: "אישורי הגעה", icon: StatIcon, path: "/event/rsvp" },
   { title: "מתנות", icon: GiftsIcon, path: "/event/gifts" },
   { title: "הגדרות", icon: SettingsIcon, path: "/event/settings" },
 ];

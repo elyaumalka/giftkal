@@ -39,6 +39,7 @@ import EventDashboard from "./pages/event/Dashboard";
 import EventInvitations from "./pages/event/Invitations";
 import EventGifts from "./pages/event/Gifts";
 import EventSettings from "./pages/event/Settings";
+import EventRSVP from "./pages/event/RSVP";
 import PaymeSetup from "./pages/event/PaymeSetup";
 
 // Public
@@ -92,6 +93,7 @@ function App() {
           <Route path="/event" element={<EventLayout />}>
             <Route index element={<EventDashboard />} />
             <Route path="invitations" element={<EventInvitations />} />
+            <Route path="rsvp" element={<EventRSVP />} />
             <Route path="gifts" element={<EventGifts />} />
             <Route path="settings" element={<EventSettings />} />
           </Route>
