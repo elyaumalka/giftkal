@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Sparkles, Loader2 } from "lucide-react";
 import { templates } from "@/components/invitations/InvitationTemplates";
 import { useExcelHandler } from "@/components/invitations/useExcelHandler";
 import { useAudioHandler } from "@/components/invitations/useAudioHandler";
@@ -36,6 +36,9 @@ export default function EventInvitations() {
   const [venueName, setVenueName] = useState("");
   const [venueLocation, setVenueLocation] = useState("");
   const [voiceText, setVoiceText] = useState("");
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiInvitations, setAiInvitations] = useState<{ id: number; style: string; imageUrl: string }[]>([]);
+  const [selectedAiIndex, setSelectedAiIndex] = useState<number | null>(null);
 
   const excelInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -140,8 +143,55 @@ export default function EventInvitations() {
   };
 
   const handleSendInvitations = () => {
-    if (selectedTemplate === null) { toast({ title: "נא לבחור תבנית הזמנה", variant: "destructive" }); return; }
+    if (selectedTemplate === null && selectedAiIndex === null) { toast({ title: "נא לבחור תבנית הזמנה", variant: "destructive" }); return; }
     toast({ title: "ההזמנות נשלחו בהצלחה!", description: `נשלחו ${guests?.length || 0} הזמנות` });
+  };
+
+  const toHebrewDateClient = (rawDate?: string): string => {
+    if (!rawDate) return "";
+    try {
+      const date = new Date(rawDate);
+      if (isNaN(date.getTime())) return "";
+      return new Intl.DateTimeFormat("he-IL-u-ca-hebrew", { day: "numeric", month: "long", year: "numeric" }).format(date);
+    } catch { return ""; }
+  };
+
+  const handleGenerateAI = async () => {
+    setIsGeneratingAI(true);
+    setAiInvitations([]);
+    setSelectedAiIndex(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-invitations", {
+        body: {
+          eventType,
+          groomName,
+          brideName,
+          childName,
+          familyName,
+          groomParents,
+          brideParents,
+          introText,
+          eventDate: event?.event_date ? new Date(event.event_date).toLocaleDateString("he-IL") : "",
+          hebrewDate: toHebrewDateClient(event?.event_date),
+          receptionTime,
+          ceremonyTime,
+          venueName,
+          venueLocation,
+          notes,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) { toast({ title: data.error, variant: "destructive" }); return; }
+      setAiInvitations(data.invitations || []);
+      if (data.invitations?.length > 0) {
+        toast({ title: `נוצרו ${data.invitations.length} הזמנות מעוצבות!` });
+      }
+    } catch (err: any) {
+      console.error("AI generation error:", err);
+      toast({ title: "שגיאה ביצירת הזמנות", description: err.message || "נסה שוב", variant: "destructive" });
+    } finally {
+      setIsGeneratingAI(false);
+    }
   };
 
   const isWeddingType = eventType === "חתונה" || eventType === "אירוסין";
@@ -404,13 +454,77 @@ export default function EventInvitations() {
       {/* Step 3: בחירת עיצוב */}
       {currentStep === 3 && (
         <div className="space-y-4">
+          {/* AI Generation Section */}
+          <div className="bg-gradient-to-l from-[#051839] to-[#0A2D6E] rounded-xl p-5 text-white" dir="rtl">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-6 h-6 text-[#C4A35A]" />
+                <div>
+                  <h3 className="font-bold text-base">יצירת הזמנה עם AI</h3>
+                  <p className="text-xs text-gray-300 mt-0.5">צור 4 עיצובים מרהיבים ומותאמים אישית על בסיס הפרטים שהזנת</p>
+                </div>
+              </div>
+              <button
+                onClick={handleGenerateAI}
+                disabled={isGeneratingAI}
+                className="bg-[#C4A35A] hover:bg-[#B8942A] disabled:opacity-50 text-[#051839] font-bold rounded-lg py-2.5 px-6 text-sm flex items-center gap-2 transition-colors"
+              >
+                {isGeneratingAI ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    יוצר הזמנות...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    צור הזמנות עם AI
+                  </>
+                )}
+              </button>
+            </div>
+            {isGeneratingAI && (
+              <div className="mt-4 text-center">
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-300">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#C4A35A]" />
+                  <span>מייצר 4 עיצובים מותאמים אישית, זה עלול לקחת כחצי דקה...</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* AI Generated Results */}
+          {aiInvitations.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-[#051839] font-bold text-base text-right" dir="rtl">🎨 הזמנות שנוצרו עם AI</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3" dir="rtl">
+                {aiInvitations.map((inv, idx) => (
+                  <div
+                    key={inv.id}
+                    onClick={() => { setSelectedAiIndex(idx); setSelectedTemplate(null); }}
+                    className={`relative bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-md ${selectedAiIndex === idx ? "ring-2 ring-[#C4A35A]" : ""}`}
+                  >
+                    <div className={`absolute top-3 left-3 w-5 h-5 rounded border-2 flex items-center justify-center z-10 ${selectedAiIndex === idx ? "bg-[#C4A35A] border-[#C4A35A]" : "border-gray-300 bg-white"}`}>
+                      {selectedAiIndex === idx && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <img src={inv.imageUrl} alt={inv.style} className="w-full aspect-[5/7] object-cover" />
+                    <div className="p-2 bg-white border-t">
+                      <h3 className="font-medium text-[#051839] text-center text-xs">{inv.style}</h3>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Existing Templates */}
+          <h3 className="text-[#051839] font-bold text-base text-right pt-2" dir="rtl">📋 תבניות מוכנות</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto p-1" dir="rtl">
             {templates.map((template, index) => {
               const TemplateComponent = template.Component;
               return (
                 <div
                   key={template.id}
-                  onClick={() => setSelectedTemplate(index)}
+                  onClick={() => { setSelectedTemplate(index); setSelectedAiIndex(null); }}
                   className={`relative bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-md ${selectedTemplate === index ? "ring-2 ring-[#95742F]" : ""}`}
                 >
                   <div className={`absolute top-3 left-3 w-5 h-5 rounded border-2 flex items-center justify-center z-10 ${selectedTemplate === index ? "bg-[#95742F] border-[#95742F]" : "border-gray-300 bg-white"}`}>
@@ -434,6 +548,12 @@ export default function EventInvitations() {
               <Download className="w-5 h-5 text-[#051839]" />
               <span className="text-[#051839] font-medium text-sm">הורדת ההזמנה כתמונה</span>
             </button>
+            {selectedAiIndex !== null && aiInvitations[selectedAiIndex] && (
+              <a href={aiInvitations[selectedAiIndex].imageUrl} download={`הזמנה-ai-${selectedAiIndex + 1}.png`} target="_blank" rel="noopener noreferrer" className="bg-[#C4A35A] hover:bg-[#B8942A] rounded-xl p-4 flex items-center justify-center gap-2 transition-colors">
+                <Download className="w-5 h-5 text-white" />
+                <span className="text-white font-medium text-sm">הורדת הזמנת AI</span>
+              </a>
+            )}
             <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors">
               <Upload className="w-5 h-5 text-[#051839]" />
               <span className="text-[#051839] font-medium text-sm">העלאת קובץ הזמנה מוכן</span>
