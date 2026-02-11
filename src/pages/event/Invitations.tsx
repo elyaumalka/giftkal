@@ -414,7 +414,7 @@ export default function EventInvitations() {
       {currentStep === 3 && (
         <div className="space-y-4">
           {/* Templates Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" dir="rtl">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto p-1" dir="rtl">
             {templates.map((template, index) => {
               const TemplateComponent = template.Component;
               return (
