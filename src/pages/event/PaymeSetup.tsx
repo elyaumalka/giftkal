@@ -28,13 +28,22 @@ const BANKS = [
   { code: 54, name: 'בנק ירושלים' },
 ];
 
-// Business types
-const INC_TYPES = [
-  { value: 0, label: 'פרטי' },
-  { value: 1, label: 'עוסק פטור' },
-  { value: 2, label: 'עוסק מורשה' },
-  { value: 3, label: 'חברה בע"מ' },
-];
+// Hebrew to English transliteration map
+const hebrewToEnglish: Record<string, string> = {
+  'א': 'a', 'ב': 'b', 'ג': 'g', 'ד': 'd', 'ה': 'h', 'ו': 'v', 'ז': 'z',
+  'ח': 'ch', 'ט': 't', 'י': 'y', 'כ': 'k', 'ך': 'k', 'ל': 'l', 'מ': 'm',
+  'ם': 'm', 'נ': 'n', 'ן': 'n', 'ס': 's', 'ע': 'a', 'פ': 'p', 'ף': 'f',
+  'צ': 'tz', 'ץ': 'tz', 'ק': 'k', 'ר': 'r', 'ש': 'sh', 'ת': 't',
+};
+
+function transliterateHebrew(text: string): string {
+  return text.split('').map(char => {
+    if (hebrewToEnglish[char]) return hebrewToEnglish[char];
+    if (/[a-zA-Z0-9\s\-_]/.test(char)) return char;
+    if (char === ' ') return ' ';
+    return '';
+  }).join('').replace(/\s+/g, ' ').trim();
+}
 
 // Validation schema
 const formSchema = z.object({
@@ -140,7 +149,18 @@ export default function PaymeSetup() {
   });
 
   const handleChange = (field: keyof FormData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      // Auto-fill merchantName and merchantNameEn when first/last name changes
+      if (field === 'firstName' || field === 'lastName') {
+        const first = field === 'firstName' ? (value as string) : prev.firstName;
+        const last = field === 'lastName' ? (value as string) : prev.lastName;
+        const fullName = `${first} ${last}`.trim();
+        updated.merchantName = fullName;
+        updated.merchantNameEn = transliterateHebrew(fullName);
+      }
+      return updated;
+    });
     // Clear error when field changes
     if (errors[field]) {
       setErrors(prev => {
@@ -400,59 +420,33 @@ export default function PaymeSetup() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <CreditCard className="w-5 h-5" />
-                  <h3>פרטי עסק</h3>
+                  <h3>פרטי סליקה</h3>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="incType">סוג עוסק *</Label>
-                    <Select 
-                      value={formData.incType?.toString()} 
-                      onValueChange={(v) => handleChange('incType', parseInt(v))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="בחרו סוג" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {INC_TYPES.map(type => (
-                          <SelectItem key={type.value} value={type.value.toString()}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="incCode">מספר עוסק / ח.פ</Label>
-                    <Input
-                      id="incCode"
-                      value={formData.incCode || ''}
-                      onChange={(e) => handleChange('incCode', e.target.value)}
-                      placeholder="אופציונלי"
-                    />
-                  </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
+                  סוג עוסק: <span className="font-medium text-foreground">פרטי</span>
                 </div>
 
                 <div>
-                  <Label htmlFor="merchantName">שם העסק / שם מלא *</Label>
+                  <Label htmlFor="merchantName">שם מלא *</Label>
                   <Input
                     id="merchantName"
                     value={formData.merchantName}
-                    onChange={(e) => handleChange('merchantName', e.target.value)}
-                    placeholder="השם שיופיע בחשבוניות (עברית)"
-                    className={errors.merchantName ? 'border-red-500' : ''}
+                    readOnly
+                    className="bg-muted/30"
+                    placeholder="ימולא אוטומטית מהשם למעלה"
                   />
                   {errors.merchantName && <p className="text-red-500 text-sm mt-1">{errors.merchantName}</p>}
                 </div>
 
                 <div>
-                  <Label htmlFor="merchantNameEn">שם העסק באנגלית *</Label>
+                  <Label htmlFor="merchantNameEn">שם מלא באנגלית *</Label>
                   <Input
                     id="merchantNameEn"
                     value={formData.merchantNameEn}
-                    onChange={(e) => handleChange('merchantNameEn', e.target.value.replace(/[^a-zA-Z0-9\s\-_]/g, ''))}
-                    placeholder="Business name in English"
-                    className={errors.merchantNameEn ? 'border-red-500' : ''}
+                    readOnly
+                    className="bg-muted/30"
+                    placeholder="ימולא אוטומטית"
                     dir="ltr"
                   />
                   {errors.merchantNameEn && <p className="text-red-500 text-sm mt-1">{errors.merchantNameEn}</p>}
