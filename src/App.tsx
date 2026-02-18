@@ -49,6 +49,7 @@ import VenueLanding from "./pages/landing/VenueLanding";
 
 // API Docs
 import YemotApiDocs from "./pages/api/YemotApiDocs";
+import SystemApiDocs from "./pages/api/SystemApiDocs";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,7 @@ function App() {
           <Route path="/event/:eventId/payme-setup" element={<PaymeSetup />} />
           <Route path="/landing/:venueId" element={<VenueLanding />} />
           <Route path="/api/yemot" element={<YemotApiDocs />} />
+          <Route path="/api/docs" element={<SystemApiDocs />} />
 
           {/* Admin routes */}
           <Route path="/admin" element={<AdminLayout />}>
