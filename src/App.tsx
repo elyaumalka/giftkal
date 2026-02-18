@@ -47,6 +47,9 @@ import EventWelcome from "./pages/gift/EventWelcome";
 import GiftScreen from "./pages/gift/GiftScreen";
 import VenueLanding from "./pages/landing/VenueLanding";
 
+// API Docs
+import YemotApiDocs from "./pages/api/YemotApiDocs";
+
 const queryClient = new QueryClient();
 
 function App() {
@@ -65,6 +68,7 @@ function App() {
           <Route path="/gift/:eventId/send" element={<GiftScreen />} />
           <Route path="/event/:eventId/payme-setup" element={<PaymeSetup />} />
           <Route path="/landing/:venueId" element={<VenueLanding />} />
+          <Route path="/api/yemot" element={<YemotApiDocs />} />
 
           {/* Admin routes */}
           <Route path="/admin" element={<AdminLayout />}>
