@@ -170,6 +170,25 @@ async function handleTransactions(action: string, supabase: any, url: URL, body:
       const totalAmount = (data || []).reduce((sum: number, t: any) => sum + Number(t.amount), 0);
       return okResponse({ transactions: data, count: data?.length || 0, stats: { total_amount: totalAmount } });
     }
+    case 'GetTransaction': {
+      const txId = url.searchParams.get('transaction_id') || body.transaction_id;
+      if (!txId) return errorResponse('transaction_id is required', 400);
+      const { data, error } = await supabase.from('transactions').select('*').eq('id', txId).single();
+      if (error) return errorResponse(error.message, 404);
+      return okResponse({ transaction: data });
+    }
+    case 'CreateTransaction': {
+      const { event_id, payer_name, amount, payer_phone, payer_email, relationship, blessing_text, venue_id, installments, payment_status } = body;
+      if (!event_id || !payer_name || !amount) return errorResponse('event_id, payer_name, and amount are required', 400);
+      const { data, error } = await supabase.from('transactions').insert({
+        event_id, payer_name, amount, payer_phone: payer_phone || null,
+        payer_email: payer_email || null, relationship: relationship || null,
+        blessing_text: blessing_text || null, venue_id: venue_id || null,
+        installments: installments || 1, payment_status: payment_status || 'completed',
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ transaction: data });
+    }
   }
   return null;
 }
@@ -490,6 +509,234 @@ async function handleSupportTickets(action: string, supabase: any, url: URL, bod
   return null;
 }
 
+async function handleInvoices(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListInvoices': {
+      const venueId = url.searchParams.get('venue_id') || body.venue_id;
+      if (!venueId) return errorResponse('venue_id is required', 400);
+      const { data, error } = await supabase.from('invoices').select('*').eq('venue_id', venueId)
+        .order('for_month', { ascending: false });
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ invoices: data, count: data?.length || 0 });
+    }
+    case 'GetInvoice': {
+      const invoiceId = url.searchParams.get('invoice_id') || body.invoice_id;
+      if (!invoiceId) return errorResponse('invoice_id is required', 400);
+      const { data, error } = await supabase.from('invoices').select('*').eq('id', invoiceId).single();
+      if (error) return errorResponse(error.message, 404);
+      return okResponse({ invoice: data });
+    }
+    case 'CreateInvoice': {
+      const { venue_id, amount, for_month, file_url } = body;
+      if (!venue_id || !amount || !for_month) return errorResponse('venue_id, amount, and for_month are required', 400);
+      const { data, error } = await supabase.from('invoices').insert({
+        venue_id, amount, for_month, file_url: file_url || null,
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ invoice: data });
+    }
+    case 'UpdateInvoice': {
+      const { invoice_id, ...updates } = body;
+      if (!invoice_id) return errorResponse('invoice_id is required', 400);
+      const { data, error } = await supabase.from('invoices').update(updates).eq('id', invoice_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ invoice: data });
+    }
+  }
+  return null;
+}
+
+async function handleDevices(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListDevices': {
+      const venueId = url.searchParams.get('venue_id') || body.venue_id;
+      if (!venueId) return errorResponse('venue_id is required', 400);
+      const { data, error } = await supabase.from('devices').select('*').eq('venue_id', venueId);
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ devices: data, count: data?.length || 0 });
+    }
+    case 'CreateDevice': {
+      const { venue_id, name, serial_number, is_active } = body;
+      if (!venue_id || !name || !serial_number) return errorResponse('venue_id, name, and serial_number are required', 400);
+      const { data, error } = await supabase.from('devices').insert({
+        venue_id, name, serial_number, is_active: is_active !== false,
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ device: data });
+    }
+    case 'UpdateDevice': {
+      const { device_id, ...updates } = body;
+      if (!device_id) return errorResponse('device_id is required', 400);
+      const { data, error } = await supabase.from('devices').update(updates).eq('id', device_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ device: data });
+    }
+    case 'DeleteDevice': {
+      const deviceId = url.searchParams.get('device_id') || body.device_id;
+      if (!deviceId) return errorResponse('device_id is required', 400);
+      const { error } = await supabase.from('devices').delete().eq('id', deviceId);
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ success: true });
+    }
+  }
+  return null;
+}
+
+async function handleNotes(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListNotes': {
+      const leadId = url.searchParams.get('lead_id') || body.lead_id;
+      if (!leadId) return errorResponse('lead_id is required', 400);
+      const { data, error } = await supabase.from('notes').select('*').eq('lead_id', leadId)
+        .order('created_at', { ascending: false });
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ notes: data, count: data?.length || 0 });
+    }
+    case 'CreateNote': {
+      const { lead_id, content } = body;
+      if (!lead_id || !content) return errorResponse('lead_id and content are required', 400);
+      const { data, error } = await supabase.from('notes').insert({ lead_id, content }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ note: data });
+    }
+    case 'UpdateNote': {
+      const { note_id, content, is_completed } = body;
+      if (!note_id) return errorResponse('note_id is required', 400);
+      const updates: any = {};
+      if (content !== undefined) updates.content = content;
+      if (is_completed !== undefined) updates.is_completed = is_completed;
+      const { data, error } = await supabase.from('notes').update(updates).eq('id', note_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ note: data });
+    }
+    case 'DeleteNote': {
+      const noteId = url.searchParams.get('note_id') || body.note_id;
+      if (!noteId) return errorResponse('note_id is required', 400);
+      const { error } = await supabase.from('notes').delete().eq('id', noteId);
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ success: true });
+    }
+  }
+  return null;
+}
+
+async function handleTasks(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListTasks': {
+      const leadId = url.searchParams.get('lead_id') || body.lead_id;
+      const userId = url.searchParams.get('user_id') || body.user_id;
+      let query = supabase.from('tasks').select('*');
+      if (leadId) query = query.eq('lead_id', leadId);
+      if (userId) query = query.eq('user_id', userId);
+      query = query.order('created_at', { ascending: false });
+      const { data, error } = await query;
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ tasks: data, count: data?.length || 0 });
+    }
+    case 'CreateTask': {
+      const { lead_id, user_id, description, due_date } = body;
+      if (!description) return errorResponse('description is required', 400);
+      const { data, error } = await supabase.from('tasks').insert({
+        lead_id: lead_id || null, user_id: user_id || null,
+        description, due_date: due_date || null,
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ task: data });
+    }
+    case 'UpdateTask': {
+      const { task_id, ...updates } = body;
+      if (!task_id) return errorResponse('task_id is required', 400);
+      const { data, error } = await supabase.from('tasks').update(updates).eq('id', task_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ task: data });
+    }
+    case 'DeleteTask': {
+      const taskId = url.searchParams.get('task_id') || body.task_id;
+      if (!taskId) return errorResponse('task_id is required', 400);
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ success: true });
+    }
+  }
+  return null;
+}
+
+async function handleLandingLeads(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListLandingLeads': {
+      const venueId = url.searchParams.get('venue_id') || body.venue_id;
+      if (!venueId) return errorResponse('venue_id is required', 400);
+      const status = url.searchParams.get('status') || body.status;
+      let query = supabase.from('landing_page_leads').select('*').eq('venue_id', venueId);
+      if (status) query = query.eq('status', status);
+      query = query.order('created_at', { ascending: false });
+      const { data, error } = await query;
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ leads: data, count: data?.length || 0 });
+    }
+    case 'CreateLandingLead': {
+      const { venue_id, full_name, phone, email, event_date, notes } = body;
+      if (!venue_id || !full_name) return errorResponse('venue_id and full_name are required', 400);
+      const { data, error } = await supabase.from('landing_page_leads').insert({
+        venue_id, full_name, phone: phone || null, email: email || null,
+        event_date: event_date || null, notes: notes || null,
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ lead: data });
+    }
+    case 'UpdateLandingLead': {
+      const { lead_id, ...updates } = body;
+      if (!lead_id) return errorResponse('lead_id is required', 400);
+      const { data, error } = await supabase.from('landing_page_leads').update(updates).eq('id', lead_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ lead: data });
+    }
+    case 'DeleteLandingLead': {
+      const leadId = url.searchParams.get('lead_id') || body.lead_id;
+      if (!leadId) return errorResponse('lead_id is required', 400);
+      const { error } = await supabase.from('landing_page_leads').delete().eq('id', leadId);
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ success: true });
+    }
+  }
+  return null;
+}
+
+async function handleSettings(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'GetSystemSettings': {
+      const { data, error } = await supabase.from('system_settings').select('*').maybeSingle();
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ settings: data });
+    }
+    case 'UpdateSystemSettings': {
+      const { admin_email, logo_url } = body;
+      const updates: any = {};
+      if (admin_email !== undefined) updates.admin_email = admin_email;
+      if (logo_url !== undefined) updates.logo_url = logo_url;
+      // Upsert since there may be only one row
+      const { data: existing } = await supabase.from('system_settings').select('id').maybeSingle();
+      let result;
+      if (existing) {
+        result = await supabase.from('system_settings').update(updates).eq('id', existing.id).select().single();
+      } else {
+        result = await supabase.from('system_settings').insert(updates).select().single();
+      }
+      if (result.error) return errorResponse(result.error.message, 400);
+      return okResponse({ settings: result.data });
+    }
+    case 'GetRequiredDocuments': {
+      const forType = url.searchParams.get('for_type') || body.for_type;
+      let query = supabase.from('required_documents').select('*');
+      if (forType) query = query.eq('for_type', forType);
+      const { data, error } = await query;
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ documents: data, count: data?.length || 0 });
+    }
+  }
+  return null;
+}
+
 // ===== Main handler =====
 
 const actionHandlers: Record<string, (action: string, supabase: any, url: URL, body: any) => Promise<Response | null>> = {
@@ -499,7 +746,7 @@ const actionHandlers: Record<string, (action: string, supabase: any, url: URL, b
   ListGuests: handleGuests, AddGuest: handleGuests, UpdateGuest: handleGuests,
   UpdateRSVP: handleGuests, DeleteGuest: handleGuests, BulkAddGuests: handleGuests, BulkUpdateRSVP: handleGuests,
   // Transactions
-  GetTransactions: handleTransactions,
+  GetTransactions: handleTransactions, GetTransaction: handleTransactions, CreateTransaction: handleTransactions,
   // Venues
   GetVenue: handleVenues, ListVenues: handleVenues, UpdateVenue: handleVenues, CreateVenue: handleVenues, DeleteVenue: handleVenues,
   // Leads
@@ -513,6 +760,18 @@ const actionHandlers: Record<string, (action: string, supabase: any, url: URL, b
   GetEventStats: handleStats, GetSystemStats: handleStats,
   // Support
   ListTickets: handleSupportTickets, CreateTicket: handleSupportTickets, UpdateTicket: handleSupportTickets,
+  // Invoices
+  ListInvoices: handleInvoices, GetInvoice: handleInvoices, CreateInvoice: handleInvoices, UpdateInvoice: handleInvoices,
+  // Devices
+  ListDevices: handleDevices, CreateDevice: handleDevices, UpdateDevice: handleDevices, DeleteDevice: handleDevices,
+  // Notes
+  ListNotes: handleNotes, CreateNote: handleNotes, UpdateNote: handleNotes, DeleteNote: handleNotes,
+  // Tasks
+  ListTasks: handleTasks, CreateTask: handleTasks, UpdateTask: handleTasks, DeleteTask: handleTasks,
+  // Landing Page Leads
+  ListLandingLeads: handleLandingLeads, CreateLandingLead: handleLandingLeads, UpdateLandingLead: handleLandingLeads, DeleteLandingLead: handleLandingLeads,
+  // Settings
+  GetSystemSettings: handleSettings, UpdateSystemSettings: handleSettings, GetRequiredDocuments: handleSettings,
 };
 
 Deno.serve(async (req) => {
