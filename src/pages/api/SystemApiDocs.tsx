@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Users, Calendar, CreditCard, Building2, BarChart3, Copy, Check, ChevronDown, ChevronLeft, Key, FileText, UserPlus, Megaphone, LifeBuoy } from "lucide-react";
+import { Search, Users, Calendar, CreditCard, Building2, BarChart3, Copy, Check, ChevronDown, ChevronLeft, Key, FileText, UserPlus, Megaphone, LifeBuoy, Receipt, Smartphone, StickyNote, ListTodo, Globe, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -37,10 +37,16 @@ const categories = [
   { id: "guests", label: "ניהול מוזמנים", icon: Users },
   { id: "transactions", label: "מתנות ועסקאות", icon: CreditCard },
   { id: "venues", label: "ניהול אולמות", icon: Building2 },
+  { id: "invoices", label: "חשבוניות", icon: Receipt },
+  { id: "devices", label: "מכשירים", icon: Smartphone },
   { id: "leads", label: "ניהול לידים", icon: Megaphone },
+  { id: "landing-leads", label: "לידים מדף נחיתה", icon: Globe },
   { id: "users", label: "ניהול משתמשים", icon: UserPlus },
   { id: "documents", label: "מסמכים", icon: FileText },
+  { id: "notes", label: "הערות", icon: StickyNote },
+  { id: "tasks", label: "משימות", icon: ListTodo },
   { id: "support", label: "תמיכה", icon: LifeBuoy },
+  { id: "settings", label: "הגדרות מערכת", icon: Settings },
   { id: "stats", label: "סטטיסטיקות", icon: BarChart3 },
 ];
 
@@ -178,6 +184,34 @@ const endpoints: Endpoint[] = [
     params: [{ name: "event_id", type: "uuid", required: true, description: "מזהה האירוע" }],
     exampleRequest: `GET ${BASE_URL}?action=GetTransactions&event_id=EVENT_ID\nX-API-Key: YOUR_API_KEY`,
     exampleResponse: `{\n  "responseStatus": "OK",\n  "transactions": [\n    {\n      "id": "uuid",\n      "payer_name": "משה כהן",\n      "amount": 500,\n      "blessing_text": "מזל טוב!",\n      "payment_status": "completed"\n    }\n  ],\n  "count": 42,\n  "stats": { "total_amount": 75000 }\n}`,
+  },
+  {
+    id: "get-transaction", action: "GetTransaction", title: "פרטי עסקה בודדת",
+    description: "קבלת כל הפרטים של עסקה ספציפית.",
+    method: "GET", category: "transactions",
+    params: [{ name: "transaction_id", type: "uuid", required: true, description: "מזהה העסקה" }],
+    exampleRequest: `GET ${BASE_URL}?action=GetTransaction&transaction_id=TX_ID\nX-API-Key: YOUR_API_KEY`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "transaction": {\n    "id": "uuid",\n    "payer_name": "משה כהן",\n    "amount": 500,\n    "blessing_text": "מזל טוב!",\n    "payment_status": "completed",\n    "relationship": "משפחה",\n    "transaction_date": "2025-06-10T14:30:00Z"\n  }\n}`,
+  },
+  {
+    id: "create-transaction", action: "CreateTransaction", title: "יצירת עסקה/מתנה",
+    description: "הוספת עסקה חדשה לאירוע – למשל מתנה שהתקבלה מחוץ למערכת התשלומים.",
+    method: "POST", category: "transactions",
+    params: [
+      { name: "event_id", type: "uuid", required: true, description: "מזהה האירוע" },
+      { name: "payer_name", type: "string", required: true, description: "שם הנותן" },
+      { name: "amount", type: "number", required: true, description: "סכום" },
+      { name: "payer_phone", type: "string", required: false, description: "טלפון" },
+      { name: "payer_email", type: "string", required: false, description: "אימייל" },
+      { name: "relationship", type: "string", required: false, description: "קרבה" },
+      { name: "blessing_text", type: "string", required: false, description: "ברכה" },
+      { name: "venue_id", type: "uuid", required: false, description: "שיוך לאולם" },
+      { name: "installments", type: "integer", required: false, description: "מספר תשלומים (ברירת מחדל: 1)" },
+      { name: "payment_status", type: "string", required: false, description: "סטטוס (ברירת מחדל: completed)", options: ["pending", "completed", "failed"] },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=CreateTransaction\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "event_id": "EVENT_ID",\n  "payer_name": "אברהם כהן",\n  "amount": 500,\n  "relationship": "דוד",\n  "blessing_text": "מזל טוב לזוג הנפלא!"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "transaction": {\n    "id": "new-uuid",\n    "payer_name": "אברהם כהן",\n    "amount": 500,\n    "payment_status": "completed"\n  }\n}`,
+    notes: ["שימושי לרישום מתנות שהתקבלו במזומן, צ'ק, או העברה בנקאית ישירה."],
   },
 
   // ===== VENUES =====
@@ -457,6 +491,257 @@ const endpoints: Endpoint[] = [
     ],
     exampleRequest: `POST ${BASE_URL}?action=UpdateTicket\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "ticket_id": "TICKET_ID",\n  "status": "closed",\n  "response": "הבעיה תוקנה, תודה על הפנייה"\n}`,
     exampleResponse: `{\n  "responseStatus": "OK",\n  "ticket": { ... }\n}`,
+  },
+
+  // ===== INVOICES =====
+  {
+    id: "list-invoices", action: "ListInvoices", title: "רשימת חשבוניות",
+    description: "קבלת כל החשבוניות של אולם ספציפי.",
+    method: "GET", category: "invoices",
+    params: [{ name: "venue_id", type: "uuid", required: true, description: "מזהה האולם" }],
+    exampleRequest: `GET ${BASE_URL}?action=ListInvoices&venue_id=VENUE_ID\nX-API-Key: YOUR_API_KEY`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "invoices": [\n    {\n      "id": "uuid",\n      "venue_id": "uuid",\n      "amount": 500,\n      "for_month": "2025-06-01",\n      "file_url": "https://..."\n    }\n  ],\n  "count": 12\n}`,
+  },
+  {
+    id: "get-invoice", action: "GetInvoice", title: "פרטי חשבונית",
+    description: "קבלת פרטי חשבונית בודדת.",
+    method: "GET", category: "invoices",
+    params: [{ name: "invoice_id", type: "uuid", required: true, description: "מזהה החשבונית" }],
+    exampleRequest: `GET ${BASE_URL}?action=GetInvoice&invoice_id=INVOICE_ID\nX-API-Key: YOUR_API_KEY`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "invoice": { ... }\n}`,
+  },
+  {
+    id: "create-invoice", action: "CreateInvoice", title: "יצירת חשבונית",
+    description: "יצירת חשבונית חדשה לאולם.",
+    method: "POST", category: "invoices",
+    params: [
+      { name: "venue_id", type: "uuid", required: true, description: "מזהה האולם" },
+      { name: "amount", type: "number", required: true, description: "סכום" },
+      { name: "for_month", type: "date", required: true, description: "עבור חודש (YYYY-MM-DD)" },
+      { name: "file_url", type: "string", required: false, description: "קישור לקובץ חשבונית" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=CreateInvoice\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "venue_id": "VENUE_ID",\n  "amount": 500,\n  "for_month": "2025-06-01"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "invoice": {\n    "id": "new-uuid",\n    "amount": 500,\n    "for_month": "2025-06-01"\n  }\n}`,
+  },
+  {
+    id: "update-invoice", action: "UpdateInvoice", title: "עדכון חשבונית",
+    description: "עדכון פרטי חשבונית – סכום, קישור לקובץ.",
+    method: "POST", category: "invoices",
+    params: [
+      { name: "invoice_id", type: "uuid", required: true, description: "מזהה החשבונית" },
+      { name: "amount", type: "number", required: false, description: "סכום" },
+      { name: "file_url", type: "string", required: false, description: "קישור לקובץ" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=UpdateInvoice\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "invoice_id": "INVOICE_ID",\n  "amount": 600\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "invoice": { ... }\n}`,
+  },
+
+  // ===== DEVICES =====
+  {
+    id: "list-devices", action: "ListDevices", title: "רשימת מכשירים",
+    description: "קבלת כל המכשירים של אולם.",
+    method: "GET", category: "devices",
+    params: [{ name: "venue_id", type: "uuid", required: true, description: "מזהה האולם" }],
+    exampleRequest: `GET ${BASE_URL}?action=ListDevices&venue_id=VENUE_ID\nX-API-Key: YOUR_API_KEY`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "devices": [\n    {\n      "id": "uuid",\n      "name": "מכשיר מתנות 1",\n      "serial_number": "SN12345",\n      "is_active": true\n    }\n  ],\n  "count": 3\n}`,
+  },
+  {
+    id: "create-device", action: "CreateDevice", title: "הוספת מכשיר",
+    description: "הוספת מכשיר חדש לאולם.",
+    method: "POST", category: "devices",
+    params: [
+      { name: "venue_id", type: "uuid", required: true, description: "מזהה האולם" },
+      { name: "name", type: "string", required: true, description: "שם המכשיר" },
+      { name: "serial_number", type: "string", required: true, description: "מספר סריאלי" },
+      { name: "is_active", type: "boolean", required: false, description: "פעיל (ברירת מחדל: true)" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=CreateDevice\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "venue_id": "VENUE_ID",\n  "name": "מכשיר מתנות 2",\n  "serial_number": "SN67890"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "device": {\n    "id": "new-uuid",\n    "name": "מכשיר מתנות 2",\n    "serial_number": "SN67890",\n    "is_active": true\n  }\n}`,
+  },
+  {
+    id: "update-device", action: "UpdateDevice", title: "עדכון מכשיר",
+    description: "עדכון פרטי מכשיר – שם, סטטוס פעילות.",
+    method: "POST", category: "devices",
+    params: [
+      { name: "device_id", type: "uuid", required: true, description: "מזהה המכשיר" },
+      { name: "name", type: "string", required: false, description: "שם" },
+      { name: "is_active", type: "boolean", required: false, description: "פעיל/לא פעיל" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=UpdateDevice\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "device_id": "DEVICE_ID",\n  "is_active": false\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "device": { ... }\n}`,
+  },
+  {
+    id: "delete-device", action: "DeleteDevice", title: "מחיקת מכשיר",
+    description: "מחיקת מכשיר מהאולם.",
+    method: "POST", category: "devices",
+    params: [{ name: "device_id", type: "uuid", required: true, description: "מזהה המכשיר" }],
+    exampleRequest: `POST ${BASE_URL}?action=DeleteDevice\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "device_id": "DEVICE_ID"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "success": true\n}`,
+  },
+
+  // ===== NOTES =====
+  {
+    id: "list-notes", action: "ListNotes", title: "רשימת הערות",
+    description: "קבלת כל ההערות של ליד.",
+    method: "GET", category: "notes",
+    params: [{ name: "lead_id", type: "uuid", required: true, description: "מזהה הליד" }],
+    exampleRequest: `GET ${BASE_URL}?action=ListNotes&lead_id=LEAD_ID\nX-API-Key: YOUR_API_KEY`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "notes": [\n    {\n      "id": "uuid",\n      "content": "דיברתי עם הלקוח, מעוניין",\n      "is_completed": false\n    }\n  ],\n  "count": 5\n}`,
+  },
+  {
+    id: "create-note", action: "CreateNote", title: "הוספת הערה",
+    description: "הוספת הערה חדשה לליד.",
+    method: "POST", category: "notes",
+    params: [
+      { name: "lead_id", type: "uuid", required: true, description: "מזהה הליד" },
+      { name: "content", type: "string", required: true, description: "תוכן ההערה" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=CreateNote\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "lead_id": "LEAD_ID",\n  "content": "התקשרתי שוב, ביקש שנחזור מחר"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "note": {\n    "id": "new-uuid",\n    "content": "התקשרתי שוב, ביקש שנחזור מחר",\n    "is_completed": false\n  }\n}`,
+  },
+  {
+    id: "update-note", action: "UpdateNote", title: "עדכון הערה",
+    description: "עדכון תוכן הערה או סימון כבוצע.",
+    method: "POST", category: "notes",
+    params: [
+      { name: "note_id", type: "uuid", required: true, description: "מזהה ההערה" },
+      { name: "content", type: "string", required: false, description: "תוכן חדש" },
+      { name: "is_completed", type: "boolean", required: false, description: "סמן כבוצע" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=UpdateNote\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "note_id": "NOTE_ID",\n  "is_completed": true\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "note": { ... }\n}`,
+  },
+  {
+    id: "delete-note", action: "DeleteNote", title: "מחיקת הערה",
+    description: "מחיקת הערה.",
+    method: "POST", category: "notes",
+    params: [{ name: "note_id", type: "uuid", required: true, description: "מזהה ההערה" }],
+    exampleRequest: `POST ${BASE_URL}?action=DeleteNote\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "note_id": "NOTE_ID"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "success": true\n}`,
+  },
+
+  // ===== TASKS =====
+  {
+    id: "list-tasks", action: "ListTasks", title: "רשימת משימות",
+    description: "קבלת משימות עם סינון לפי ליד או משתמש.",
+    method: "GET", category: "tasks",
+    params: [
+      { name: "lead_id", type: "uuid", required: false, description: "סינון לפי ליד" },
+      { name: "user_id", type: "uuid", required: false, description: "סינון לפי משתמש" },
+    ],
+    exampleRequest: `GET ${BASE_URL}?action=ListTasks&lead_id=LEAD_ID\nX-API-Key: YOUR_API_KEY`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "tasks": [\n    {\n      "id": "uuid",\n      "description": "להתקשר ללקוח",\n      "due_date": "2025-06-20",\n      "is_completed": false\n    }\n  ],\n  "count": 3\n}`,
+  },
+  {
+    id: "create-task", action: "CreateTask", title: "יצירת משימה",
+    description: "יצירת משימה חדשה – ניתן לשייך לליד או למשתמש.",
+    method: "POST", category: "tasks",
+    params: [
+      { name: "description", type: "string", required: true, description: "תיאור המשימה" },
+      { name: "lead_id", type: "uuid", required: false, description: "שיוך לליד" },
+      { name: "user_id", type: "uuid", required: false, description: "שיוך למשתמש" },
+      { name: "due_date", type: "date", required: false, description: "תאריך יעד (YYYY-MM-DD)" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=CreateTask\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "description": "לשלוח הצעת מחיר",\n  "lead_id": "LEAD_ID",\n  "due_date": "2025-06-25"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "task": {\n    "id": "new-uuid",\n    "description": "לשלוח הצעת מחיר",\n    "is_completed": false\n  }\n}`,
+  },
+  {
+    id: "update-task", action: "UpdateTask", title: "עדכון משימה",
+    description: "עדכון משימה – תיאור, תאריך יעד, או סימון כבוצע.",
+    method: "POST", category: "tasks",
+    params: [
+      { name: "task_id", type: "uuid", required: true, description: "מזהה המשימה" },
+      { name: "description", type: "string", required: false, description: "תיאור" },
+      { name: "due_date", type: "date", required: false, description: "תאריך יעד" },
+      { name: "is_completed", type: "boolean", required: false, description: "סמן כבוצע" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=UpdateTask\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "task_id": "TASK_ID",\n  "is_completed": true\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "task": { ... }\n}`,
+  },
+  {
+    id: "delete-task", action: "DeleteTask", title: "מחיקת משימה",
+    description: "מחיקת משימה.",
+    method: "POST", category: "tasks",
+    params: [{ name: "task_id", type: "uuid", required: true, description: "מזהה המשימה" }],
+    exampleRequest: `POST ${BASE_URL}?action=DeleteTask\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "task_id": "TASK_ID"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "success": true\n}`,
+  },
+
+  // ===== LANDING PAGE LEADS =====
+  {
+    id: "list-landing-leads", action: "ListLandingLeads", title: "לידים מדף נחיתה",
+    description: "קבלת לידים שהגיעו מדף הנחיתה של אולם.",
+    method: "GET", category: "landing-leads",
+    params: [
+      { name: "venue_id", type: "uuid", required: true, description: "מזהה האולם" },
+      { name: "status", type: "string", required: false, description: "סינון לפי סטטוס", options: ["new", "contacted", "converted"] },
+    ],
+    exampleRequest: `GET ${BASE_URL}?action=ListLandingLeads&venue_id=VENUE_ID\nX-API-Key: YOUR_API_KEY`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "leads": [\n    {\n      "id": "uuid",\n      "full_name": "שרה כהן",\n      "phone": "0541234567",\n      "event_date": "2025-08-15",\n      "status": "new"\n    }\n  ],\n  "count": 8\n}`,
+  },
+  {
+    id: "create-landing-lead", action: "CreateLandingLead", title: "הוספת ליד מדף נחיתה",
+    description: "הוספת ליד חדש לדף הנחיתה של אולם.",
+    method: "POST", category: "landing-leads",
+    params: [
+      { name: "venue_id", type: "uuid", required: true, description: "מזהה האולם" },
+      { name: "full_name", type: "string", required: true, description: "שם מלא" },
+      { name: "phone", type: "string", required: false, description: "טלפון" },
+      { name: "email", type: "string", required: false, description: "אימייל" },
+      { name: "event_date", type: "date", required: false, description: "תאריך אירוע" },
+      { name: "notes", type: "string", required: false, description: "הערות" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=CreateLandingLead\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "venue_id": "VENUE_ID",\n  "full_name": "דוד ישראלי",\n  "phone": "0521234567",\n  "event_date": "2025-09-10"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "lead": {\n    "id": "new-uuid",\n    "full_name": "דוד ישראלי",\n    "status": "new"\n  }\n}`,
+  },
+  {
+    id: "update-landing-lead", action: "UpdateLandingLead", title: "עדכון ליד דף נחיתה",
+    description: "עדכון סטטוס או פרטי ליד מדף הנחיתה.",
+    method: "POST", category: "landing-leads",
+    params: [
+      { name: "lead_id", type: "uuid", required: true, description: "מזהה הליד" },
+      { name: "status", type: "string", required: false, description: "סטטוס חדש" },
+      { name: "notes", type: "string", required: false, description: "הערות" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=UpdateLandingLead\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "lead_id": "LEAD_ID",\n  "status": "contacted"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "lead": { ... }\n}`,
+  },
+  {
+    id: "delete-landing-lead", action: "DeleteLandingLead", title: "מחיקת ליד דף נחיתה",
+    description: "מחיקת ליד מדף הנחיתה.",
+    method: "POST", category: "landing-leads",
+    params: [{ name: "lead_id", type: "uuid", required: true, description: "מזהה הליד" }],
+    exampleRequest: `POST ${BASE_URL}?action=DeleteLandingLead\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "lead_id": "LEAD_ID"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "success": true\n}`,
+  },
+
+  // ===== SETTINGS =====
+  {
+    id: "get-system-settings", action: "GetSystemSettings", title: "הגדרות מערכת",
+    description: "קבלת הגדרות המערכת הכלליות.",
+    method: "GET", category: "settings",
+    params: [],
+    exampleRequest: `GET ${BASE_URL}?action=GetSystemSettings\nX-API-Key: YOUR_API_KEY`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "settings": {\n    "id": "uuid",\n    "admin_email": "admin@example.com",\n    "logo_url": "https://..."\n  }\n}`,
+  },
+  {
+    id: "update-system-settings", action: "UpdateSystemSettings", title: "עדכון הגדרות מערכת",
+    description: "עדכון הגדרות כלליות – אימייל אדמין, לוגו.",
+    method: "POST", category: "settings",
+    params: [
+      { name: "admin_email", type: "string", required: false, description: "אימייל אדמין" },
+      { name: "logo_url", type: "string", required: false, description: "URL לוגו" },
+    ],
+    exampleRequest: `POST ${BASE_URL}?action=UpdateSystemSettings\nX-API-Key: YOUR_API_KEY\nContent-Type: application/json\n\n{\n  "admin_email": "new-admin@example.com"\n}`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "settings": { ... }\n}`,
+  },
+  {
+    id: "get-required-documents", action: "GetRequiredDocuments", title: "מסמכים נדרשים",
+    description: "קבלת רשימת סוגי המסמכים הנדרשים לפי סוג (venue/event).",
+    method: "GET", category: "settings",
+    params: [{ name: "for_type", type: "string", required: false, description: "סינון לפי סוג", options: ["venue", "event"] }],
+    exampleRequest: `GET ${BASE_URL}?action=GetRequiredDocuments&for_type=event\nX-API-Key: YOUR_API_KEY`,
+    exampleResponse: `{\n  "responseStatus": "OK",\n  "documents": [\n    {\n      "id": "uuid",\n      "document_type": "bank_approval",\n      "for_type": "event",\n      "is_required": true\n    }\n  ],\n  "count": 3\n}`,
   },
 
   // ===== STATS =====
