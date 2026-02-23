@@ -7,7 +7,6 @@ const corsHeaders = {
 
 async function validateApiKey(supabase: any, apiKey: string): Promise<boolean> {
   if (!apiKey) return false;
-  // Simple hash for comparison (in production use bcrypt)
   const encoder = new TextEncoder();
   const data = encoder.encode(apiKey);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -24,6 +23,498 @@ async function validateApiKey(supabase: any, apiKey: string): Promise<boolean> {
   return !!keyData;
 }
 
+function errorResponse(message: string, status: number) {
+  return new Response(
+    JSON.stringify({ responseStatus: 'ERROR', error: message, code: status }),
+    { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+function okResponse(result: any) {
+  return new Response(JSON.stringify({ responseStatus: 'OK', ...result }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+// ===== Handler modules =====
+
+async function handleEvents(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'GetEvent': {
+      const eventId = url.searchParams.get('event_id') || body.event_id;
+      if (!eventId) return errorResponse('event_id is required', 400);
+      const { data, error } = await supabase.from('events').select('*').eq('id', eventId).single();
+      if (error) return errorResponse(error.message, 404);
+      return okResponse({ event: data });
+    }
+    case 'ListEvents': {
+      const venueId = url.searchParams.get('venue_id') || body.venue_id;
+      const ownerId = url.searchParams.get('owner_id') || body.owner_id;
+      let query = supabase.from('events').select('*');
+      if (venueId) query = query.eq('venue_id', venueId);
+      if (ownerId) query = query.eq('owner_id', ownerId);
+      query = query.order('event_date', { ascending: false });
+      const { data, error } = await query;
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ events: data, count: data?.length || 0 });
+    }
+    case 'UpdateEvent': {
+      const { event_id, ...updates } = body;
+      if (!event_id) return errorResponse('event_id is required', 400);
+      const { data, error } = await supabase.from('events').update(updates).eq('id', event_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ event: data });
+    }
+  }
+  return null;
+}
+
+async function handleGuests(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListGuests': {
+      const eventId = url.searchParams.get('event_id') || body.event_id;
+      if (!eventId) return errorResponse('event_id is required', 400);
+      const status = url.searchParams.get('status');
+      let query = supabase.from('guests').select('*').eq('event_id', eventId);
+      if (status) query = query.eq('rsvp_status', status);
+      query = query.order('created_at', { ascending: false });
+      const { data, error } = await query;
+      if (error) return errorResponse(error.message, 500);
+      const approved = (data || []).filter((g: any) => g.rsvp_status === 'approved');
+      const approvedTotal = approved.reduce((sum: number, g: any) => sum + (g.number_of_guests || 1), 0);
+      return okResponse({
+        guests: data, count: data?.length || 0,
+        stats: {
+          total: data?.length || 0, approved: approved.length,
+          approved_guests_total: approvedTotal,
+          declined: (data || []).filter((g: any) => g.rsvp_status === 'declined').length,
+          pending: (data || []).filter((g: any) => g.rsvp_status === 'pending').length,
+        }
+      });
+    }
+    case 'AddGuest': {
+      const { event_id, full_name, phone, email, relationship, number_of_guests } = body;
+      if (!event_id || !full_name) return errorResponse('event_id and full_name are required', 400);
+      const { data, error } = await supabase.from('guests').insert({
+        event_id, full_name, phone: phone || null, email: email || null,
+        relationship: relationship || null, number_of_guests: number_of_guests || 1,
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ guest: data });
+    }
+    case 'UpdateGuest': {
+      const { guest_id, ...updates } = body;
+      if (!guest_id) return errorResponse('guest_id is required', 400);
+      const { data, error } = await supabase.from('guests').update(updates).eq('id', guest_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ guest: data });
+    }
+    case 'UpdateRSVP': {
+      const { guest_id, rsvp_status, number_of_guests } = body;
+      if (!guest_id || !rsvp_status) return errorResponse('guest_id and rsvp_status are required', 400);
+      if (!['approved', 'declined', 'pending'].includes(rsvp_status)) {
+        return errorResponse('rsvp_status must be: approved, declined, or pending', 400);
+      }
+      const updateData: any = { rsvp_status, rsvp_date: new Date().toISOString() };
+      if (number_of_guests !== undefined) updateData.number_of_guests = number_of_guests;
+      const { data, error } = await supabase.from('guests').update(updateData).eq('id', guest_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ guest: data });
+    }
+    case 'DeleteGuest': {
+      const guestId = url.searchParams.get('guest_id') || body.guest_id;
+      if (!guestId) return errorResponse('guest_id is required', 400);
+      const { error } = await supabase.from('guests').delete().eq('id', guestId);
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ success: true });
+    }
+    case 'BulkAddGuests': {
+      const { event_id, guests } = body;
+      if (!event_id || !Array.isArray(guests) || guests.length === 0) {
+        return errorResponse('event_id and guests array are required', 400);
+      }
+      const rows = guests.map((g: any) => ({
+        event_id, full_name: g.full_name, phone: g.phone || null, email: g.email || null,
+        relationship: g.relationship || null, number_of_guests: g.number_of_guests || 1,
+      }));
+      const { data, error } = await supabase.from('guests').insert(rows).select();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ guests: data, count: data?.length || 0 });
+    }
+    case 'BulkUpdateRSVP': {
+      const { updates } = body;
+      if (!Array.isArray(updates) || updates.length === 0) {
+        return errorResponse('updates array is required', 400);
+      }
+      const results: any[] = [];
+      for (const u of updates) {
+        const updateData: any = { rsvp_status: u.rsvp_status, rsvp_date: new Date().toISOString() };
+        if (u.number_of_guests !== undefined) updateData.number_of_guests = u.number_of_guests;
+        const { data, error } = await supabase.from('guests').update(updateData).eq('id', u.guest_id).select().single();
+        results.push({ guest_id: u.guest_id, success: !error, data, error: error?.message });
+      }
+      return okResponse({ results });
+    }
+  }
+  return null;
+}
+
+async function handleTransactions(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'GetTransactions': {
+      const eventId = url.searchParams.get('event_id') || body.event_id;
+      if (!eventId) return errorResponse('event_id is required', 400);
+      const { data, error } = await supabase.from('transactions').select('*').eq('event_id', eventId)
+        .order('transaction_date', { ascending: false });
+      if (error) return errorResponse(error.message, 500);
+      const totalAmount = (data || []).reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+      return okResponse({ transactions: data, count: data?.length || 0, stats: { total_amount: totalAmount } });
+    }
+  }
+  return null;
+}
+
+async function handleVenues(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'GetVenue': {
+      const venueId = url.searchParams.get('venue_id') || body.venue_id;
+      if (!venueId) return errorResponse('venue_id is required', 400);
+      const { data, error } = await supabase.from('venues').select('*').eq('id', venueId).single();
+      if (error) return errorResponse(error.message, 404);
+      return okResponse({ venue: data });
+    }
+    case 'ListVenues': {
+      const ownerId = url.searchParams.get('owner_id') || body.owner_id;
+      let query = supabase.from('venues').select('*');
+      if (ownerId) query = query.eq('owner_id', ownerId);
+      const { data, error } = await query;
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ venues: data, count: data?.length || 0 });
+    }
+    case 'UpdateVenue': {
+      const { venue_id, ...updates } = body;
+      if (!venue_id) return errorResponse('venue_id is required', 400);
+      const { data, error } = await supabase.from('venues').update(updates).eq('id', venue_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ venue: data });
+    }
+    case 'CreateVenue': {
+      const { owner_id, name, address, phone, email, monthly_subscription } = body;
+      if (!owner_id || !name || !address) return errorResponse('owner_id, name, and address are required', 400);
+      const { data, error } = await supabase.from('venues').insert({
+        owner_id, name, address, phone: phone || null, email: email || null,
+        monthly_subscription: monthly_subscription || 0,
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ venue: data });
+    }
+    case 'DeleteVenue': {
+      const venueId = url.searchParams.get('venue_id') || body.venue_id;
+      if (!venueId) return errorResponse('venue_id is required', 400);
+      const { error } = await supabase.from('venues').delete().eq('id', venueId);
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ success: true });
+    }
+  }
+  return null;
+}
+
+async function handleLeads(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListLeads': {
+      const status = url.searchParams.get('status') || body.status;
+      const leadType = url.searchParams.get('lead_type') || body.lead_type;
+      let query = supabase.from('leads').select('*');
+      if (status) query = query.eq('status', status);
+      if (leadType) query = query.eq('lead_type', leadType);
+      query = query.order('created_at', { ascending: false });
+      const { data, error } = await query;
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ leads: data, count: data?.length || 0 });
+    }
+    case 'GetLead': {
+      const leadId = url.searchParams.get('lead_id') || body.lead_id;
+      if (!leadId) return errorResponse('lead_id is required', 400);
+      const { data, error } = await supabase.from('leads').select('*').eq('id', leadId).single();
+      if (error) return errorResponse(error.message, 404);
+      return okResponse({ lead: data });
+    }
+    case 'CreateLead': {
+      const { lead_type, full_name, phone, email, venue_name, venue_address, venue_count, status } = body;
+      if (!lead_type || !full_name) return errorResponse('lead_type and full_name are required', 400);
+      const { data, error } = await supabase.from('leads').insert({
+        lead_type, full_name, phone: phone || null, email: email || null,
+        venue_name: venue_name || null, venue_address: venue_address || null,
+        venue_count: venue_count || 1, status: status || 'new',
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ lead: data });
+    }
+    case 'UpdateLead': {
+      const { lead_id, ...updates } = body;
+      if (!lead_id) return errorResponse('lead_id is required', 400);
+      const { data, error } = await supabase.from('leads').update(updates).eq('id', lead_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ lead: data });
+    }
+    case 'DeleteLead': {
+      const leadId = url.searchParams.get('lead_id') || body.lead_id;
+      if (!leadId) return errorResponse('lead_id is required', 400);
+      const { error } = await supabase.from('leads').delete().eq('id', leadId);
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ success: true });
+    }
+  }
+  return null;
+}
+
+async function handleUsers(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListProfiles': {
+      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ profiles: data, count: data?.length || 0 });
+    }
+    case 'GetProfile': {
+      const userId = url.searchParams.get('user_id') || body.user_id;
+      if (!userId) return errorResponse('user_id is required', 400);
+      const { data, error } = await supabase.from('profiles').select('*').eq('user_id', userId).single();
+      if (error) return errorResponse(error.message, 404);
+      return okResponse({ profile: data });
+    }
+    case 'CreateEventOwner': {
+      const { email, password, full_name, phone, event } = body;
+      if (!email || !password || !full_name) return errorResponse('email, password, and full_name are required', 400);
+
+      // Create auth user
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email, password, email_confirm: true, user_metadata: { full_name }
+      });
+      if (createError) return errorResponse(createError.message, 400);
+
+      const userId = newUser.user.id;
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Update profile
+      await supabase.from('profiles').update({ full_name, phone: phone || null }).eq('user_id', userId);
+
+      // Assign role
+      await supabase.from('user_roles').insert({ user_id: userId, role: 'event_owner' });
+
+      let createdEvent = null;
+      if (event) {
+        const { data: eventData } = await supabase.from('events').insert({
+          owner_id: userId, venue_id: event.venue_id || null,
+          event_type: event.event_type || 'חתונה', event_date: event.event_date,
+          groom_name: event.groom_name || null, bride_name: event.bride_name || null,
+        }).select().single();
+        createdEvent = eventData;
+      }
+
+      return okResponse({ user: { id: userId, email, full_name }, event: createdEvent });
+    }
+    case 'CreateVenueOwner': {
+      const { email, password, full_name, phone, venue } = body;
+      if (!email || !password || !full_name) return errorResponse('email, password, and full_name are required', 400);
+
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email, password, email_confirm: true, user_metadata: { full_name }
+      });
+      if (createError) return errorResponse(createError.message, 400);
+
+      const userId = newUser.user.id;
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      await supabase.from('profiles').update({ full_name, phone: phone || null }).eq('user_id', userId);
+      await supabase.from('user_roles').insert({ user_id: userId, role: 'venue_owner' });
+
+      let createdVenue = null;
+      if (venue) {
+        const { data: venueData } = await supabase.from('venues').insert({
+          owner_id: userId, name: venue.name, address: venue.address,
+          phone: venue.phone || null, email: venue.email || null,
+          monthly_subscription: venue.monthly_subscription || 0,
+        }).select().single();
+        createdVenue = venueData;
+      }
+
+      return okResponse({ user: { id: userId, email, full_name }, venue: createdVenue });
+    }
+    case 'ListUsers': {
+      const { data: profiles, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      if (error) return errorResponse(error.message, 500);
+      // Get roles for all users
+      const userIds = (profiles || []).map((p: any) => p.user_id);
+      const { data: roles } = await supabase.from('user_roles').select('*').in('user_id', userIds);
+      const rolesMap: Record<string, string[]> = {};
+      for (const r of (roles || [])) {
+        if (!rolesMap[r.user_id]) rolesMap[r.user_id] = [];
+        rolesMap[r.user_id].push(r.role);
+      }
+      const users = (profiles || []).map((p: any) => ({ ...p, roles: rolesMap[p.user_id] || [] }));
+      return okResponse({ users, count: users.length });
+    }
+    case 'UpdateProfile': {
+      const { user_id, full_name, phone, avatar_url } = body;
+      if (!user_id) return errorResponse('user_id is required', 400);
+      const updates: any = {};
+      if (full_name !== undefined) updates.full_name = full_name;
+      if (phone !== undefined) updates.phone = phone;
+      if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+      const { data, error } = await supabase.from('profiles').update(updates).eq('user_id', user_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ profile: data });
+    }
+  }
+  return null;
+}
+
+async function handleDocuments(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListDocuments': {
+      const userId = url.searchParams.get('user_id') || body.user_id;
+      const eventId = url.searchParams.get('event_id') || body.event_id;
+      const venueId = url.searchParams.get('venue_id') || body.venue_id;
+      let query = supabase.from('documents').select('*');
+      if (userId) query = query.eq('user_id', userId);
+      if (eventId) query = query.eq('event_id', eventId);
+      if (venueId) query = query.eq('venue_id', venueId);
+      query = query.order('uploaded_at', { ascending: false });
+      const { data, error } = await query;
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ documents: data, count: data?.length || 0 });
+    }
+    case 'AddDocument': {
+      const { user_id, document_type, file_url, file_name, event_id, venue_id } = body;
+      if (!user_id || !document_type || !file_url || !file_name) {
+        return errorResponse('user_id, document_type, file_url, and file_name are required', 400);
+      }
+      const { data, error } = await supabase.from('documents').insert({
+        user_id, document_type, file_url, file_name,
+        event_id: event_id || null, venue_id: venue_id || null,
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ document: data });
+    }
+    case 'DeleteDocument': {
+      const docId = url.searchParams.get('document_id') || body.document_id;
+      if (!docId) return errorResponse('document_id is required', 400);
+      const { error } = await supabase.from('documents').delete().eq('id', docId);
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ success: true });
+    }
+  }
+  return null;
+}
+
+async function handleStats(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'GetEventStats': {
+      const eventId = url.searchParams.get('event_id') || body.event_id;
+      if (!eventId) return errorResponse('event_id is required', 400);
+      const [eventRes, guestsRes, transactionsRes] = await Promise.all([
+        supabase.from('events').select('*').eq('id', eventId).single(),
+        supabase.from('guests').select('*').eq('event_id', eventId),
+        supabase.from('transactions').select('*').eq('event_id', eventId),
+      ]);
+      const guests = guestsRes.data || [];
+      const transactions = transactionsRes.data || [];
+      const approved = guests.filter((g: any) => g.rsvp_status === 'approved');
+      return okResponse({
+        event: eventRes.data,
+        stats: {
+          guests_total: guests.length, guests_approved: approved.length,
+          guests_approved_total: approved.reduce((s: number, g: any) => s + (g.number_of_guests || 1), 0),
+          guests_declined: guests.filter((g: any) => g.rsvp_status === 'declined').length,
+          guests_pending: guests.filter((g: any) => g.rsvp_status === 'pending').length,
+          transactions_count: transactions.length,
+          transactions_total_amount: transactions.reduce((s: number, t: any) => s + Number(t.amount), 0),
+        }
+      });
+    }
+    case 'GetSystemStats': {
+      const [eventsRes, venuesRes, profilesRes, leadsRes, transactionsRes] = await Promise.all([
+        supabase.from('events').select('id', { count: 'exact' }),
+        supabase.from('venues').select('id', { count: 'exact' }),
+        supabase.from('profiles').select('id', { count: 'exact' }),
+        supabase.from('leads').select('id', { count: 'exact' }),
+        supabase.from('transactions').select('amount'),
+      ]);
+      const totalAmount = (transactionsRes.data || []).reduce((s: number, t: any) => s + Number(t.amount), 0);
+      return okResponse({
+        stats: {
+          events_count: eventsRes.count || 0,
+          venues_count: venuesRes.count || 0,
+          users_count: profilesRes.count || 0,
+          leads_count: leadsRes.count || 0,
+          transactions_total_amount: totalAmount,
+        }
+      });
+    }
+  }
+  return null;
+}
+
+async function handleSupportTickets(action: string, supabase: any, url: URL, body: any) {
+  switch (action) {
+    case 'ListTickets': {
+      const userId = url.searchParams.get('user_id') || body.user_id;
+      const status = url.searchParams.get('status') || body.status;
+      let query = supabase.from('support_tickets').select('*');
+      if (userId) query = query.eq('user_id', userId);
+      if (status) query = query.eq('status', status);
+      query = query.order('created_at', { ascending: false });
+      const { data, error } = await query;
+      if (error) return errorResponse(error.message, 500);
+      return okResponse({ tickets: data, count: data?.length || 0 });
+    }
+    case 'CreateTicket': {
+      const { user_id, venue_id, ticket_type, subject, description } = body;
+      if (!user_id || !ticket_type || !subject || !description) {
+        return errorResponse('user_id, ticket_type, subject, and description are required', 400);
+      }
+      const { data, error } = await supabase.from('support_tickets').insert({
+        user_id, venue_id: venue_id || null, ticket_type, subject, description,
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ ticket: data });
+    }
+    case 'UpdateTicket': {
+      const { ticket_id, ...updates } = body;
+      if (!ticket_id) return errorResponse('ticket_id is required', 400);
+      const { data, error } = await supabase.from('support_tickets').update(updates).eq('id', ticket_id).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ ticket: data });
+    }
+  }
+  return null;
+}
+
+// ===== Main handler =====
+
+const actionHandlers: Record<string, (action: string, supabase: any, url: URL, body: any) => Promise<Response | null>> = {
+  // Events
+  GetEvent: handleEvents, ListEvents: handleEvents, UpdateEvent: handleEvents,
+  // Guests
+  ListGuests: handleGuests, AddGuest: handleGuests, UpdateGuest: handleGuests,
+  UpdateRSVP: handleGuests, DeleteGuest: handleGuests, BulkAddGuests: handleGuests, BulkUpdateRSVP: handleGuests,
+  // Transactions
+  GetTransactions: handleTransactions,
+  // Venues
+  GetVenue: handleVenues, ListVenues: handleVenues, UpdateVenue: handleVenues, CreateVenue: handleVenues, DeleteVenue: handleVenues,
+  // Leads
+  ListLeads: handleLeads, GetLead: handleLeads, CreateLead: handleLeads, UpdateLead: handleLeads, DeleteLead: handleLeads,
+  // Users
+  ListProfiles: handleUsers, GetProfile: handleUsers, CreateEventOwner: handleUsers, CreateVenueOwner: handleUsers,
+  ListUsers: handleUsers, UpdateProfile: handleUsers,
+  // Documents
+  ListDocuments: handleDocuments, AddDocument: handleDocuments, DeleteDocument: handleDocuments,
+  // Stats
+  GetEventStats: handleStats, GetSystemStats: handleStats,
+  // Support
+  ListTickets: handleSupportTickets, CreateTicket: handleSupportTickets, UpdateTicket: handleSupportTickets,
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -36,235 +527,28 @@ Deno.serve(async (req) => {
   });
 
   try {
-    // Auth via X-API-Key header
     const apiKey = req.headers.get('x-api-key') || '';
     const isValid = await validateApiKey(supabase, apiKey);
     if (!isValid) {
-      return new Response(JSON.stringify({ error: 'Invalid or missing API key', code: 401 }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return errorResponse('Invalid or missing API key', 401);
     }
 
     const url = new URL(req.url);
     const action = url.searchParams.get('action') || '';
     const body = req.method === 'POST' ? await req.json() : {};
 
-    let result: any;
-
-    switch (action) {
-      // ===== EVENTS =====
-      case 'GetEvent': {
-        const eventId = url.searchParams.get('event_id') || body.event_id;
-        if (!eventId) return errorResponse('event_id is required', 400);
-        const { data, error } = await supabase.from('events').select('*').eq('id', eventId).single();
-        if (error) return errorResponse(error.message, 404);
-        result = { event: data };
-        break;
-      }
-      case 'ListEvents': {
-        const venueId = url.searchParams.get('venue_id') || body.venue_id;
-        const ownerId = url.searchParams.get('owner_id') || body.owner_id;
-        let query = supabase.from('events').select('*');
-        if (venueId) query = query.eq('venue_id', venueId);
-        if (ownerId) query = query.eq('owner_id', ownerId);
-        query = query.order('event_date', { ascending: false });
-        const { data, error } = await query;
-        if (error) return errorResponse(error.message, 500);
-        result = { events: data, count: data?.length || 0 };
-        break;
-      }
-      case 'UpdateEvent': {
-        const { event_id, ...updates } = body;
-        if (!event_id) return errorResponse('event_id is required', 400);
-        const { data, error } = await supabase.from('events').update(updates).eq('id', event_id).select().single();
-        if (error) return errorResponse(error.message, 400);
-        result = { event: data };
-        break;
-      }
-
-      // ===== GUESTS =====
-      case 'ListGuests': {
-        const eventId = url.searchParams.get('event_id') || body.event_id;
-        if (!eventId) return errorResponse('event_id is required', 400);
-        const status = url.searchParams.get('status');
-        let query = supabase.from('guests').select('*').eq('event_id', eventId);
-        if (status) query = query.eq('rsvp_status', status);
-        query = query.order('created_at', { ascending: false });
-        const { data, error } = await query;
-        if (error) return errorResponse(error.message, 500);
-        const approved = (data || []).filter((g: any) => g.rsvp_status === 'approved');
-        const approvedTotal = approved.reduce((sum: number, g: any) => sum + (g.number_of_guests || 1), 0);
-        result = {
-          guests: data,
-          count: data?.length || 0,
-          stats: {
-            total: data?.length || 0,
-            approved: approved.length,
-            approved_guests_total: approvedTotal,
-            declined: (data || []).filter((g: any) => g.rsvp_status === 'declined').length,
-            pending: (data || []).filter((g: any) => g.rsvp_status === 'pending').length,
-          }
-        };
-        break;
-      }
-      case 'AddGuest': {
-        const { event_id, full_name, phone, email, relationship, number_of_guests } = body;
-        if (!event_id || !full_name) return errorResponse('event_id and full_name are required', 400);
-        const { data, error } = await supabase.from('guests').insert({
-          event_id, full_name, phone: phone || null, email: email || null,
-          relationship: relationship || null, number_of_guests: number_of_guests || 1,
-        }).select().single();
-        if (error) return errorResponse(error.message, 400);
-        result = { guest: data };
-        break;
-      }
-      case 'UpdateGuest': {
-        const { guest_id, ...updates } = body;
-        if (!guest_id) return errorResponse('guest_id is required', 400);
-        const { data, error } = await supabase.from('guests').update(updates).eq('id', guest_id).select().single();
-        if (error) return errorResponse(error.message, 400);
-        result = { guest: data };
-        break;
-      }
-      case 'UpdateRSVP': {
-        const { guest_id, rsvp_status, number_of_guests } = body;
-        if (!guest_id || !rsvp_status) return errorResponse('guest_id and rsvp_status are required', 400);
-        if (!['approved', 'declined', 'pending'].includes(rsvp_status)) {
-          return errorResponse('rsvp_status must be: approved, declined, or pending', 400);
-        }
-        const updateData: any = { rsvp_status, rsvp_date: new Date().toISOString() };
-        if (number_of_guests !== undefined) updateData.number_of_guests = number_of_guests;
-        const { data, error } = await supabase.from('guests').update(updateData).eq('id', guest_id).select().single();
-        if (error) return errorResponse(error.message, 400);
-        result = { guest: data };
-        break;
-      }
-      case 'DeleteGuest': {
-        const guestId = url.searchParams.get('guest_id') || body.guest_id;
-        if (!guestId) return errorResponse('guest_id is required', 400);
-        const { error } = await supabase.from('guests').delete().eq('id', guestId);
-        if (error) return errorResponse(error.message, 400);
-        result = { success: true };
-        break;
-      }
-      case 'BulkAddGuests': {
-        const { event_id, guests } = body;
-        if (!event_id || !Array.isArray(guests) || guests.length === 0) {
-          return errorResponse('event_id and guests array are required', 400);
-        }
-        const rows = guests.map((g: any) => ({
-          event_id,
-          full_name: g.full_name,
-          phone: g.phone || null,
-          email: g.email || null,
-          relationship: g.relationship || null,
-          number_of_guests: g.number_of_guests || 1,
-        }));
-        const { data, error } = await supabase.from('guests').insert(rows).select();
-        if (error) return errorResponse(error.message, 400);
-        result = { guests: data, count: data?.length || 0 };
-        break;
-      }
-      case 'BulkUpdateRSVP': {
-        const { updates } = body;
-        if (!Array.isArray(updates) || updates.length === 0) {
-          return errorResponse('updates array is required', 400);
-        }
-        const results: any[] = [];
-        for (const u of updates) {
-          const updateData: any = { rsvp_status: u.rsvp_status, rsvp_date: new Date().toISOString() };
-          if (u.number_of_guests !== undefined) updateData.number_of_guests = u.number_of_guests;
-          const { data, error } = await supabase.from('guests').update(updateData).eq('id', u.guest_id).select().single();
-          results.push({ guest_id: u.guest_id, success: !error, data, error: error?.message });
-        }
-        result = { results };
-        break;
-      }
-
-      // ===== TRANSACTIONS =====
-      case 'GetTransactions': {
-        const eventId = url.searchParams.get('event_id') || body.event_id;
-        if (!eventId) return errorResponse('event_id is required', 400);
-        const { data, error } = await supabase.from('transactions').select('*').eq('event_id', eventId)
-          .order('transaction_date', { ascending: false });
-        if (error) return errorResponse(error.message, 500);
-        const totalAmount = (data || []).reduce((sum: number, t: any) => sum + Number(t.amount), 0);
-        result = {
-          transactions: data,
-          count: data?.length || 0,
-          stats: { total_amount: totalAmount }
-        };
-        break;
-      }
-
-      // ===== VENUES =====
-      case 'GetVenue': {
-        const venueId = url.searchParams.get('venue_id') || body.venue_id;
-        if (!venueId) return errorResponse('venue_id is required', 400);
-        const { data, error } = await supabase.from('venues').select('*').eq('id', venueId).single();
-        if (error) return errorResponse(error.message, 404);
-        result = { venue: data };
-        break;
-      }
-      case 'ListVenues': {
-        const ownerId = url.searchParams.get('owner_id') || body.owner_id;
-        let query = supabase.from('venues').select('*');
-        if (ownerId) query = query.eq('owner_id', ownerId);
-        const { data, error } = await query;
-        if (error) return errorResponse(error.message, 500);
-        result = { venues: data, count: data?.length || 0 };
-        break;
-      }
-
-      // ===== EVENT STATS =====
-      case 'GetEventStats': {
-        const eventId = url.searchParams.get('event_id') || body.event_id;
-        if (!eventId) return errorResponse('event_id is required', 400);
-
-        const [eventRes, guestsRes, transactionsRes] = await Promise.all([
-          supabase.from('events').select('*').eq('id', eventId).single(),
-          supabase.from('guests').select('*').eq('event_id', eventId),
-          supabase.from('transactions').select('*').eq('event_id', eventId),
-        ]);
-
-        const guests = guestsRes.data || [];
-        const transactions = transactionsRes.data || [];
-        const approved = guests.filter((g: any) => g.rsvp_status === 'approved');
-
-        result = {
-          event: eventRes.data,
-          stats: {
-            guests_total: guests.length,
-            guests_approved: approved.length,
-            guests_approved_total: approved.reduce((s: number, g: any) => s + (g.number_of_guests || 1), 0),
-            guests_declined: guests.filter((g: any) => g.rsvp_status === 'declined').length,
-            guests_pending: guests.filter((g: any) => g.rsvp_status === 'pending').length,
-            transactions_count: transactions.length,
-            transactions_total_amount: transactions.reduce((s: number, t: any) => s + Number(t.amount), 0),
-          }
-        };
-        break;
-      }
-
-      default:
-        return errorResponse(`Unknown action: ${action}. See API docs for available actions.`, 400);
+    const handler = actionHandlers[action];
+    if (!handler) {
+      return errorResponse(`Unknown action: ${action}. See API docs for available actions.`, 400);
     }
 
-    return new Response(JSON.stringify({ responseStatus: 'OK', ...result }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    const result = await handler(action, supabase, url, body);
+    if (result) return result;
 
+    return errorResponse(`Action ${action} not handled`, 500);
   } catch (err: unknown) {
     console.error('Public API Error:', err);
     const message = err instanceof Error ? err.message : 'Internal server error';
     return errorResponse(message, 500);
   }
 });
-
-function errorResponse(message: string, status: number) {
-  return new Response(
-    JSON.stringify({ responseStatus: 'ERROR', error: message, code: status }),
-    { status, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key', 'Content-Type': 'application/json' } }
-  );
-}
