@@ -2,6 +2,7 @@ import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LogOut, Loader2 } from "lucide-react";
@@ -15,13 +16,13 @@ import SettingsIcon from "@/assets/icons/event/Settings.svg";
 
 import StatIcon from "@/assets/icons/event/StatIcon.svg";
 
-const menuItems = [
-  { title: "דשבורד", icon: DashboardIcon, path: "/event" },
-  { title: "הזמנות", icon: InvitationsIcon, path: "/event/invitations" },
-  { title: "אישורי הגעה", icon: StatIcon, path: "/event/rsvp" },
-  { title: "מתנות", icon: GiftsIcon, path: "/event/gifts" },
-  { title: "תקציב", icon: StatIcon, path: "/event/budget" },
-  { title: "הגדרות", icon: SettingsIcon, path: "/event/settings" },
+const allMenuItems = [
+  { title: "דשבורד", icon: DashboardIcon, path: "/event", key: "dashboard" },
+  { title: "הזמנות", icon: InvitationsIcon, path: "/event/invitations", key: "invitations" },
+  { title: "אישורי הגעה", icon: StatIcon, path: "/event/rsvp", key: "rsvp" },
+  { title: "מתנות", icon: GiftsIcon, path: "/event/gifts", key: "gifts" },
+  { title: "תקציב", icon: StatIcon, path: "/event/budget", key: "budget" },
+  { title: "הגדרות", icon: SettingsIcon, path: "/event/settings", key: "settings" },
 ];
 
 export function EventLayout() {
@@ -80,6 +81,27 @@ export function EventLayout() {
 
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
+
+  // Check if budget is enabled for this event
+  const { data: eventData } = useQuery({
+    queryKey: ["event-budget-enabled"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from("events")
+        .select("budget_enabled")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: authorized,
+  });
+
+  const menuItems = allMenuItems.filter(item => {
+    if (item.key === "budget" && !eventData?.budget_enabled) return false;
+    return true;
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

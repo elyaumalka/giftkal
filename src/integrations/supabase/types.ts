@@ -204,6 +204,7 @@ export type Database = {
           bride_grandparents: string | null
           bride_name: string | null
           bride_parents: string | null
+          budget_enabled: boolean | null
           ceremony_time: string | null
           child_name: string | null
           created_at: string
@@ -238,6 +239,7 @@ export type Database = {
           bride_grandparents?: string | null
           bride_name?: string | null
           bride_parents?: string | null
+          budget_enabled?: boolean | null
           ceremony_time?: string | null
           child_name?: string | null
           created_at?: string
@@ -272,6 +274,7 @@ export type Database = {
           bride_grandparents?: string | null
           bride_name?: string | null
           bride_parents?: string | null
+          budget_enabled?: boolean | null
           ceremony_time?: string | null
           child_name?: string | null
           created_at?: string
