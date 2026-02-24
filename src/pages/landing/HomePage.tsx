@@ -43,6 +43,9 @@ import {
 import logo from "@/assets/logo.png";
 import laptopMockup from "@/assets/mockups/laptop-dashboard-mockup.png";
 import mobileMockup from "@/assets/mockups/mobile-gift-screen.png";
+import dashboardScreenshot from "@/assets/mockups/dashboard-screenshot.png";
+import mobileGiftSending from "@/assets/mockups/mobile-gift-sending.png";
+import analyticsScreenshot from "@/assets/mockups/analytics-screenshot.png";
 
 // ─── Hooks ───
 const useCounter = (end: number, duration = 2000, start = 0) => {
@@ -357,6 +360,17 @@ const SolutionSection = () => {
           ))}
         </div>
 
+        {/* Dashboard screenshot showcase */}
+        <div className={`max-w-5xl mx-auto mb-16 transition-all duration-700 delay-300 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/10 blur-[40px] scale-105 rounded-3xl" />
+            <div className="relative bg-sidebar rounded-3xl p-4 shadow-2xl overflow-hidden">
+              <img src={dashboardScreenshot} alt="דשבורד ניהול מתנות - Giftkal" className="w-full rounded-2xl" />
+            </div>
+          </div>
+          <p className="text-center text-muted-foreground text-sm mt-4">דשבורד ניהול מתנות ואירועים — שליטה מלאה בלחיצה</p>
+        </div>
+
         {/* Benefits list */}
         <div className={`max-w-2xl mx-auto bg-card rounded-3xl p-8 shadow-lg border border-border/50 transition-all duration-700 delay-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -430,22 +444,13 @@ const StationsSection = () => {
           {/* Visual */}
           <div className={`relative transition-all duration-700 delay-200 ${inView ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"}`}>
             <div className="absolute inset-0 bg-primary/10 blur-[60px] scale-110 rounded-full" />
-            <div className="relative bg-sidebar-accent rounded-3xl p-8 shadow-2xl overflow-hidden border border-white/5">
+            <div className="relative bg-sidebar-accent rounded-3xl p-6 shadow-2xl overflow-hidden border border-white/5">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_hsl(38_92%_50%_/_0.1),_transparent_70%)]" />
-              <div className="relative flex flex-col items-center gap-6">
-                <Monitor className="w-32 h-32 text-primary/40" />
-                <div className="text-center">
-                  <p className="text-white/80 font-bold text-xl mb-2">עמדת Giftkal</p>
-                  <p className="text-white/50 text-sm">תשלום מאובטח · מהיר · מתועד</p>
-                </div>
-                <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
-                  {["₪200", "₪500", "₪1,000"].map(amount => (
-                    <div key={amount} className="bg-white/5 border border-primary/20 rounded-xl py-4 text-center hover:bg-primary/10 transition-colors cursor-pointer">
-                      <span className="text-primary font-bold text-lg">{amount}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <img 
+                src={mobileGiftSending} 
+                alt="עמדת Giftkal - מסך שליחת מתנה" 
+                className="relative w-full rounded-2xl shadow-lg"
+              />
             </div>
           </div>
         </div>
@@ -541,6 +546,17 @@ const WhyGuestsSection = () => {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Analytics screenshot */}
+        <div className={`max-w-5xl mx-auto mt-16 transition-all duration-700 delay-400 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/10 blur-[40px] scale-105 rounded-3xl" />
+            <div className="relative bg-sidebar rounded-3xl p-4 shadow-2xl overflow-hidden">
+              <img src={analyticsScreenshot} alt="ניתוח נתונים ודוחות - Giftkal" className="w-full rounded-2xl" />
+            </div>
+          </div>
+          <p className="text-center text-muted-foreground text-sm mt-4">מעקב מלא על כל מתנה, אורח ותשלום — הכל במקום אחד</p>
         </div>
       </div>
     </section>
