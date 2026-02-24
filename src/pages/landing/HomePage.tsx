@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -39,6 +41,13 @@ import {
   Wallet,
   FileText,
   HandCoins,
+  Search,
+  Calendar,
+  MapPin,
+  LogIn,
+  UserPlus,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import laptopMockup from "@/assets/mockups/laptop-dashboard-mockup.png";
@@ -128,8 +137,9 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 hidden sm:inline-flex">
-            <Link to="/login">התחברות</Link>
+          <Button onClick={() => scrollTo("access")} variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 hidden sm:inline-flex">
+            <LogIn className="w-4 h-4 ml-2" />
+            כניסה למערכת
           </Button>
           <Button onClick={() => scrollTo("lead-form")} className="bg-gradient-gold text-white shadow-gold hover:shadow-lg transition-all hover:scale-105">
             פתחו אירוע עכשיו
@@ -998,6 +1008,367 @@ const LeadFormSection = () => {
   );
 };
 
+// ─── Access Section (Login / Gift / Signup) ───
+const AccessSection = () => {
+  const { ref, inView } = useInView();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [activePanel, setActivePanel] = useState<"event-login" | "venue-login" | "gift" | "signup">("event-login");
+
+  // Event owner login
+  const [eventEmail, setEventEmail] = useState("");
+  const [eventPassword, setEventPassword] = useState("");
+  const [eventShowPassword, setEventShowPassword] = useState(false);
+  const [eventLoading, setEventLoading] = useState(false);
+
+  // Venue owner login
+  const [venueEmail, setVenueEmail] = useState("");
+  const [venuePassword, setVenuePassword] = useState("");
+  const [venueShowPassword, setVenueShowPassword] = useState(false);
+  const [venueLoading, setVenueLoading] = useState(false);
+
+  // Gift search
+  const [giftSearchName, setGiftSearchName] = useState("");
+  const [giftSearchVenue, setGiftSearchVenue] = useState("");
+  const [giftSearchDate, setGiftSearchDate] = useState("");
+  const [giftResults, setGiftResults] = useState<any[]>([]);
+  const [giftSearching, setGiftSearching] = useState(false);
+
+  // Signup
+  const [signupData, setSignupData] = useState({
+    fullName: "", email: "", phone: "", password: "",
+    eventDate: "", eventType: "חתונה", city: "", venueName: "",
+    groomName: "", brideName: "", agreeTerms: false,
+  });
+  const [signupShowPassword, setSignupShowPassword] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
+
+  // Venues list for signup
+  const [venues, setVenues] = useState<any[]>([]);
+  useEffect(() => {
+    supabase.from("venues").select("id, name, address").then(({ data }) => {
+      if (data) setVenues(data);
+    });
+  }, []);
+
+  const handleEventLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventEmail.trim()) { toast({ title: "⚠️ מייל חסר", description: "יש להזין כתובת מייל", variant: "destructive" }); return; }
+    if (!eventPassword) { toast({ title: "⚠️ סיסמה חסרה", description: "יש להזין סיסמה", variant: "destructive" }); return; }
+    setEventLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: eventEmail, password: eventPassword });
+      if (error) { toast({ title: "❌ פרטים שגויים", description: "המייל או הסיסמה אינם נכונים", variant: "destructive" }); return; }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+        const role = roles?.[0]?.role;
+        if (role === "event_owner") navigate("/event");
+        else if (role === "venue_owner") navigate("/venue");
+        else if (role === "admin") navigate("/admin");
+        else navigate("/event");
+      }
+    } catch { toast({ title: "❌ שגיאה", description: "אירעה שגיאה בהתחברות", variant: "destructive" }); }
+    finally { setEventLoading(false); }
+  };
+
+  const handleVenueLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!venueEmail.trim()) { toast({ title: "⚠️ מייל חסר", description: "יש להזין כתובת מייל", variant: "destructive" }); return; }
+    if (!venuePassword) { toast({ title: "⚠️ סיסמה חסרה", description: "יש להזין סיסמה", variant: "destructive" }); return; }
+    setVenueLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: venueEmail, password: venuePassword });
+      if (error) { toast({ title: "❌ פרטים שגויים", description: "המייל או הסיסמה אינם נכונים", variant: "destructive" }); return; }
+      navigate("/venue");
+    } catch { toast({ title: "❌ שגיאה", description: "אירעה שגיאה בהתחברות", variant: "destructive" }); }
+    finally { setVenueLoading(false); }
+  };
+
+  const handleGiftSearch = async () => {
+    setGiftSearching(true);
+    try {
+      let query = supabase.from("events").select("id, groom_name, bride_name, child_name, family_name, event_date, event_type, venues(name)");
+      if (giftSearchDate) query = query.eq("event_date", giftSearchDate);
+      if (giftSearchName) query = query.or(`groom_name.ilike.%${giftSearchName}%,bride_name.ilike.%${giftSearchName}%,child_name.ilike.%${giftSearchName}%,family_name.ilike.%${giftSearchName}%`);
+      const { data } = await query.order("event_date", { ascending: true }).limit(10);
+      setGiftResults(data || []);
+      if (!data?.length) toast({ title: "לא נמצאו אירועים", description: "נסה לחפש עם פרטים אחרים" });
+    } catch { toast({ title: "שגיאה בחיפוש", variant: "destructive" }); }
+    finally { setGiftSearching(false); }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signupData.fullName.trim()) { toast({ title: "⚠️ שם חסר", description: "יש להזין שם מלא", variant: "destructive" }); return; }
+    if (!signupData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupData.email)) { toast({ title: "⚠️ מייל לא תקין", description: "יש להזין כתובת מייל תקינה", variant: "destructive" }); return; }
+    if (!signupData.phone.trim()) { toast({ title: "⚠️ טלפון חסר", description: "יש להזין מספר טלפון", variant: "destructive" }); return; }
+    if (!signupData.password || signupData.password.length < 6) { toast({ title: "⚠️ סיסמה קצרה", description: "הסיסמה חייבת להכיל לפחות 6 תווים", variant: "destructive" }); return; }
+    if (!signupData.eventDate) { toast({ title: "⚠️ תאריך חסר", description: "יש לבחור תאריך אירוע", variant: "destructive" }); return; }
+    if (!signupData.agreeTerms) { toast({ title: "⚠️ תנאי שירות", description: "יש לאשר את תנאי השירות כדי להמשיך", variant: "destructive" }); return; }
+
+    setSignupLoading(true);
+    try {
+      // Submit as lead for now (admin will create the account)
+      const { error } = await supabase.from("leads").insert({
+        full_name: signupData.fullName,
+        phone: signupData.phone,
+        email: signupData.email,
+        lead_type: "couple",
+        venue_name: signupData.venueName || null,
+        venue_address: signupData.city || null,
+        status: "new",
+      });
+      if (error) throw error;
+      toast({ title: "✅ הפרטים נשלחו בהצלחה!", description: "ניצור איתך קשר בהקדם להשלמת ההרשמה. תשלום ראשוני: ₪200" });
+      setSignupData({ fullName: "", email: "", phone: "", password: "", eventDate: "", eventType: "חתונה", city: "", venueName: "", groomName: "", brideName: "", agreeTerms: false });
+    } catch { toast({ title: "❌ שגיאה", description: "אירעה שגיאה בשליחת הפרטים", variant: "destructive" }); }
+    finally { setSignupLoading(false); }
+  };
+
+  const panels = [
+    { key: "event-login" as const, icon: PartyPopper, label: "בעלי אירועים", desc: "יש לכם אירוע? נכנסים כאן" },
+    { key: "venue-login" as const, icon: Building2, label: "בעלי אולמות", desc: "מנהלים אולם? כאן הכניסה" },
+    { key: "gift" as const, icon: Gift, label: "רוצים להעביר מתנה?", desc: "חפשו את האירוע ושלחו מתנה" },
+    { key: "signup" as const, icon: UserPlus, label: "רוצים להצטרף?", desc: "פתחו אירוע חדש ב-Giftkal" },
+  ];
+
+  return (
+    <section id="access" className="py-24 bg-sidebar relative overflow-hidden" ref={ref}>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,_hsl(38_92%_50%_/_0.1),_transparent_70%)]" />
+
+      <div className="container mx-auto px-4 relative z-10">
+        <div className={`text-center mb-12 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+            ברוכים הבאים ל-<span className="text-gradient-gold">Giftkal</span>
+          </h2>
+          <p className="text-white/60 text-lg">בחרו את הכניסה המתאימה לכם</p>
+        </div>
+
+        {/* Tab Selector */}
+        <div className="flex flex-wrap justify-center gap-3 mb-10">
+          {panels.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setActivePanel(p.key)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full transition-all duration-300 text-sm font-medium ${
+                activePanel === p.key
+                  ? "bg-gradient-gold text-white shadow-gold"
+                  : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white border border-white/10"
+              }`}
+            >
+              <p.icon className="w-4 h-4" />
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Panel Content */}
+        <div className={`max-w-xl mx-auto transition-all duration-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          {/* Event Owner Login */}
+          {activePanel === "event-login" && (
+            <form onSubmit={handleEventLogin} className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 space-y-5 animate-fade-in" dir="rtl">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-gold flex items-center justify-center mx-auto mb-4">
+                  <PartyPopper className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">כניסה לבעלי אירועים</h3>
+                <p className="text-white/50 text-sm mt-1">הזינו את פרטי ההתחברות שלכם</p>
+              </div>
+              <div>
+                <Label className="text-white/70 text-sm mb-2 block">כתובת מייל</Label>
+                <Input value={eventEmail} onChange={e => setEventEmail(e.target.value)} placeholder="your@email.com" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+              </div>
+              <div className="relative">
+                <Label className="text-white/70 text-sm mb-2 block">סיסמה</Label>
+                <Input type={eventShowPassword ? "text" : "password"} value={eventPassword} onChange={e => setEventPassword(e.target.value)} placeholder="••••••" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12 pl-12" />
+                <button type="button" onClick={() => setEventShowPassword(!eventShowPassword)} className="absolute left-3 top-[38px] text-white/40 hover:text-white/70">
+                  {eventShowPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              <Button type="submit" disabled={eventLoading} className="w-full h-12 bg-gradient-gold text-white shadow-gold hover:shadow-lg text-lg">
+                {eventLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><LogIn className="w-5 h-5 ml-2" /> כניסה</>}
+              </Button>
+              <button type="button" onClick={() => navigate("/reset-password")} className="w-full text-center text-primary/80 hover:text-primary text-sm">שכחתי סיסמה</button>
+            </form>
+          )}
+
+          {/* Venue Owner Login */}
+          {activePanel === "venue-login" && (
+            <form onSubmit={handleVenueLogin} className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 space-y-5 animate-fade-in" dir="rtl">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-gold flex items-center justify-center mx-auto mb-4">
+                  <Building2 className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">כניסה לבעלי אולמות</h3>
+                <p className="text-white/50 text-sm mt-1">הזינו מייל וסיסמה כדי להיכנס למערכת</p>
+              </div>
+              <div>
+                <Label className="text-white/70 text-sm mb-2 block">כתובת מייל</Label>
+                <Input value={venueEmail} onChange={e => setVenueEmail(e.target.value)} placeholder="venue@email.com" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+              </div>
+              <div className="relative">
+                <Label className="text-white/70 text-sm mb-2 block">סיסמה</Label>
+                <Input type={venueShowPassword ? "text" : "password"} value={venuePassword} onChange={e => setVenuePassword(e.target.value)} placeholder="••••••" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12 pl-12" />
+                <button type="button" onClick={() => setVenueShowPassword(!venueShowPassword)} className="absolute left-3 top-[38px] text-white/40 hover:text-white/70">
+                  {venueShowPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              <Button type="submit" disabled={venueLoading} className="w-full h-12 bg-gradient-gold text-white shadow-gold hover:shadow-lg text-lg">
+                {venueLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><LogIn className="w-5 h-5 ml-2" /> כניסה</>}
+              </Button>
+              <button type="button" onClick={() => navigate("/reset-password")} className="w-full text-center text-primary/80 hover:text-primary text-sm">שכחתי סיסמה</button>
+            </form>
+          )}
+
+          {/* Gift Search */}
+          {activePanel === "gift" && (
+            <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 space-y-5 animate-fade-in" dir="rtl">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-gold flex items-center justify-center mx-auto mb-4">
+                  <Gift className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">שלחו מתנה לאירוע</h3>
+                <p className="text-white/50 text-sm mt-1">חפשו את האירוע לפי שם או תאריך ואולם</p>
+              </div>
+              <div>
+                <Label className="text-white/70 text-sm mb-2 block">שם חתן / כלה / בעל האירוע</Label>
+                <Input value={giftSearchName} onChange={e => setGiftSearchName(e.target.value)} placeholder="הזינו שם..." className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-white/70 text-sm mb-2 block">תאריך אירוע</Label>
+                  <Input type="date" value={giftSearchDate} onChange={e => setGiftSearchDate(e.target.value)} className="bg-white/10 border-white/20 text-white h-12" />
+                </div>
+                <div>
+                  <Label className="text-white/70 text-sm mb-2 block">אולם (אופציונלי)</Label>
+                  <Input value={giftSearchVenue} onChange={e => setGiftSearchVenue(e.target.value)} placeholder="שם האולם" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+                </div>
+              </div>
+              <Button onClick={handleGiftSearch} disabled={giftSearching || (!giftSearchName && !giftSearchDate)} className="w-full h-12 bg-gradient-gold text-white shadow-gold hover:shadow-lg text-lg">
+                {giftSearching ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Search className="w-5 h-5 ml-2" /> חפשו אירוע</>}
+              </Button>
+
+              {/* Results */}
+              {giftResults.length > 0 && (
+                <div className="space-y-3 mt-4">
+                  <p className="text-white/60 text-sm">נמצאו {giftResults.length} אירועים:</p>
+                  {giftResults.map((event: any) => (
+                    <div key={event.id} className="bg-white/10 rounded-2xl p-4 flex items-center justify-between border border-white/10">
+                      <div className="text-right">
+                        <p className="text-white font-bold">
+                          {event.groom_name && event.bride_name ? `${event.groom_name} & ${event.bride_name}` : event.child_name || event.family_name || "אירוע"}
+                        </p>
+                        <p className="text-white/50 text-sm">
+                          {new Date(event.event_date).toLocaleDateString("he-IL")} • {(event.venues as any)?.name || ""}
+                        </p>
+                      </div>
+                      <Button onClick={() => navigate(`/gift/${event.id}`)} size="sm" className="bg-gradient-gold text-white rounded-full">
+                        <Gift className="w-4 h-4 ml-1" />
+                        שלחו מתנה
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Signup */}
+          {activePanel === "signup" && (
+            <form onSubmit={handleSignup} className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 space-y-5 animate-fade-in" dir="rtl">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-gold flex items-center justify-center mx-auto mb-4">
+                  <UserPlus className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">הצטרפו ל-Giftkal</h3>
+                <p className="text-white/50 text-sm mt-1">פתחו אירוע חדש ב-2 דקות • תשלום ראשוני ₪200</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-white/70 text-sm mb-2 block">שם מלא *</Label>
+                  <Input value={signupData.fullName} onChange={e => setSignupData({...signupData, fullName: e.target.value})} placeholder="השם שלכם" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+                </div>
+                <div>
+                  <Label className="text-white/70 text-sm mb-2 block">טלפון *</Label>
+                  <Input value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} placeholder="050-0000000" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-white/70 text-sm mb-2 block">כתובת מייל *</Label>
+                <Input value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} placeholder="your@email.com" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+              </div>
+
+              <div className="relative">
+                <Label className="text-white/70 text-sm mb-2 block">בחרו סיסמה *</Label>
+                <Input type={signupShowPassword ? "text" : "password"} value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} placeholder="לפחות 6 תווים" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12 pl-12" />
+                <button type="button" onClick={() => setSignupShowPassword(!signupShowPassword)} className="absolute left-3 top-[38px] text-white/40 hover:text-white/70">
+                  {signupShowPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-white/70 text-sm mb-2 block">סוג אירוע</Label>
+                  <select value={signupData.eventType} onChange={e => setSignupData({...signupData, eventType: e.target.value})} className="w-full h-12 rounded-xl bg-white/10 border border-white/20 text-white px-4 text-sm">
+                    <option value="חתונה" className="text-black">חתונה</option>
+                    <option value="בר מצווה" className="text-black">בר מצווה</option>
+                    <option value="בת מצווה" className="text-black">בת מצווה</option>
+                    <option value="ברית" className="text-black">ברית</option>
+                    <option value="אחר" className="text-black">אחר</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-white/70 text-sm mb-2 block">תאריך אירוע *</Label>
+                  <Input type="date" value={signupData.eventDate} onChange={e => setSignupData({...signupData, eventDate: e.target.value})} className="bg-white/10 border-white/20 text-white h-12" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-white/70 text-sm mb-2 block">עיר</Label>
+                  <Input value={signupData.city} onChange={e => setSignupData({...signupData, city: e.target.value})} placeholder="עיר האירוע" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+                </div>
+                <div>
+                  <Label className="text-white/70 text-sm mb-2 block">שם אולם (או השכרה)</Label>
+                  <Input value={signupData.venueName} onChange={e => setSignupData({...signupData, venueName: e.target.value})} placeholder="שם האולם" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+                </div>
+              </div>
+
+              {(signupData.eventType === "חתונה") && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-white/70 text-sm mb-2 block">שם חתן</Label>
+                    <Input value={signupData.groomName} onChange={e => setSignupData({...signupData, groomName: e.target.value})} placeholder="שם החתן" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+                  </div>
+                  <div>
+                    <Label className="text-white/70 text-sm mb-2 block">שם כלה</Label>
+                    <Input value={signupData.brideName} onChange={e => setSignupData({...signupData, brideName: e.target.value})} placeholder="שם הכלה" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-12" />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-start gap-3 bg-white/5 rounded-xl p-4 border border-white/10">
+                <Checkbox id="terms" checked={signupData.agreeTerms} onCheckedChange={(checked) => setSignupData({...signupData, agreeTerms: !!checked})} className="border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary mt-0.5" />
+                <Label htmlFor="terms" className="text-white/60 text-sm leading-relaxed cursor-pointer">
+                  אני מאשר/ת את <span className="text-primary underline">תנאי השירות</span> ו<span className="text-primary underline">מדיניות הפרטיות</span> של Giftkal
+                </Label>
+              </div>
+
+              <Button type="submit" disabled={signupLoading} className="w-full h-12 bg-gradient-gold text-white shadow-gold hover:shadow-lg text-lg">
+                {signupLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><UserPlus className="w-5 h-5 ml-2" /> שלחו פרטים והצטרפו</>}
+              </Button>
+              <p className="text-center text-white/40 text-xs">לאחר אישור הפרטים ותשלום ₪200, נפתח לכם חשבון במערכת</p>
+            </form>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ─── Footer ───
 const Footer = () => {
   return (
@@ -1014,7 +1385,7 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-bold mb-6 text-lg">קישורים</h4>
             <ul className="space-y-3">
-              <li><Link to="/login" className="text-white/60 hover:text-primary transition-colors text-sm">כניסה למערכת</Link></li>
+              <li><button onClick={() => scrollTo("access")} className="text-white/60 hover:text-primary transition-colors text-sm">כניסה למערכת</button></li>
               <li><a href="#lead-form" className="text-white/60 hover:text-primary transition-colors text-sm">צור קשר</a></li>
               <li><a href="#why-guests" className="text-white/60 hover:text-primary transition-colors text-sm">למה Giftkal</a></li>
             </ul>
@@ -1068,6 +1439,7 @@ const HomePage = () => {
       <TestimonialsSection />
       <AudienceSection />
       <AggressiveCTA />
+      <AccessSection />
       <LeadFormSection />
       <Footer />
     </div>
