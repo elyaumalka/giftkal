@@ -38,6 +38,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [newDeviceSerial, setNewDeviceSerial] = useState("");
   const [localPaymentCompleted, setLocalPaymentCompleted] = useState(event.payment_completed);
   const [localDeviceReturned, setLocalDeviceReturned] = useState(event.device_returned);
+  const [localBudgetEnabled, setLocalBudgetEnabled] = useState(event.budget_enabled ?? false);
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
@@ -185,6 +186,24 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
     },
   });
 
+  // Toggle budget enabled
+  const toggleBudget = useMutation({
+    mutationFn: async () => {
+      const newStatus = !localBudgetEnabled;
+      const { error } = await supabase
+        .from("events")
+        .update({ budget_enabled: newStatus })
+        .eq("id", event.id);
+      if (error) throw error;
+      return newStatus;
+    },
+    onSuccess: (newStatus) => {
+      setLocalBudgetEnabled(newStatus);
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      toast({ title: newStatus ? "ניהול תקציב הופעל" : "ניהול תקציב כובה" });
+    },
+  });
+
   const uploadedDocTypes = uploadedDocs?.map((d: any) => d.document_type) || [];
 
   return (
@@ -193,6 +212,19 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       <div className="bg-secondary text-white p-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">פרטי לקוח</h2>
         <div className="flex items-center gap-3">
+          {/* Budget Toggle Button */}
+          <Button
+            onClick={() => toggleBudget.mutate()}
+            className={`${
+              localBudgetEnabled 
+                ? "bg-purple-500 hover:bg-purple-600" 
+                : "bg-gray-500 hover:bg-gray-600"
+            } text-white rounded-full px-6`}
+            disabled={toggleBudget.isPending}
+          >
+            {localBudgetEnabled ? "תקציב פעיל" : "הפעל תקציב"}
+          </Button>
+
           {/* Payment Toggle Button */}
           <Button
             onClick={() => togglePayment.mutate()}
