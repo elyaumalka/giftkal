@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Sparkles, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Sparkles, Loader2, Trash2, Link2, Copy } from "lucide-react";
 import { templates } from "@/components/invitations/InvitationTemplates";
 import { useExcelHandler } from "@/components/invitations/useExcelHandler";
 import { useAudioHandler } from "@/components/invitations/useAudioHandler";
@@ -407,6 +407,41 @@ export default function EventInvitations() {
       {/* Step 2: בחירת מוזמנים */}
       {currentStep === 2 && (
         <div className="space-y-4">
+          {/* Share links section */}
+          <div className="bg-white rounded-xl shadow-sm p-5 space-y-4" dir="rtl">
+            <h3 className="font-bold text-[#051839] flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-[#C4A35A]" />
+              קישורים לשיתוף — שליחת הזמנות ללא התחברות
+            </h3>
+            <p className="text-sm text-gray-500">שלחו את הקישורים למשפחה כדי שיוכלו להעלות רשימת מוזמנים בעצמם</p>
+            <div className="grid grid-cols-1 gap-3">
+              {(isWeddingType ? [
+                { key: "groom", label: `צד החתן${groomName ? ` — ${groomName}` : ""}`, token: (event as any)?.share_token_groom },
+                { key: "bride", label: `צד הכלה${brideName ? ` — ${brideName}` : ""}`, token: (event as any)?.share_token_bride },
+              ] : [
+                { key: "general", label: eventType === "ברית" ? `משפחת ${familyName || ""}` : "רשימת מוזמנים", token: (event as any)?.share_token_general },
+              ]).map(({ key, label, token }) => (
+                <div key={key} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <span className="font-medium text-sm text-[#051839] min-w-[120px]">{label}</span>
+                  <code className="flex-1 text-xs bg-white rounded px-3 py-2 border border-gray-200 text-gray-600 truncate" dir="ltr">
+                    {token ? `${window.location.origin}/invite/${token}` : "טוען..."}
+                  </code>
+                  <button
+                    onClick={() => {
+                      if (token) {
+                        navigator.clipboard.writeText(`${window.location.origin}/invite/${token}`);
+                        toast({ title: "הקישור הועתק!" });
+                      }
+                    }}
+                    className="bg-[#051839] text-white p-2 rounded-lg hover:bg-[#08275E] transition-colors shrink-0"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
             <div onClick={() => audioInputRef.current?.click()} className="bg-[#051839] rounded-xl p-4 text-white cursor-pointer hover:bg-[#08275E] transition-colors">
               <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioFileChange} className="hidden" />
