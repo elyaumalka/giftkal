@@ -110,7 +110,19 @@ export default function SharedInvitePage() {
   };
 
   const addGuest = async () => {
-    if (!manualName.trim() || !event?.id) return;
+    if (!manualName.trim()) {
+      toast({ title: "⚠️ שם חסר", description: "יש להזין שם מלא של המוזמן", variant: "destructive" });
+      return;
+    }
+    if (manualName.trim().length < 2) {
+      toast({ title: "⚠️ שם קצר מדי", description: "יש להזין שם מלא (לפחות 2 תווים)", variant: "destructive" });
+      return;
+    }
+    if (manualPhone && !/^[\d\-\+\(\)\s]{7,15}$/.test(manualPhone.trim())) {
+      toast({ title: "⚠️ טלפון לא תקין", description: "יש להזין מספר טלפון תקין (7-15 ספרות)", variant: "destructive" });
+      return;
+    }
+    if (!event?.id) return;
     const { error } = await supabase.from("guests").insert({
       event_id: event.id,
       full_name: manualName.trim(),

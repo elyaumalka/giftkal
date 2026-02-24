@@ -121,8 +121,27 @@ export default function EventInvitations() {
   };
 
   const handleNextStep = async () => {
-    if (currentStep === 1) { await saveEventData(); setCurrentStep(2); }
-    else if (currentStep === 2) { await saveEventData(); setCurrentStep(3); }
+    if (currentStep === 1) {
+      // Validate step 1
+      if (isWeddingType && !groomName.trim()) {
+        toast({ title: "⚠️ שם חתן חסר", description: "יש להזין שם חתן כדי להמשיך", variant: "destructive" });
+        return;
+      }
+      if (isWeddingType && !brideName.trim()) {
+        toast({ title: "⚠️ שם כלה חסר", description: "יש להזין שם כלה כדי להמשיך", variant: "destructive" });
+        return;
+      }
+      if (isBarBatMitzvah && !childName.trim()) {
+        toast({ title: "⚠️ שם חסר", description: "יש להזין שם חתן/בת הבר/בת מצווה", variant: "destructive" });
+        return;
+      }
+      if ((eventType === "ברית" || eventType === "אחר") && !childName.trim() && !familyName.trim()) {
+        toast({ title: "⚠️ שם חסר", description: "יש להזין שם ילד/ה או שם משפחה", variant: "destructive" });
+        return;
+      }
+      await saveEventData();
+      setCurrentStep(2);
+    } else if (currentStep === 2) { await saveEventData(); setCurrentStep(3); }
   };
 
   const handlePrevStep = () => {
