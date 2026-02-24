@@ -148,6 +148,9 @@ export type Database = {
           payment_completed: boolean | null
           reception_time: string | null
           seller_payme_id: string | null
+          share_token_bride: string | null
+          share_token_general: string | null
+          share_token_groom: string | null
           updated_at: string
           venue_id: string | null
           voice_text: string | null
@@ -178,6 +181,9 @@ export type Database = {
           payment_completed?: boolean | null
           reception_time?: string | null
           seller_payme_id?: string | null
+          share_token_bride?: string | null
+          share_token_general?: string | null
+          share_token_groom?: string | null
           updated_at?: string
           venue_id?: string | null
           voice_text?: string | null
@@ -208,6 +214,9 @@ export type Database = {
           payment_completed?: boolean | null
           reception_time?: string | null
           seller_payme_id?: string | null
+          share_token_bride?: string | null
+          share_token_general?: string | null
+          share_token_groom?: string | null
           updated_at?: string
           venue_id?: string | null
           voice_text?: string | null
@@ -235,6 +244,7 @@ export type Database = {
           relationship: string | null
           rsvp_date: string | null
           rsvp_status: string
+          side: string
         }
         Insert: {
           created_at?: string
@@ -248,6 +258,7 @@ export type Database = {
           relationship?: string | null
           rsvp_date?: string | null
           rsvp_status?: string
+          side?: string
         }
         Update: {
           created_at?: string
@@ -261,6 +272,7 @@ export type Database = {
           relationship?: string | null
           rsvp_date?: string | null
           rsvp_status?: string
+          side?: string
         }
         Relationships: [
           {
