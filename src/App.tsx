@@ -11,6 +11,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import EventLogin from "./pages/auth/EventLogin";
 import VenueLogin from "./pages/auth/VenueLogin";
 import Signup from "./pages/auth/Signup";
+import AccessPage from "./pages/auth/AccessPage";
 
 // Landing
 import HomePage from "./pages/landing/HomePage";
@@ -70,6 +71,7 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/access" element={<AccessPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/event" element={<EventLogin />} />
           <Route path="/login/venue" element={<VenueLogin />} />

@@ -126,10 +126,10 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button onClick={() => scrollTo("access")} variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 hidden sm:inline-flex">
+          <Link to="/access" className="text-white/70 hover:text-white hover:bg-white/10 hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium">
             <LogIn className="w-4 h-4 ml-2" />
             כניסה למערכת
-          </Button>
+          </Link>
           <Button onClick={() => scrollTo("lead-form")} className="bg-gradient-gold text-white shadow-gold hover:shadow-lg transition-all hover:scale-105">
             פתחו אירוע עכשיו
           </Button>
@@ -1059,7 +1059,7 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-bold mb-6 text-lg">קישורים</h4>
             <ul className="space-y-3">
-              <li><button onClick={() => scrollTo("access")} className="text-white/60 hover:text-primary transition-colors text-sm">כניסה למערכת</button></li>
+              <li><Link to="/access" className="text-white/60 hover:text-primary transition-colors text-sm">כניסה למערכת</Link></li>
               <li><a href="#lead-form" className="text-white/60 hover:text-primary transition-colors text-sm">צור קשר</a></li>
               <li><a href="#why-guests" className="text-white/60 hover:text-primary transition-colors text-sm">למה Giftkal</a></li>
             </ul>
