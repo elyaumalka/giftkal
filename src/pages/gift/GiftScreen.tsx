@@ -223,7 +223,51 @@ export default function GiftScreen() {
 
   const finalAmount = selectedAmount || Number(customAmount);
 
+  const validateEmail = (email: string): boolean => {
+    if (!email) return true; // Optional field
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    if (!phone) return true; // Optional field
+    const phoneRegex = /^[\d\-\+\(\)\s]{7,15}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const handleProceedToDetails = () => {
+    if (!finalAmount || finalAmount <= 0) {
+      toast({ title: "⚠️ סכום לא תקין", description: "יש לבחור סכום מתנה או להזין סכום גדול מ-0", variant: "destructive" });
+      return;
+    }
+    if (finalAmount < 10) {
+      toast({ title: "⚠️ סכום מינימלי", description: "סכום המתנה המינימלי הוא ₪10", variant: "destructive" });
+      return;
+    }
+    if (finalAmount > 100000) {
+      toast({ title: "⚠️ סכום חריג", description: "סכום המתנה המקסימלי הוא ₪100,000", variant: "destructive" });
+      return;
+    }
+    setStep("details");
+  };
+
   const handleProceedToBlessing = () => {
+    if (!payerName.trim()) {
+      toast({ title: "⚠️ שם חסר", description: "יש להזין שם מלא כדי להמשיך", variant: "destructive" });
+      return;
+    }
+    if (payerName.trim().length < 2) {
+      toast({ title: "⚠️ שם קצר מדי", description: "יש להזין שם מלא (לפחות 2 תווים)", variant: "destructive" });
+      return;
+    }
+    if (payerEmail && !validateEmail(payerEmail)) {
+      toast({ title: "⚠️ כתובת מייל לא תקינה", description: "יש להזין כתובת מייל תקינה, לדוגמה: name@email.com", variant: "destructive" });
+      return;
+    }
+    if (payerPhone && !validatePhone(payerPhone)) {
+      toast({ title: "⚠️ מספר טלפון לא תקין", description: "יש להזין מספר טלפון תקין (7-15 ספרות)", variant: "destructive" });
+      return;
+    }
     setStep("blessing");
   };
 
@@ -404,8 +448,7 @@ export default function GiftScreen() {
 
               <Button
                 className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white shadow-lg"
-                disabled={!finalAmount || finalAmount <= 0}
-                onClick={() => setStep("details")}
+                onClick={handleProceedToDetails}
               >
                 המשך
                 <ArrowLeft className="w-5 h-5 mr-2" />
@@ -508,7 +551,6 @@ export default function GiftScreen() {
                 </Button>
                 <Button
                   onClick={handleProceedToBlessing}
-                  disabled={!payerName}
                   className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
                 >
                   המשך לברכה

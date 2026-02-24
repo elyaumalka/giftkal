@@ -60,6 +60,24 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email.trim()) {
+      toast({ title: "⚠️ מייל חסר", description: "יש להזין כתובת מייל כדי להתחבר", variant: "destructive" });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "⚠️ מייל לא תקין", description: "יש להזין כתובת מייל תקינה, לדוגמה: name@email.com", variant: "destructive" });
+      return;
+    }
+    if (!password) {
+      toast({ title: "⚠️ סיסמה חסרה", description: "יש להזין סיסמה כדי להתחבר", variant: "destructive" });
+      return;
+    }
+    if (password.length < 6) {
+      toast({ title: "⚠️ סיסמה קצרה", description: "הסיסמה חייבת להכיל לפחות 6 תווים", variant: "destructive" });
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -68,7 +86,14 @@ export default function Login() {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("Invalid login")) {
+          toast({ title: "❌ פרטים שגויים", description: "המייל או הסיסמה שהזנת אינם נכונים. נסה שוב.", variant: "destructive" });
+        } else {
+          toast({ title: "❌ שגיאה בהתחברות", description: error.message, variant: "destructive" });
+        }
+        return;
+      }
 
       toast({
         title: "התחברת בהצלחה!",
@@ -87,6 +112,16 @@ export default function Login() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!resetEmail.trim()) {
+      toast({ title: "⚠️ מייל חסר", description: "יש להזין כתובת מייל לאיפוס סיסמה", variant: "destructive" });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
+      toast({ title: "⚠️ מייל לא תקין", description: "יש להזין כתובת מייל תקינה, לדוגמה: name@email.com", variant: "destructive" });
+      return;
+    }
+    
     setResetLoading(true);
 
     try {
