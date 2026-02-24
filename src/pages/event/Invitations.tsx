@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Sparkles, Loader2, Trash2 } from "lucide-react";
 import { templates } from "@/components/invitations/InvitationTemplates";
 import { useExcelHandler } from "@/components/invitations/useExcelHandler";
 import { useAudioHandler } from "@/components/invitations/useAudioHandler";
@@ -62,12 +62,18 @@ export default function EventInvitations() {
         setBrideParents(data.bride_parents || "");
         setIntroText(data.invitation_text || "");
         if (data.event_type) setEventType(data.event_type as EventType);
-        // Load venue info
+        setReceptionTime((data as any).reception_time || "");
+        setCeremonyTime((data as any).ceremony_time || "");
+        setChildName((data as any).child_name || "");
+        setFamilyName((data as any).family_name || "");
+        setNotes((data as any).invitation_notes || "");
+        setVoiceText((data as any).voice_text || "");
+        // Load venue info - prefer custom, fallback to venue relation
+        const customVenue = (data as any).custom_venue_name;
+        const customLocation = (data as any).custom_venue_location;
         const v = data.venues as any;
-        if (v) {
-          setVenueName(v.name || "");
-          setVenueLocation(v.address || "");
-        }
+        setVenueName(customVenue || (v?.name) || "");
+        setVenueLocation(customLocation || (v?.address) || "");
       }
 
       return data;
@@ -102,13 +108,21 @@ export default function EventInvitations() {
         groom_parents: groomParents,
         bride_parents: brideParents,
         invitation_text: introText,
-      })
+        reception_time: receptionTime,
+        ceremony_time: ceremonyTime,
+        child_name: childName,
+        family_name: familyName,
+        invitation_notes: notes,
+        voice_text: voiceText,
+        custom_venue_name: venueName,
+        custom_venue_location: venueLocation,
+      } as any)
       .eq("id", event.id);
   };
 
   const handleNextStep = async () => {
     if (currentStep === 1) { await saveEventData(); setCurrentStep(2); }
-    else if (currentStep === 2) { setCurrentStep(3); }
+    else if (currentStep === 2) { await saveEventData(); setCurrentStep(3); }
   };
 
   const handlePrevStep = () => {
@@ -433,8 +447,44 @@ export default function EventInvitations() {
           </div>
 
           {guests && guests.length > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center" dir="rtl">
-              <p className="text-green-700 font-medium">נמצאו {guests.length} מוזמנים ברשימה</p>
+            <div className="bg-card border border-border rounded-xl p-4 space-y-3" dir="rtl">
+              <div className="flex items-center justify-between">
+                <p className="text-foreground font-medium text-sm">רשימת מוזמנים ({guests.length})</p>
+              </div>
+              <div className="max-h-[300px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted sticky top-0">
+                    <tr>
+                      <th className="text-right p-2 font-medium text-muted-foreground">שם</th>
+                      <th className="text-right p-2 font-medium text-muted-foreground">טלפון</th>
+                      <th className="text-right p-2 font-medium text-muted-foreground">אימייל</th>
+                      <th className="text-right p-2 font-medium text-muted-foreground">קרבה</th>
+                      <th className="p-2 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {guests.map((g: any) => (
+                      <tr key={g.id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="p-2">{g.full_name}</td>
+                        <td className="p-2 text-muted-foreground">{g.phone || "—"}</td>
+                        <td className="p-2 text-muted-foreground">{g.email || "—"}</td>
+                        <td className="p-2 text-muted-foreground">{g.relationship || "—"}</td>
+                        <td className="p-2">
+                          <button
+                            onClick={async () => {
+                              await supabase.from("guests").delete().eq("id", g.id);
+                              refetchGuests();
+                            }}
+                            className="text-destructive hover:text-destructive/80 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
