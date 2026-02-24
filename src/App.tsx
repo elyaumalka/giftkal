@@ -46,6 +46,7 @@ import PaymeSetup from "./pages/event/PaymeSetup";
 import EventWelcome from "./pages/gift/EventWelcome";
 import GiftScreen from "./pages/gift/GiftScreen";
 import SharedInvitePage from "./pages/invite/SharedInvitePage";
+import PublicRSVP from "./pages/rsvp/PublicRSVP";
 import VenueLanding from "./pages/landing/VenueLanding";
 
 // API Docs
@@ -71,6 +72,7 @@ function App() {
           <Route path="/event/:eventId/payme-setup" element={<PaymeSetup />} />
            <Route path="/landing/:venueId" element={<VenueLanding />} />
            <Route path="/invite/:token" element={<SharedInvitePage />} />
+           <Route path="/rsvp/:eventId/:guestId" element={<PublicRSVP />} />
           <Route path="/api/yemot" element={<YemotApiDocs />} />
           <Route path="/api/docs" element={<SystemApiDocs />} />
 

@@ -2,51 +2,63 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Search, Users, UserCheck, UserX, Clock, Filter } from "lucide-react";
+import { Search, Users, UserCheck, UserX, Clock, Copy, Baby, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 type RsvpFilter = "all" | "approved" | "declined" | "pending";
 
 export default function RSVP() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<RsvpFilter>("all");
+  const { toast } = useToast();
 
-  const { data: guests = [], isLoading } = useQuery({
-    queryKey: ["rsvp-guests"],
+  const { data: eventData } = useQuery({
+    queryKey: ["rsvp-event-data"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
-
-      const { data: event } = await supabase
+      if (!user) return null;
+      const { data } = await supabase
         .from("events")
         .select("id")
         .eq("owner_id", user.id)
         .maybeSingle();
+      return data;
+    },
+  });
 
-      if (!event) return [];
-
+  const { data: guests = [], isLoading } = useQuery({
+    queryKey: ["rsvp-guests", eventData?.id],
+    queryFn: async () => {
+      if (!eventData?.id) return [];
       const { data } = await supabase
         .from("guests")
         .select("*")
-        .eq("event_id", event.id)
+        .eq("event_id", eventData.id)
         .order("full_name");
-
       return data || [];
     },
+    enabled: !!eventData?.id,
   });
 
   const stats = useMemo(() => {
     const total = guests.length;
-    const approved = guests.filter((g: any) => g.rsvp_status === "approved").reduce((sum: number, g: any) => sum + (g.number_of_guests || 1), 0);
+    const confirmed = guests.filter((g: any) => g.rsvp_status === "confirmed" || g.rsvp_status === "approved");
+    const approvedGuests = confirmed.reduce((sum: number, g: any) => sum + (g.number_of_guests || 1), 0);
+    const childrenTotal = confirmed.reduce((sum: number, g: any) => sum + ((g as any).children_count || 0), 0);
     const declined = guests.filter((g: any) => g.rsvp_status === "declined").length;
-    const pending = guests.filter((g: any) => g.rsvp_status === "pending").length;
-    const approvedCount = guests.filter((g: any) => g.rsvp_status === "approved").length;
-    return { total, approved, declined, pending, approvedCount };
+    const pending = guests.filter((g: any) => g.rsvp_status === "pending" || g.rsvp_status === "maybe").length;
+    const approvedCount = confirmed.length;
+    return { total, approved: approvedGuests, declined, pending, approvedCount, childrenTotal };
   }, [guests]);
 
   const filteredGuests = useMemo(() => {
     let list = guests;
-    if (filter !== "all") {
+    if (filter === "approved") {
+      list = list.filter((g: any) => g.rsvp_status === "approved" || g.rsvp_status === "confirmed");
+    } else if (filter === "pending") {
+      list = list.filter((g: any) => g.rsvp_status === "pending" || g.rsvp_status === "maybe");
+    } else if (filter !== "all") {
       list = list.filter((g: any) => g.rsvp_status === filter);
     }
     if (searchQuery.trim()) {
@@ -62,16 +74,20 @@ export default function RSVP() {
 
   const statusLabel = (status: string) => {
     switch (status) {
-      case "approved": return "אישר הגעה";
+      case "approved":
+      case "confirmed": return "אישר הגעה";
       case "declined": return "לא מגיע";
+      case "maybe": return "עוד לא יודע";
       default: return "ממתין";
     }
   };
 
   const statusColor = (status: string) => {
     switch (status) {
-      case "approved": return "bg-[#22C55E] text-white";
+      case "approved":
+      case "confirmed": return "bg-[#22C55E] text-white";
       case "declined": return "bg-[#C41E3A] text-white";
+      case "maybe": return "bg-[#F59E0B] text-white";
       default: return "bg-gray-200 text-gray-700";
     }
   };
@@ -79,6 +95,7 @@ export default function RSVP() {
   const statCards = [
     { label: "סה״כ מוזמנים", value: stats.total, icon: Users, color: "bg-[#051839]" },
     { label: "אישרו הגעה", value: `${stats.approvedCount} (${stats.approved} אורחים)`, icon: UserCheck, color: "bg-[#22C55E]" },
+    { label: "ילדים", value: stats.childrenTotal, icon: Baby, color: "bg-[#C4A35A]" },
     { label: "לא מגיעים", value: stats.declined, icon: UserX, color: "bg-[#C41E3A]" },
     { label: "ממתינים", value: stats.pending, icon: Clock, color: "bg-[#F59E0B]" },
   ];
@@ -93,7 +110,7 @@ export default function RSVP() {
   return (
     <div className="space-y-6 animate-fade-in" dir="rtl">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statCards.map((card) => (
           <div key={card.label} className="bg-white rounded-2xl p-5 shadow-sm flex items-center gap-4">
             <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-white", card.color)}>
@@ -156,13 +173,14 @@ export default function RSVP() {
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="p-4">
           {/* Header */}
-          <div className="grid grid-cols-6 gap-4 text-sm font-medium text-gray-500 mb-4 px-4">
-            <span className="text-right">שם מלא</span>
-            <span className="text-right">טלפון</span>
-            <span className="text-right">מייל</span>
-            <span className="text-right">קרבה</span>
-            <span className="text-right">מספר אורחים</span>
-            <span className="text-right">סטטוס</span>
+          <div className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_0.6fr_auto] gap-3 text-sm font-medium text-gray-500 mb-4 px-4">
+            <span>שם מלא</span>
+            <span>טלפון</span>
+            <span>קרבה</span>
+            <span>אורחים</span>
+            <span>ילדים</span>
+            <span>סטטוס</span>
+            <span className="w-10">קישור</span>
           </div>
 
           {/* Rows */}
@@ -177,18 +195,31 @@ export default function RSVP() {
               filteredGuests.map((guest: any) => (
                 <div
                   key={guest.id}
-                  className="grid grid-cols-6 gap-4 items-center bg-gray-50 rounded-xl p-4 text-sm hover:bg-gray-100 transition-colors"
+                  className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_0.6fr_auto] gap-3 items-center bg-gray-50 rounded-xl p-4 text-sm hover:bg-gray-100 transition-colors"
                 >
                   <span className="font-bold text-[#051839]">{guest.full_name}</span>
                   <span className="text-[#051839]">{guest.phone || "—"}</span>
-                  <span className="text-[#051839] truncate">{guest.email || "—"}</span>
                   <span className="text-[#051839]">{guest.relationship || "—"}</span>
                   <span className="font-bold text-[#051839]">{guest.number_of_guests || 1}</span>
+                  <span className="text-[#051839]">{guest.children_count || 0}</span>
                   <span>
-                    <span className={cn("inline-block px-4 py-1.5 rounded-full text-xs font-medium", statusColor(guest.rsvp_status))}>
+                    <span className={cn("inline-block px-3 py-1 rounded-full text-xs font-medium", statusColor(guest.rsvp_status))}>
                       {statusLabel(guest.rsvp_status)}
                     </span>
                   </span>
+                  <div className="w-10">
+                    <button
+                      onClick={() => {
+                        const url = `${window.location.origin}/rsvp/${eventData?.id}/${guest.id}`;
+                        navigator.clipboard.writeText(url);
+                        toast({ title: "קישור RSVP הועתק!" });
+                      }}
+                      className="text-[#C4A35A] hover:text-[#95742F] transition-colors"
+                      title="העתק קישור RSVP"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))
             )}

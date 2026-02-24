@@ -487,41 +487,72 @@ export default function EventInvitations() {
                 <p className="text-foreground font-medium text-sm">רשימת מוזמנים ({guests.length})</p>
               </div>
               <div className="max-h-[300px] overflow-y-auto">
-                <table className="w-full text-sm">
+              <table className="w-full text-sm">
                   <thead className="bg-muted sticky top-0">
                     <tr>
                       <th className="text-right p-2 font-medium text-muted-foreground">שם</th>
                       <th className="text-right p-2 font-medium text-muted-foreground">טלפון</th>
-                      <th className="text-right p-2 font-medium text-muted-foreground">אימייל</th>
                       <th className="text-right p-2 font-medium text-muted-foreground">קרבה</th>
+                      <th className="text-right p-2 font-medium text-muted-foreground">קישור RSVP</th>
                       <th className="p-2 w-10"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {guests.map((g: any) => (
-                      <tr key={g.id} className="border-b border-border/50 hover:bg-muted/30">
-                        <td className="p-2">{g.full_name}</td>
-                        <td className="p-2 text-muted-foreground">{g.phone || "—"}</td>
-                        <td className="p-2 text-muted-foreground">{g.email || "—"}</td>
-                        <td className="p-2 text-muted-foreground">{g.relationship || "—"}</td>
-                        <td className="p-2">
-                          <button
-                            onClick={async () => {
-                              await supabase.from("guests").delete().eq("id", g.id);
-                              refetchGuests();
-                            }}
-                            className="text-destructive hover:text-destructive/80 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {guests.map((g: any) => {
+                      const rsvpUrl = `${window.location.origin}/rsvp/${event?.id}/${g.id}`;
+                      return (
+                        <tr key={g.id} className="border-b border-border/50 hover:bg-muted/30">
+                          <td className="p-2">{g.full_name}</td>
+                          <td className="p-2 text-muted-foreground">{g.phone || "—"}</td>
+                          <td className="p-2 text-muted-foreground">{g.relationship || "—"}</td>
+                          <td className="p-2">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(rsvpUrl);
+                                toast({ title: "קישור RSVP הועתק!" });
+                              }}
+                              className="text-[#C4A35A] hover:text-[#95742F] text-xs flex items-center gap-1"
+                            >
+                              <Copy className="w-3 h-3" />
+                              העתק
+                            </button>
+                          </td>
+                          <td className="p-2">
+                            <button
+                              onClick={async () => {
+                                await supabase.from("guests").delete().eq("id", g.id);
+                                refetchGuests();
+                              }}
+                              className="text-destructive hover:text-destructive/80 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
+
+          {/* RSVP Message Template */}
+          <div className="bg-white rounded-xl shadow-sm p-5 space-y-3" dir="rtl">
+            <h3 className="font-bold text-[#051839] flex items-center gap-2 text-sm">
+              📩 נוסח הודעת RSVP לשליחה
+            </h3>
+            <p className="text-xs text-gray-500">העתיקו את הנוסח ושלחו לכל מוזמן עם הקישור האישי שלו</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-[#051839] leading-relaxed whitespace-pre-wrap">
+              {isWeddingType
+                ? `הוזמנתם לאירוע של ${groomName} ו${brideName} 🎉\n\nכדי להתארגן בהתאם, נשמח לדעת האם אתם מגיעים לאירוע.\n\nלחצו על הקישור כדי לאשר הגעה:\n[קישור אישי]`
+                : eventType === "ברית"
+                ? `הוזמנתם לאירוע של משפחת ${familyName} 🎉\n\nכדי להתארגן בהתאם, נשמח לדעת האם אתם מגיעים לאירוע.\n\nלחצו על הקישור כדי לאשר הגעה:\n[קישור אישי]`
+                : `הוזמנתם לאירוע של ${childName || familyName} 🎉\n\nכדי להתארגן בהתאם, נשמח לדעת האם אתם מגיעים לאירוע.\n\nלחצו על הקישור כדי לאשר הגעה:\n[קישור אישי]`
+              }
+            </div>
+            <p className="text-xs text-gray-400">💡 הקישור האישי של כל מוזמן מופיע בטבלה למעלה — לחצו "העתק" ליד שמו</p>
+          </div>
 
           <div className="flex items-center justify-between pt-4" dir="rtl">
             <button onClick={handlePrevStep} className="bg-[#C41E3A] hover:bg-[#C41E3A]/90 text-white rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors">

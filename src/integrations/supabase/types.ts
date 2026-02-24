@@ -233,6 +233,7 @@ export type Database = {
       }
       guests: {
         Row: {
+          children_count: number
           created_at: string
           email: string | null
           event_id: string
@@ -247,6 +248,7 @@ export type Database = {
           side: string
         }
         Insert: {
+          children_count?: number
           created_at?: string
           email?: string | null
           event_id: string
@@ -261,6 +263,7 @@ export type Database = {
           side?: string
         }
         Update: {
+          children_count?: number
           created_at?: string
           email?: string | null
           event_id?: string
