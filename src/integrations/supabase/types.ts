@@ -126,67 +126,91 @@ export type Database = {
           bride_grandparents: string | null
           bride_name: string | null
           bride_parents: string | null
+          ceremony_time: string | null
+          child_name: string | null
           created_at: string
+          custom_venue_location: string | null
+          custom_venue_name: string | null
           device_rental_cost: number | null
           device_returned: boolean | null
           documents_complete: boolean | null
           event_date: string
           event_type: string
+          family_name: string | null
           groom_grandparents: string | null
           groom_name: string | null
           groom_parents: string | null
           id: string
           invitation_design_url: string | null
+          invitation_notes: string | null
           invitation_text: string | null
           owner_id: string
           payment_completed: boolean | null
+          reception_time: string | null
           seller_payme_id: string | null
           updated_at: string
           venue_id: string | null
+          voice_text: string | null
         }
         Insert: {
           bride_grandparents?: string | null
           bride_name?: string | null
           bride_parents?: string | null
+          ceremony_time?: string | null
+          child_name?: string | null
           created_at?: string
+          custom_venue_location?: string | null
+          custom_venue_name?: string | null
           device_rental_cost?: number | null
           device_returned?: boolean | null
           documents_complete?: boolean | null
           event_date: string
           event_type?: string
+          family_name?: string | null
           groom_grandparents?: string | null
           groom_name?: string | null
           groom_parents?: string | null
           id?: string
           invitation_design_url?: string | null
+          invitation_notes?: string | null
           invitation_text?: string | null
           owner_id: string
           payment_completed?: boolean | null
+          reception_time?: string | null
           seller_payme_id?: string | null
           updated_at?: string
           venue_id?: string | null
+          voice_text?: string | null
         }
         Update: {
           bride_grandparents?: string | null
           bride_name?: string | null
           bride_parents?: string | null
+          ceremony_time?: string | null
+          child_name?: string | null
           created_at?: string
+          custom_venue_location?: string | null
+          custom_venue_name?: string | null
           device_rental_cost?: number | null
           device_returned?: boolean | null
           documents_complete?: boolean | null
           event_date?: string
           event_type?: string
+          family_name?: string | null
           groom_grandparents?: string | null
           groom_name?: string | null
           groom_parents?: string | null
           id?: string
           invitation_design_url?: string | null
+          invitation_notes?: string | null
           invitation_text?: string | null
           owner_id?: string
           payment_completed?: boolean | null
+          reception_time?: string | null
           seller_payme_id?: string | null
           updated_at?: string
           venue_id?: string | null
+          voice_text?: string | null
         }
         Relationships: [
           {
