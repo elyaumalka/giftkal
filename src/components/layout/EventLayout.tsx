@@ -20,6 +20,7 @@ const menuItems = [
   { title: "הזמנות", icon: InvitationsIcon, path: "/event/invitations" },
   { title: "אישורי הגעה", icon: StatIcon, path: "/event/rsvp" },
   { title: "מתנות", icon: GiftsIcon, path: "/event/gifts" },
+  { title: "תקציב", icon: StatIcon, path: "/event/budget" },
   { title: "הגדרות", icon: SettingsIcon, path: "/event/settings" },
 ];
 
