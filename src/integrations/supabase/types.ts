@@ -38,6 +38,84 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_categories: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      budget_items: {
+        Row: {
+          actual_amount: number
+          category_id: string | null
+          category_name: string
+          created_at: string | null
+          event_id: string
+          id: string
+          notes: string | null
+          planned_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          actual_amount?: number
+          category_id?: string | null
+          category_name: string
+          created_at?: string | null
+          event_id: string
+          id?: string
+          notes?: string | null
+          planned_amount?: number
+          updated_at?: string | null
+        }
+        Update: {
+          actual_amount?: number
+          category_id?: string | null
+          category_name?: string
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          notes?: string | null
+          planned_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "budget_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           created_at: string
@@ -151,6 +229,7 @@ export type Database = {
           share_token_bride: string | null
           share_token_general: string | null
           share_token_groom: string | null
+          total_budget: number | null
           updated_at: string
           venue_id: string | null
           voice_text: string | null
@@ -184,6 +263,7 @@ export type Database = {
           share_token_bride?: string | null
           share_token_general?: string | null
           share_token_groom?: string | null
+          total_budget?: number | null
           updated_at?: string
           venue_id?: string | null
           voice_text?: string | null
@@ -217,6 +297,7 @@ export type Database = {
           share_token_bride?: string | null
           share_token_general?: string | null
           share_token_groom?: string | null
+          total_budget?: number | null
           updated_at?: string
           venue_id?: string | null
           voice_text?: string | null
