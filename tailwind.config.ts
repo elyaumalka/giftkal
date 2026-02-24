@@ -15,8 +15,10 @@ export default {
     extend: {
       fontFamily: {
         discovery: ['Discovery', 'sans-serif'],
-        heebo: ['Discovery', 'sans-serif'],
+        heebo: ['Heebo', 'Discovery', 'sans-serif'],
         assistant: ['Discovery', 'sans-serif'],
+        playfair: ['Playfair Display', 'serif'],
+        cormorant: ['Cormorant Garamond', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
