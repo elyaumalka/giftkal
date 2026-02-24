@@ -8,6 +8,9 @@ import NotFound from "./pages/NotFound";
 // Auth
 import Login from "./pages/auth/Login";
 import ResetPassword from "./pages/auth/ResetPassword";
+import EventLogin from "./pages/auth/EventLogin";
+import VenueLogin from "./pages/auth/VenueLogin";
+import Signup from "./pages/auth/Signup";
 
 // Landing
 import HomePage from "./pages/landing/HomePage";
@@ -47,6 +50,7 @@ import PaymeSetup from "./pages/event/PaymeSetup";
 import EventWelcome from "./pages/gift/EventWelcome";
 import GiftScreen from "./pages/gift/GiftScreen";
 import SharedInvitePage from "./pages/invite/SharedInvitePage";
+import GiftSearch from "./pages/gift/GiftSearch";
 import PublicRSVP from "./pages/rsvp/PublicRSVP";
 import VenueLanding from "./pages/landing/VenueLanding";
 
@@ -67,6 +71,10 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/login/event" element={<EventLogin />} />
+          <Route path="/login/venue" element={<VenueLogin />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/gift-search" element={<GiftSearch />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/gift/:eventId" element={<EventWelcome />} />
           <Route path="/gift/:eventId/send" element={<GiftScreen />} />
