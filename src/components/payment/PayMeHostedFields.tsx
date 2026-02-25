@@ -217,8 +217,12 @@ export default function PayMeHostedFields({
         // Get hosted fields manager
         const fields = instance.hostedFields();
 
-        // Create fields
-        const cardNumber = fields.create('cardNumber', {
+        // Create fields using PayMe field type constants
+        const cardNumberType = window.PayMe?.fields?.NUMBER || 'cardNumber';
+        const expiryType = window.PayMe?.fields?.EXPIRATION || 'cardExpiration';
+        const cvcType = window.PayMe?.fields?.CVC || 'cvc';
+
+        const cardNumber = fields.create(cardNumberType, {
           placeholder: 'מספר כרטיס',
           messages: {
             required: 'שדה חובה',
@@ -227,7 +231,7 @@ export default function PayMeHostedFields({
           styles: fieldStyles,
         });
 
-        const cardExpiration = fields.create('cardExpiration', {
+        const cardExpiration = fields.create(expiryType, {
           placeholder: 'MM/YY',
           messages: {
             required: 'שדה חובה',
@@ -236,7 +240,7 @@ export default function PayMeHostedFields({
           styles: fieldStyles,
         });
 
-        const cvc = fields.create('cvc', {
+        const cvc = fields.create(cvcType, {
           placeholder: 'CVV',
           messages: {
             required: 'שדה חובה',
