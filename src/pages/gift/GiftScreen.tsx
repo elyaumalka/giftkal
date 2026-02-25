@@ -12,10 +12,11 @@ import { Gift, Heart, CreditCard, Check, ArrowLeft, Sparkles, Loader2, X } from 
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
+import PayMeIframe from "@/components/payment/PayMeIframe";
 
 const GIFT_AMOUNTS = [100, 200, 300, 500, 1000];
 
-type Step = "amount" | "details" | "blessing" | "processing" | "success" | "failed";
+type Step = "amount" | "details" | "blessing" | "card-payment" | "processing" | "success" | "failed";
 
 // Blessing card designs
 const BLESSING_DESIGNS = [
@@ -40,6 +41,8 @@ export default function GiftScreen() {
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [blessingImageUrl, setBlessingImageUrl] = useState<string | null>(null);
+  const [paymeApiKey, setPaymeApiKey] = useState<string | null>(null);
+  const [paymeTestMode, setPaymeTestMode] = useState(true);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +59,21 @@ export default function GiftScreen() {
     }
   }, [searchParams]);
 
-  // No need to fetch PayMe client key anymore - we use server-side generate-sale
+  // Fetch PayMe API key for Hosted Fields iframe
+  useEffect(() => {
+    const fetchPaymeKey = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-payme-key');
+        if (!error && data?.clientKey) {
+          setPaymeApiKey(data.clientKey);
+          setPaymeTestMode(data.testMode ?? true);
+        }
+      } catch (e) {
+        console.error('Failed to fetch PayMe key:', e);
+      }
+    };
+    fetchPaymeKey();
+  }, []);
 
   // Fetch event details
   const { data: event, isLoading } = useQuery({
@@ -135,14 +152,13 @@ export default function GiftScreen() {
     }
   };
 
-  // Charge token mutation (for Hosted Fields)
-  // Generate PayMe payment link and redirect
-  const generatePaymentLink = useMutation({
-    mutationFn: async () => {
+  // Charge token via edge function after Hosted Fields tokenization
+  const chargeToken = useMutation({
+    mutationFn: async (token: string) => {
       const amount = selectedAmount || Number(customAmount);
-      
-      const response = await supabase.functions.invoke('payme-generate-link', {
+      const response = await supabase.functions.invoke('payme-charge-token', {
         body: {
+          token,
           eventId,
           amount,
           payerName,
@@ -154,30 +170,15 @@ export default function GiftScreen() {
           installments: selectedInstallments,
         },
       });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'שגיאה בביצוע התשלום');
-      }
-
-      if (!response.data?.success || !response.data?.saleUrl) {
-        throw new Error(response.data?.error || response.data?.details || 'שגיאה בביצוע התשלום');
-      }
-
+      if (response.error) throw new Error(response.error.message || 'שגיאה בביצוע התשלום');
+      if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה בביצוע התשלום');
       return response.data;
     },
-    onSuccess: (data) => {
-      // Redirect to PayMe hosted payment page
-      console.log('[GiftScreen] Redirecting to PayMe:', data.saleUrl);
-      window.location.href = data.saleUrl;
-    },
+    onSuccess: () => setStep("success"),
     onError: (error: Error) => {
       setPaymentError(error.message);
       setStep("failed");
-      toast({
-        title: "שגיאה",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" });
     },
   });
 
@@ -200,15 +201,9 @@ export default function GiftScreen() {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      setStep("success");
-    },
+    onSuccess: () => setStep("success"),
     onError: (error: Error) => {
-      toast({
-        title: "שגיאה",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" });
     },
   });
 
@@ -216,14 +211,12 @@ export default function GiftScreen() {
 
   const validateEmail = (email: string): boolean => {
     if (!email) return true;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
   const validatePhone = (phone: string): boolean => {
     if (!phone) return true;
-    const phoneRegex = /^[\d\-\+\(\)\s]{7,15}$/;
-    return phoneRegex.test(phone);
+    return /^[\d\-\+\(\)\s]{7,15}$/.test(phone);
   };
 
   const handleProceedToDetails = () => {
@@ -267,13 +260,23 @@ export default function GiftScreen() {
     const imageUrl = await saveBlessingAsImage();
     setBlessingImageUrl(imageUrl);
     
-    if (event?.seller_payme_id) {
-      // Use PayMe Hosted Payment Page (redirect)
-      generatePaymentLink.mutate();
+    if (event?.seller_payme_id && paymeApiKey) {
+      setStep("card-payment");
+    } else if (event?.seller_payme_id) {
+      toast({ title: "שגיאה", description: "מערכת התשלום לא זמינה כרגע", variant: "destructive" });
+      setStep("blessing");
     } else {
-      // No PayMe configured - legacy mode
       createTransaction.mutate();
     }
+  };
+
+  const handleTokenize = (token: string) => {
+    setStep("processing");
+    chargeToken.mutate(token);
+  };
+
+  const handlePaymentError = (error: string) => {
+    setPaymentError(error);
   };
 
   if (isLoading) {
@@ -632,7 +635,43 @@ export default function GiftScreen() {
             </div>
           )}
 
-          {/* No more card-payment step - we redirect to PayMe's hosted page */}
+          {/* Step: Card Payment with Hosted Fields in isolated iframe */}
+          {step === "card-payment" && paymeApiKey && (
+            <div className="p-6 md:p-8 space-y-6 animate-fade-in">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#051839] to-[#0A2F5C] flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <CreditCard className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-[#051839]">תשלום מאובטח</h2>
+                <div className="inline-block bg-[#C4A35A]/10 px-4 py-2 rounded-full mt-2">
+                  <span className="text-[#5A4A2A]">סכום לתשלום: </span>
+                  <span className="font-bold text-[#C4A35A] text-xl">₪{finalAmount}</span>
+                </div>
+              </div>
+
+              <PayMeIframe
+                apiKey={paymeApiKey}
+                testMode={paymeTestMode}
+                amount={finalAmount}
+                payerName={payerName}
+                payerEmail={payerEmail}
+                payerPhone={payerPhone}
+                productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
+                onTokenize={handleTokenize}
+                onError={handlePaymentError}
+                disabled={chargeToken.isPending}
+              />
+
+              <Button
+                variant="outline"
+                onClick={() => setStep("blessing")}
+                className="w-full h-12 rounded-xl border-2"
+                disabled={chargeToken.isPending}
+              >
+                חזרה
+              </Button>
+            </div>
+          )}
 
           {/* Step: Processing Payment */}
           {step === "processing" && (
@@ -644,7 +683,7 @@ export default function GiftScreen() {
               <div>
                 <h2 className="text-2xl font-bold text-[#051839]">מעבד...</h2>
                 <p className="text-[#5A4A2A] mt-2">
-                  מעביר לעמוד תשלום מאובטח
+                  שומר את הברכה שלכם
                 </p>
               </div>
             </div>
@@ -665,7 +704,7 @@ export default function GiftScreen() {
               </div>
 
               <Button
-                onClick={() => setStep("blessing")}
+                onClick={() => setStep("card-payment")}
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
               >
                 נסה שוב
