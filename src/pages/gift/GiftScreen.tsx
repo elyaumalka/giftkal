@@ -12,11 +12,10 @@ import { Gift, Heart, CreditCard, Check, ArrowLeft, Sparkles, Loader2, X } from 
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
-import PayMeHostedFields from "@/components/payment/PayMeHostedFields";
 
 const GIFT_AMOUNTS = [100, 200, 300, 500, 1000];
 
-type Step = "amount" | "details" | "blessing" | "card-payment" | "processing" | "success" | "failed";
+type Step = "amount" | "details" | "blessing" | "processing" | "success" | "failed";
 
 // Blessing card designs
 const BLESSING_DESIGNS = [
@@ -40,8 +39,6 @@ export default function GiftScreen() {
   const [selectedInstallments, setSelectedInstallments] = useState(1);
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [paymeApiKey, setPaymeApiKey] = useState<string | null>(null);
-  const [paymeTestMode, setPaymeTestMode] = useState(true);
   const [blessingImageUrl, setBlessingImageUrl] = useState<string | null>(null);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
@@ -59,28 +56,7 @@ export default function GiftScreen() {
     }
   }, [searchParams]);
 
-  // Fetch PayMe API key
-  useEffect(() => {
-    const fetchPaymeKey = async () => {
-      try {
-        console.log('[GiftScreen] Fetching PayMe key...');
-        const { data, error } = await supabase.functions.invoke('get-payme-key');
-        console.log('[GiftScreen] PayMe key response:', { data, error });
-        if (error) {
-          console.error('[GiftScreen] PayMe key error:', error);
-          return;
-        }
-        if (data?.clientKey) {
-          setPaymeApiKey(data.clientKey);
-          setPaymeTestMode(data.testMode ?? true);
-          console.log('[GiftScreen] PayMe key set successfully, testMode:', data.testMode);
-        }
-      } catch (error) {
-        console.error('[GiftScreen] Failed to fetch PayMe key:', error);
-      }
-    };
-    fetchPaymeKey();
-  }, []);
+  // No need to fetch PayMe client key anymore - we use server-side generate-sale
 
   // Fetch event details
   const { data: event, isLoading } = useQuery({
@@ -160,13 +136,13 @@ export default function GiftScreen() {
   };
 
   // Charge token mutation (for Hosted Fields)
-  const chargeToken = useMutation({
-    mutationFn: async (token: string) => {
+  // Generate PayMe payment link and redirect
+  const generatePaymentLink = useMutation({
+    mutationFn: async () => {
       const amount = selectedAmount || Number(customAmount);
       
-      const response = await supabase.functions.invoke('payme-charge-token', {
+      const response = await supabase.functions.invoke('payme-generate-link', {
         body: {
-          token,
           eventId,
           amount,
           payerName,
@@ -183,17 +159,20 @@ export default function GiftScreen() {
         throw new Error(response.error.message || 'שגיאה בביצוע התשלום');
       }
 
-      if (!response.data?.success) {
-        throw new Error(response.data?.error || 'שגיאה בביצוע התשלום');
+      if (!response.data?.success || !response.data?.saleUrl) {
+        throw new Error(response.data?.error || response.data?.details || 'שגיאה בביצוע התשלום');
       }
 
       return response.data;
     },
-    onSuccess: () => {
-      setStep("success");
+    onSuccess: (data) => {
+      // Redirect to PayMe hosted payment page
+      console.log('[GiftScreen] Redirecting to PayMe:', data.saleUrl);
+      window.location.href = data.saleUrl;
     },
     onError: (error: Error) => {
       setPaymentError(error.message);
+      setStep("failed");
       toast({
         title: "שגיאה",
         description: error.message,
@@ -205,9 +184,7 @@ export default function GiftScreen() {
   // Legacy transaction creation (for when PayMe is not configured)
   const createTransaction = useMutation({
     mutationFn: async () => {
-      // Save blessing card as image first
       const imageUrl = await saveBlessingAsImage();
-      
       const amount = selectedAmount || Number(customAmount);
       const { error } = await supabase.from("transactions").insert({
         event_id: eventId,
@@ -238,13 +215,13 @@ export default function GiftScreen() {
   const finalAmount = selectedAmount || Number(customAmount);
 
   const validateEmail = (email: string): boolean => {
-    if (!email) return true; // Optional field
+    if (!email) return true;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
   const validatePhone = (phone: string): boolean => {
-    if (!phone) return true; // Optional field
+    if (!phone) return true;
     const phoneRegex = /^[\d\-\+\(\)\s]{7,15}$/;
     return phoneRegex.test(phone);
   };
@@ -286,34 +263,17 @@ export default function GiftScreen() {
   };
 
   const handleProceedToPayment = async () => {
-    // Save blessing image first
     setStep("processing");
     const imageUrl = await saveBlessingAsImage();
     setBlessingImageUrl(imageUrl);
     
-    // Check if Hosted Fields is available
-    if (event?.seller_payme_id && paymeApiKey) {
-      setStep("card-payment");
-    } else if (event?.seller_payme_id) {
-      // Fallback - no API key available
-      toast({
-        title: "שגיאה",
-        description: "מערכת התשלום לא זמינה כרגע",
-        variant: "destructive",
-      });
-      setStep("blessing");
+    if (event?.seller_payme_id) {
+      // Use PayMe Hosted Payment Page (redirect)
+      generatePaymentLink.mutate();
     } else {
       // No PayMe configured - legacy mode
       createTransaction.mutate();
     }
-  };
-
-  const handleTokenize = (token: string) => {
-    chargeToken.mutate(token);
-  };
-
-  const handlePaymentError = (error: string) => {
-    setPaymentError(error);
   };
 
   if (isLoading) {
@@ -672,43 +632,7 @@ export default function GiftScreen() {
             </div>
           )}
 
-          {/* Step: Card Payment with Hosted Fields */}
-          {step === "card-payment" && paymeApiKey && (
-            <div className="p-6 md:p-8 space-y-6 animate-fade-in">
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#051839] to-[#0A2F5C] flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <CreditCard className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-[#051839]">תשלום מאובטח</h2>
-                <div className="inline-block bg-[#C4A35A]/10 px-4 py-2 rounded-full mt-2">
-                  <span className="text-[#5A4A2A]">סכום לתשלום: </span>
-                  <span className="font-bold text-[#C4A35A] text-xl">₪{finalAmount}</span>
-                </div>
-              </div>
-
-              <PayMeHostedFields
-                apiKey={paymeApiKey}
-                testMode={paymeTestMode}
-                amount={finalAmount}
-                payerName={payerName}
-                payerEmail={payerEmail}
-                payerPhone={payerPhone}
-                productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
-                onTokenize={handleTokenize}
-                onError={handlePaymentError}
-                disabled={chargeToken.isPending}
-              />
-
-              <Button
-                variant="outline"
-                onClick={() => setStep("blessing")}
-                className="w-full h-12 rounded-xl border-2"
-                disabled={chargeToken.isPending}
-              >
-                חזרה
-              </Button>
-            </div>
-          )}
+          {/* No more card-payment step - we redirect to PayMe's hosted page */}
 
           {/* Step: Processing Payment */}
           {step === "processing" && (
@@ -720,7 +644,7 @@ export default function GiftScreen() {
               <div>
                 <h2 className="text-2xl font-bold text-[#051839]">מעבד...</h2>
                 <p className="text-[#5A4A2A] mt-2">
-                  שומר את הברכה שלכם
+                  מעביר לעמוד תשלום מאובטח
                 </p>
               </div>
             </div>
@@ -741,7 +665,7 @@ export default function GiftScreen() {
               </div>
 
               <Button
-                onClick={() => setStep("card-payment")}
+                onClick={() => setStep("blessing")}
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
               >
                 נסה שוב

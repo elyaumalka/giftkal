@@ -18,5 +18,8 @@ verify_jwt = false
 [functions.payme-generate-sale]
 verify_jwt = false
 
+[functions.payme-generate-link]
+verify_jwt = false
+
 [functions.payme-create-seller]
 verify_jwt = false
