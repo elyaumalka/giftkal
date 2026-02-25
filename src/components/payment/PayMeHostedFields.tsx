@@ -136,7 +136,6 @@ export default function PayMeHostedFields({
       'color': '#051839',
       'font-size': '16px',
       'text-align': 'left',
-      'direction': 'ltr',
       '::placeholder': {
         color: '#9CA3AF',
       },
