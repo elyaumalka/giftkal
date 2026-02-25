@@ -16,8 +16,6 @@ interface ChargeTokenRequest {
   blessing?: string;
   blessingImageUrl?: string;
   installments?: number;
-  cardMask?: string;
-  cardExpiry?: string;
 }
 
 Deno.serve(async (req) => {
@@ -29,12 +27,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const paymeClientKey = Deno.env.get('PAYME_CLIENT_KEY');
-    const paymeClientSecret = Deno.env.get('PAYME_CLIENT_SECRET');
-
-    if (!paymeClientKey || !paymeClientSecret) {
-      throw new Error('PayMe credentials not configured');
-    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body: ChargeTokenRequest = await req.json();
@@ -50,8 +42,6 @@ Deno.serve(async (req) => {
       blessing, 
       blessingImageUrl, 
       installments = 1,
-      cardMask,
-      cardExpiry,
     } = body;
 
     if (!token || !eventId || !amount || !payerName) {
@@ -113,29 +103,36 @@ Deno.serve(async (req) => {
     const paymeEnv = 'sandbox'; // Change to 'ng' for production
     const paymeBaseUrl = `https://${paymeEnv}.payme.io`;
 
-    // Format installments for PayMe
-    const maxInstallments = installments && installments > 1 ? installments : 1;
-    const installmentsValue = maxInstallments > 1 ? `1${maxInstallments.toString().padStart(2, '0')}` : '1';
-
-    // Generate sale using token from Hosted Fields
+    // Generate sale using buyer_key (token from Hosted Fields)
+    // Per PayMe Postman collection: POST /api/generate-sale with buyer_key
     const productName = `מתנה ל${event.groom_name || ''} & ${event.bride_name || ''}`;
     
-    const salePayload = {
+    // Callback URL for PayMe webhook
+    const callbackUrl = `${supabaseUrl}/functions/v1/payme-webhook`;
+    
+    const salePayload: Record<string, unknown> = {
       seller_payme_id: event.seller_payme_id,
       sale_price: Math.round(amount * 100), // PayMe expects price in agorot
       currency: 'ILS',
       product_name: productName,
       transaction_id: transaction.id,
-      installments: installmentsValue,
       buyer_key: token, // The token from Hosted Fields tokenization
-      sale_type: 'token', // Important: use token sale type
+      capture_buyer: '1',
+      sale_callback_url: callbackUrl,
+      sale_name: payerName,
       language: 'he',
     };
 
-    console.log('Calling PayMe capture-sale with token:', paymeBaseUrl);
+    // Add optional fields
+    if (payerEmail) salePayload.sale_email = payerEmail;
+    if (payerPhone) salePayload.sale_mobile = payerPhone;
+    if (installments > 1) salePayload.installments = installments.toString();
+    else salePayload.installments = '1';
+
+    console.log('Calling PayMe generate-sale with token:', paymeBaseUrl);
     console.log('Sale payload:', JSON.stringify({ ...salePayload, buyer_key: '[REDACTED]' }));
 
-    const paymeResponse = await fetch(`${paymeBaseUrl}/api/capture-sale`, {
+    const paymeResponse = await fetch(`${paymeBaseUrl}/api/generate-sale`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -156,7 +153,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'PayMe error', 
-          details: paymeResult.status_error_details || paymeResult.status_error_code 
+          details: paymeResult.status_error_details || paymeResult.status_error_code || paymeResult.status_additional_info
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
