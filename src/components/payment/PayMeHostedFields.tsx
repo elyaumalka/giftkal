@@ -130,15 +130,12 @@ export default function PayMeHostedFields({
                       fieldStates.cardExpiration.isValid && 
                       fieldStates.cvc.isValid;
 
-  // Field styling for hosted fields - memoized to prevent re-initialization
+  // Field styling - only whitelisted CSS properties allowed by PayMe SDK:
+  // color, font-size, text-align, letter-spacing, text-decoration, text-shadow, text-transform, ::placeholder
   const fieldStyles = useMemo(() => ({
     base: {
       'color': '#051839',
       'font-size': '16px',
-      'text-align': 'left',
-      '::placeholder': {
-        color: '#9CA3AF',
-      },
     },
     invalid: {
       'color': '#DC2626',
@@ -205,48 +202,42 @@ export default function PayMeHostedFields({
 
     const initializeFields = async () => {
       try {
+        console.log('[PayMe] Creating instance with apiKey:', apiKey?.substring(0, 8) + '...', 'testMode:', testMode);
+        console.log('[PayMe] PayMe global:', typeof window.PayMe, 'fields:', JSON.stringify(window.PayMe?.fields));
+        
         // Create PayMe instance
         const instance = await window.PayMe.create(apiKey, {
           testMode,
           language: 'he',
         });
+        console.log('[PayMe] Instance created successfully');
 
         instanceRef.current = instance;
 
         // Get hosted fields manager
         const fields = instance.hostedFields();
 
-        // Create fields using PayMe field type constants
-        const cardNumberType = window.PayMe?.fields?.NUMBER || 'cardNumber';
-        const expiryType = window.PayMe?.fields?.EXPIRATION || 'cardExpiration';
-        const cvcType = window.PayMe?.fields?.CVC || 'cvc';
-
-        const cardNumber = fields.create(cardNumberType, {
-          placeholder: 'מספר כרטיס',
-          messages: {
-            required: 'שדה חובה',
-            invalid: 'מספר כרטיס לא תקין',
-          },
+        // Create fields - use string literals as per official PayMe docs
+        console.log('[PayMe] Creating card number field...');
+        const cardNumber = fields.create('cardNumber', {
+          placeholder: 'Card Number',
           styles: fieldStyles,
         });
+        console.log('[PayMe] Card number field created');
 
-        const cardExpiration = fields.create(expiryType, {
+        console.log('[PayMe] Creating expiration field...');
+        const cardExpiration = fields.create('cardExpiration', {
           placeholder: 'MM/YY',
-          messages: {
-            required: 'שדה חובה',
-            invalid: 'תאריך לא תקין',
-          },
           styles: fieldStyles,
         });
+        console.log('[PayMe] Expiration field created');
 
-        const cvc = fields.create(cvcType, {
+        console.log('[PayMe] Creating CVC field...');
+        const cvc = fields.create('cvc', {
           placeholder: 'CVV',
-          messages: {
-            required: 'שדה חובה',
-            invalid: 'CVV לא תקין',
-          },
           styles: fieldStyles,
         });
+        console.log('[PayMe] CVC field created');
 
         // Setup event listeners
         const setupFieldEvents = (field: HostedField, fieldName: keyof typeof fieldStates) => {
