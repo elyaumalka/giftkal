@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader2, CreditCard, Lock, AlertCircle } from "lucide-react";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 declare global {
   interface Window {
     PayMe: {
-      create: (apiKey: string, options: { testMode: boolean; language: string }) => Promise<PayMeInstance>;
+      create: (apiKey: string, options: { testMode: boolean; language?: string; tokenIsPermanent?: boolean }) => Promise<PayMeInstance>;
       fields: {
         NUMBER: string;
         EXPIRATION: string;
@@ -130,20 +130,7 @@ export default function PayMeHostedFields({
                       fieldStates.cardExpiration.isValid && 
                       fieldStates.cvc.isValid;
 
-  // Field styling - only whitelisted CSS properties allowed by PayMe SDK:
-  // color, font-size, text-align, letter-spacing, text-decoration, text-shadow, text-transform, ::placeholder
-  const fieldStyles = useMemo(() => ({
-    base: {
-      'color': '#051839',
-      'font-size': '16px',
-    },
-    invalid: {
-      'color': '#DC2626',
-    },
-    valid: {
-      'color': '#059669',
-    },
-  }), []);
+  // Keep Hosted Fields config minimal to avoid SDK parser issues
 
   // Load PayMe SDK script
   useEffect(() => {
@@ -205,10 +192,9 @@ export default function PayMeHostedFields({
         console.log('[PayMe] Creating instance with apiKey:', apiKey?.substring(0, 8) + '...', 'testMode:', testMode);
         console.log('[PayMe] PayMe global:', typeof window.PayMe, 'fields:', JSON.stringify(window.PayMe?.fields));
         
-        // Create PayMe instance
+        // Create PayMe instance (minimal config, aligned with official docs)
         const instance = await window.PayMe.create(apiKey, {
           testMode,
-          language: 'he',
         });
         console.log('[PayMe] Instance created successfully');
 
@@ -217,26 +203,21 @@ export default function PayMeHostedFields({
         // Get hosted fields manager
         const fields = instance.hostedFields();
 
-        // Create fields - use string literals as per official PayMe docs
+        // Create fields with official constants and without custom options
+        const cardNumberType = window.PayMe?.fields?.NUMBER || 'cardNumber';
+        const expiryType = window.PayMe?.fields?.EXPIRATION || 'cardExpiration';
+        const cvcType = window.PayMe?.fields?.CVC || 'cvc';
+
         console.log('[PayMe] Creating card number field...');
-        const cardNumber = fields.create('cardNumber', {
-          placeholder: 'Card Number',
-          styles: fieldStyles,
-        });
+        const cardNumber = fields.create(cardNumberType);
         console.log('[PayMe] Card number field created');
 
         console.log('[PayMe] Creating expiration field...');
-        const cardExpiration = fields.create('cardExpiration', {
-          placeholder: 'MM/YY',
-          styles: fieldStyles,
-        });
+        const cardExpiration = fields.create(expiryType);
         console.log('[PayMe] Expiration field created');
 
         console.log('[PayMe] Creating CVC field...');
-        const cvc = fields.create('cvc', {
-          placeholder: 'CVV',
-          styles: fieldStyles,
-        });
+        const cvc = fields.create(cvcType);
         console.log('[PayMe] CVC field created');
 
         // Setup event listeners
@@ -312,7 +293,7 @@ export default function PayMeHostedFields({
     return () => {
       mountedRef.current = false;
     };
-  }, [sdkLoaded, apiKey, testMode, fieldStyles]);
+  }, [sdkLoaded, apiKey, testMode]);
 
   // Handle form submission
   const handleSubmit = useCallback(async () => {
