@@ -5,3 +5,18 @@ verify_jwt = false
 
 [functions.public-api]
 verify_jwt = false
+
+[functions.get-payme-key]
+verify_jwt = false
+
+[functions.payme-charge-token]
+verify_jwt = false
+
+[functions.payme-webhook]
+verify_jwt = false
+
+[functions.payme-generate-sale]
+verify_jwt = false
+
+[functions.payme-create-seller]
+verify_jwt = false

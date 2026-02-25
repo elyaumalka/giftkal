@@ -63,13 +63,20 @@ export default function GiftScreen() {
   useEffect(() => {
     const fetchPaymeKey = async () => {
       try {
+        console.log('[GiftScreen] Fetching PayMe key...');
         const { data, error } = await supabase.functions.invoke('get-payme-key');
+        console.log('[GiftScreen] PayMe key response:', { data, error });
+        if (error) {
+          console.error('[GiftScreen] PayMe key error:', error);
+          return;
+        }
         if (data?.clientKey) {
           setPaymeApiKey(data.clientKey);
           setPaymeTestMode(data.testMode ?? true);
+          console.log('[GiftScreen] PayMe key set successfully, testMode:', data.testMode);
         }
       } catch (error) {
-        console.error('Failed to fetch PayMe key:', error);
+        console.error('[GiftScreen] Failed to fetch PayMe key:', error);
       }
     };
     fetchPaymeKey();
