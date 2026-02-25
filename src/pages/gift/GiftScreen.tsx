@@ -106,6 +106,13 @@ export default function GiftScreen() {
     if (!blessingCardRef.current) return null;
     
     try {
+      // Public gift flow is usually anonymous; avoid direct storage upload when no authenticated user
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        console.log('[GiftScreen] Skipping blessing image upload for anonymous guest');
+        return null;
+      }
+
       const canvas = await html2canvas(blessingCardRef.current, {
         scale: 2,
         backgroundColor: null,
