@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogBody } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -188,9 +188,9 @@ export default function AdminHallsDevices() {
                   <Plus className="w-4 h-4" /> אולם חדש
                 </Button>
               </DialogTrigger>
-              <DialogContent dir="rtl">
+               <DialogContent dir="rtl">
                 <DialogHeader><DialogTitle>הוסף אולם חדש</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-4">
+                <DialogBody>
                   <div>
                     <Label>בעל אולם</Label>
                     <Select value={hallForm.venue_id} onValueChange={(v) => setHallForm(p => ({ ...p, venue_id: v }))}>
@@ -213,7 +213,7 @@ export default function AdminHallsDevices() {
                   <Button onClick={() => createHall.mutate()} disabled={!hallForm.name || !hallForm.venue_id || createHall.isPending} className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl">
                     {createHall.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "הוסף אולם"}
                   </Button>
-                </div>
+                </DialogBody>
               </DialogContent>
             </Dialog>
           </div>
@@ -265,9 +265,9 @@ export default function AdminHallsDevices() {
                   <Plus className="w-4 h-4" /> מכשיר חדש
                 </Button>
               </DialogTrigger>
-              <DialogContent dir="rtl">
+               <DialogContent dir="rtl">
                 <DialogHeader><DialogTitle>הוסף מכשיר חדש</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-4">
+                <DialogBody>
                   <div>
                     <Label>בעל אולם</Label>
                     <Select value={deviceForm.venue_id} onValueChange={(v) => setDeviceForm(p => ({ ...p, venue_id: v, hall_id: "" }))}>
@@ -304,7 +304,7 @@ export default function AdminHallsDevices() {
                   <Button onClick={() => createDevice.mutate()} disabled={!deviceForm.name || !deviceForm.serial_number || !deviceForm.venue_id || createDevice.isPending} className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl">
                     {createDevice.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "הוסף מכשיר"}
                   </Button>
-                </div>
+                </DialogBody>
               </DialogContent>
             </Dialog>
           </div>
