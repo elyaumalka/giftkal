@@ -89,6 +89,7 @@ function App() {
            <Route path="/landing/:venueId" element={<VenueLanding />} />
            <Route path="/invite/:token" element={<SharedInvitePage />} />
            <Route path="/rsvp/:eventId/:guestId" element={<PublicRSVP />} />
+           <Route path="/kiosk/:hallId" element={<KioskPage />} />
           <Route path="/api/yemot" element={<YemotApiDocs />} />
           <Route path="/api/docs" element={<SystemApiDocs />} />
 
