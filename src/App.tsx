@@ -27,6 +27,7 @@ import Support from "./pages/admin/Support";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 import SeedData from "./pages/admin/SeedData";
+import AdminHallsDevices from "./pages/admin/HallsDevices";
 
 // Venue
 import { VenueLayout } from "./components/layout/VenueLayout";
