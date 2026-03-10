@@ -103,6 +103,7 @@ function App() {
             <Route path="support" element={<Support />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="halls-devices" element={<AdminHallsDevices />} />
             <Route path="seed" element={<SeedData />} />
           </Route>
 
