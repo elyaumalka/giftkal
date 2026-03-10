@@ -57,6 +57,9 @@ import GiftSearch from "./pages/gift/GiftSearch";
 import PublicRSVP from "./pages/rsvp/PublicRSVP";
 import VenueLanding from "./pages/landing/VenueLanding";
 
+// Kiosk
+import KioskPage from "./pages/kiosk/KioskPage";
+
 // API Docs
 import YemotApiDocs from "./pages/api/YemotApiDocs";
 import SystemApiDocs from "./pages/api/SystemApiDocs";
