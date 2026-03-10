@@ -119,6 +119,7 @@ export type Database = {
       devices: {
         Row: {
           created_at: string
+          hall_id: string | null
           id: string
           is_active: boolean | null
           name: string
@@ -127,6 +128,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          hall_id?: string | null
           id?: string
           is_active?: boolean | null
           name: string
@@ -135,6 +137,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          hall_id?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
@@ -142,6 +145,13 @@ export type Database = {
           venue_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "devices_hall_id_fkey"
+            columns: ["hall_id"]
+            isOneToOne: false
+            referencedRelation: "halls"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "devices_venue_id_fkey"
             columns: ["venue_id"]
@@ -219,6 +229,7 @@ export type Database = {
           groom_grandparents: string | null
           groom_name: string | null
           groom_parents: string | null
+          hall_id: string | null
           id: string
           invitation_design_url: string | null
           invitation_notes: string | null
@@ -254,6 +265,7 @@ export type Database = {
           groom_grandparents?: string | null
           groom_name?: string | null
           groom_parents?: string | null
+          hall_id?: string | null
           id?: string
           invitation_design_url?: string | null
           invitation_notes?: string | null
@@ -289,6 +301,7 @@ export type Database = {
           groom_grandparents?: string | null
           groom_name?: string | null
           groom_parents?: string | null
+          hall_id?: string | null
           id?: string
           invitation_design_url?: string | null
           invitation_notes?: string | null
@@ -306,6 +319,13 @@ export type Database = {
           voice_text?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "events_hall_id_fkey"
+            columns: ["hall_id"]
+            isOneToOne: false
+            referencedRelation: "halls"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_venue_id_fkey"
             columns: ["venue_id"]
@@ -367,6 +387,47 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      halls: {
+        Row: {
+          created_at: string
+          default_message: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_message?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          default_message?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "halls_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
             referencedColumns: ["id"]
           },
         ]

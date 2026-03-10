@@ -27,6 +27,7 @@ import Support from "./pages/admin/Support";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 import SeedData from "./pages/admin/SeedData";
+import AdminHallsDevices from "./pages/admin/HallsDevices";
 
 // Venue
 import { VenueLayout } from "./components/layout/VenueLayout";
@@ -35,6 +36,7 @@ import VenueInvoices from "./pages/venue/Invoices";
 import VenueEvents from "./pages/venue/Events";
 import VenueSupport from "./pages/venue/Support";
 import VenueSettings from "./pages/venue/Settings";
+import VenueHalls from "./pages/venue/Halls";
 import VenueLeads from "./pages/venue/Leads";
 
 // Event
@@ -54,6 +56,9 @@ import SharedInvitePage from "./pages/invite/SharedInvitePage";
 import GiftSearch from "./pages/gift/GiftSearch";
 import PublicRSVP from "./pages/rsvp/PublicRSVP";
 import VenueLanding from "./pages/landing/VenueLanding";
+
+// Kiosk
+import KioskPage from "./pages/kiosk/KioskPage";
 
 // API Docs
 import YemotApiDocs from "./pages/api/YemotApiDocs";
@@ -84,6 +89,7 @@ function App() {
            <Route path="/landing/:venueId" element={<VenueLanding />} />
            <Route path="/invite/:token" element={<SharedInvitePage />} />
            <Route path="/rsvp/:eventId/:guestId" element={<PublicRSVP />} />
+           <Route path="/kiosk/:hallId" element={<KioskPage />} />
           <Route path="/api/yemot" element={<YemotApiDocs />} />
           <Route path="/api/docs" element={<SystemApiDocs />} />
 
@@ -97,6 +103,7 @@ function App() {
             <Route path="support" element={<Support />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="halls-devices" element={<AdminHallsDevices />} />
             <Route path="seed" element={<SeedData />} />
           </Route>
 
@@ -106,6 +113,7 @@ function App() {
             <Route path="invoices" element={<VenueInvoices />} />
             <Route path="events" element={<VenueEvents />} />
             <Route path="leads" element={<VenueLeads />} />
+            <Route path="halls" element={<VenueHalls />} />
             <Route path="support" element={<VenueSupport />} />
             <Route path="settings" element={<VenueSettings />} />
           </Route>

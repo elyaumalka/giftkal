@@ -47,6 +47,11 @@ const menuItems = [
     path: "/admin/settings",
   },
   {
+    title: "אולמות ומכשירים",
+    icon: CustomersIcon,
+    path: "/admin/halls-devices",
+  },
+  {
     title: "דוחות",
     icon: ReportsIcon,
     path: "/admin/reports",

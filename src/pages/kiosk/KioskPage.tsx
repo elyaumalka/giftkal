@@ -1,0 +1,196 @@
+import { useState, useEffect, useCallback } from "react";
+import { useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, Gift, Monitor } from "lucide-react";
+import logo from "@/assets/logo.png";
+
+interface HallInfo {
+  id: string;
+  name: string;
+  default_message: string | null;
+  logo_url: string | null;
+  venue_id: string;
+  venues?: { name: string; logo_url: string | null } | null;
+}
+
+interface ActiveEvent {
+  id: string;
+  groom_name: string | null;
+  bride_name: string | null;
+  child_name: string | null;
+  family_name: string | null;
+  event_type: string;
+  event_date: string;
+  reception_time: string | null;
+  ceremony_time: string | null;
+}
+
+export default function KioskPage() {
+  const { hallId } = useParams();
+  const [hall, setHall] = useState<HallInfo | null>(null);
+  const [activeEvent, setActiveEvent] = useState<ActiveEvent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update clock every minute
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch hall info
+  useEffect(() => {
+    if (!hallId) return;
+    const fetchHall = async () => {
+      const { data, error } = await supabase
+        .from("halls")
+        .select("id, name, default_message, logo_url, venue_id, venues(name, logo_url)")
+        .eq("id", hallId)
+        .single();
+
+      if (error || !data) {
+        setError("האולם לא נמצא");
+        setLoading(false);
+        return;
+      }
+      setHall(data as unknown as HallInfo);
+    };
+    fetchHall();
+  }, [hallId]);
+
+  // Check for active event - runs every 2 minutes
+  const checkActiveEvent = useCallback(async () => {
+    if (!hallId) return;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data: events } = await supabase
+      .from("events")
+      .select("id, groom_name, bride_name, child_name, family_name, event_type, event_date, reception_time, ceremony_time")
+      .eq("hall_id", hallId)
+      .eq("event_date", today);
+
+    if (events && events.length > 0) {
+      // If multiple events today, pick the one closest to now
+      setActiveEvent(events[0]);
+    } else {
+      setActiveEvent(null);
+    }
+    setLoading(false);
+  }, [hallId]);
+
+  useEffect(() => {
+    checkActiveEvent();
+    const interval = setInterval(checkActiveEvent, 120_000); // every 2 min
+    return () => clearInterval(interval);
+  }, [checkActiveEvent]);
+
+  // Format time
+  const timeStr = currentTime.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  const dateStr = currentTime.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#051839] flex items-center justify-center" dir="rtl">
+        <Loader2 className="w-16 h-16 text-[#C4A35A] animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#051839] flex items-center justify-center text-white" dir="rtl">
+        <div className="text-center space-y-4">
+          <Monitor className="w-20 h-20 mx-auto text-red-400" />
+          <h1 className="text-3xl font-bold">{error}</h1>
+          <p className="text-gray-400">בדוק שהקישור נכון</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If there's an active event, show the gift page in an iframe
+  if (activeEvent) {
+    const eventTitle = activeEvent.event_type === "חתונה" || activeEvent.event_type === "אירוסין"
+      ? `${activeEvent.groom_name || ""} & ${activeEvent.bride_name || ""}`
+      : activeEvent.event_type === "ברית"
+        ? activeEvent.child_name || activeEvent.family_name || ""
+        : `${activeEvent.groom_name || activeEvent.family_name || ""}`;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#FDF8E8] to-[#F5EDD6]" dir="rtl">
+        {/* Top bar with hall info */}
+        <div className="bg-[#051839]/90 backdrop-blur-sm text-white px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {hall?.logo_url ? (
+              <img src={hall.logo_url} alt="" className="h-10 w-10 rounded-full object-cover" />
+            ) : (
+              <img src={logo} alt="Giftkal" className="h-8" />
+            )}
+            <span className="text-sm opacity-70">{hall?.name}</span>
+          </div>
+          <div className="text-left text-sm opacity-70">
+            <div>{timeStr}</div>
+            <div className="text-xs">{dateStr}</div>
+          </div>
+        </div>
+
+        {/* Gift page iframe - full screen */}
+        <iframe
+          src={`/gift/${activeEvent.id}`}
+          className="w-full border-0"
+          style={{ height: "calc(100vh - 56px)" }}
+          title={`מתנה ל${eventTitle}`}
+        />
+      </div>
+    );
+  }
+
+  // Idle screen - no active event
+  const venueLogo = hall?.logo_url || (hall?.venues as any)?.logo_url;
+  const venueName = (hall?.venues as any)?.name || "";
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#051839] via-[#0a2a5e] to-[#051839] flex items-center justify-center" dir="rtl">
+      <div className="text-center space-y-8 animate-fade-in">
+        {/* Logo */}
+        {venueLogo ? (
+          <img src={venueLogo} alt={venueName} className="h-32 mx-auto rounded-2xl object-contain" />
+        ) : (
+          <img src={logo} alt="Giftkal" className="h-20 mx-auto" />
+        )}
+
+        {/* Hall name */}
+        <div>
+          <h1 className="text-5xl font-bold text-white mb-2">{hall?.name}</h1>
+          {venueName && <p className="text-xl text-[#C4A35A]">{venueName}</p>}
+        </div>
+
+        {/* Default message */}
+        <p className="text-3xl text-white/80 font-light">
+          {hall?.default_message || "ברוכים הבאים"}
+        </p>
+
+        {/* Clock */}
+        <div className="text-white/60 space-y-1">
+          <p className="text-6xl font-light tracking-wider">{timeStr}</p>
+          <p className="text-lg">{dateStr}</p>
+        </div>
+
+        {/* Subtle gift icon */}
+        <div className="pt-8">
+          <Gift className="w-12 h-12 mx-auto text-[#C4A35A]/30" />
+        </div>
+
+        {/* Powered by */}
+        <div className="absolute bottom-6 left-0 right-0 text-center">
+          <div className="flex items-center justify-center gap-2 text-white/20 text-sm">
+            <span>Powered by</span>
+            <img src={logo} alt="Giftkal" className="h-5 opacity-30" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
