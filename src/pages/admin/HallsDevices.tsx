@@ -188,9 +188,9 @@ export default function AdminHallsDevices() {
                   <Plus className="w-4 h-4" /> אולם חדש
                 </Button>
               </DialogTrigger>
-              <DialogContent dir="rtl">
+               <DialogContent dir="rtl">
                 <DialogHeader><DialogTitle>הוסף אולם חדש</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-4">
+                <DialogBody>
                   <div>
                     <Label>בעל אולם</Label>
                     <Select value={hallForm.venue_id} onValueChange={(v) => setHallForm(p => ({ ...p, venue_id: v }))}>
@@ -213,7 +213,7 @@ export default function AdminHallsDevices() {
                   <Button onClick={() => createHall.mutate()} disabled={!hallForm.name || !hallForm.venue_id || createHall.isPending} className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl">
                     {createHall.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "הוסף אולם"}
                   </Button>
-                </div>
+                </DialogBody>
               </DialogContent>
             </Dialog>
           </div>
