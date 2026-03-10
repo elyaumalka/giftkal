@@ -13,6 +13,7 @@ import InvoicesIcon from "@/assets/icons/venue/Invoices.svg";
 import EventsIcon from "@/assets/icons/venue/Events.svg";
 import ToolsIcon from "@/assets/icons/venue/Tools.svg";
 import SettingsIcon from "@/assets/icons/venue/Settings.svg";
+import CheersIcon from "@/assets/icons/venue/Cheers.svg";
 
 const menuItems = [
   { title: "דשבורד", icon: DashboardIcon, path: "/venue" },
