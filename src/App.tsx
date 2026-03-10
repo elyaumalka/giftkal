@@ -113,6 +113,7 @@ function App() {
             <Route path="invoices" element={<VenueInvoices />} />
             <Route path="events" element={<VenueEvents />} />
             <Route path="leads" element={<VenueLeads />} />
+            <Route path="halls" element={<VenueHalls />} />
             <Route path="support" element={<VenueSupport />} />
             <Route path="settings" element={<VenueSettings />} />
           </Route>
