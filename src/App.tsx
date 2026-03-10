@@ -35,6 +35,7 @@ import VenueInvoices from "./pages/venue/Invoices";
 import VenueEvents from "./pages/venue/Events";
 import VenueSupport from "./pages/venue/Support";
 import VenueSettings from "./pages/venue/Settings";
+import VenueHalls from "./pages/venue/Halls";
 import VenueLeads from "./pages/venue/Leads";
 
 // Event
