@@ -265,9 +265,9 @@ export default function AdminHallsDevices() {
                   <Plus className="w-4 h-4" /> מכשיר חדש
                 </Button>
               </DialogTrigger>
-              <DialogContent dir="rtl">
+               <DialogContent dir="rtl">
                 <DialogHeader><DialogTitle>הוסף מכשיר חדש</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-4">
+                <DialogBody>
                   <div>
                     <Label>בעל אולם</Label>
                     <Select value={deviceForm.venue_id} onValueChange={(v) => setDeviceForm(p => ({ ...p, venue_id: v, hall_id: "" }))}>
@@ -304,7 +304,7 @@ export default function AdminHallsDevices() {
                   <Button onClick={() => createDevice.mutate()} disabled={!deviceForm.name || !deviceForm.serial_number || !deviceForm.venue_id || createDevice.isPending} className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl">
                     {createDevice.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "הוסף מכשיר"}
                   </Button>
-                </div>
+                </DialogBody>
               </DialogContent>
             </Dialog>
           </div>
