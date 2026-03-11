@@ -80,23 +80,7 @@ export default function VenueLanding() {
     setIsSubmitting(false);
   };
 
-  /* ── stories auto-advance ── */
-  const STORY_DURATION = 4000; // ms per image
-  useEffect(() => {
-    if (galleryImages.length === 0) return;
-    const interval = 30; // progress tick
-    let elapsed = 0;
-    const timer = setInterval(() => {
-      elapsed += interval;
-      setStoryProgress((elapsed / STORY_DURATION) * 100);
-      if (elapsed >= STORY_DURATION) {
-        elapsed = 0;
-        setStoryIndex((prev) => (prev + 1) % galleryImages.length);
-        setStoryProgress(0);
-      }
-    }, interval);
-    return () => clearInterval(timer);
-  }, [storyIndex, galleryImages.length]);
+  const STORY_DURATION = 4000;
 
   if (isLoading) {
     return (
