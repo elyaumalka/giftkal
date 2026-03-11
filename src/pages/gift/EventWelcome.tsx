@@ -1,13 +1,43 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowLeft, Gift } from "lucide-react";
+import { Loader2, ArrowLeft, Gift, Sparkles, Phone } from "lucide-react";
 import logo from "@/assets/logo.png";
-import cheersImg from "@/assets/cheers.png";
+import { useEffect, useState, useRef } from "react";
+
+/* ── floating sparkle particles ── */
+function SparkleField() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
+      {Array.from({ length: 18 }).map((_, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: `${2 + Math.random() * 4}px`,
+            height: `${2 + Math.random() * 4}px`,
+            background: `hsl(${38 + Math.random() * 10}, 92%, ${55 + Math.random() * 20}%)`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animation: `sparkleFloat ${3 + Math.random() * 4}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 5}s`,
+            opacity: 0.4 + Math.random() * 0.5,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function EventWelcome() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const [showContent, setShowContent] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowContent(true), 200);
+    return () => clearTimeout(t);
+  }, []);
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["event-welcome", eventId],
@@ -28,24 +58,25 @@ export default function EventWelcome() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: `url('/landing/bg-hexagon.png') center/cover no-repeat` }}>
-        <Loader2 className="w-10 h-10 animate-spin text-[#051839]" />
+      <div className="min-h-screen flex items-center justify-center bg-[#051839]">
+        <Loader2 className="w-10 h-10 animate-spin text-[#C4A35A]" />
       </div>
     );
   }
 
   if (!event) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4" dir="rtl" style={{ background: `url('/landing/bg-hexagon.png') center/cover no-repeat` }}>
-        <div className="w-20 h-20 mx-auto rounded-full bg-red-100 flex items-center justify-center"><span className="text-4xl">😕</span></div>
-        <h1 className="text-2xl font-bold text-[#051839]">האירוע לא נמצא</h1>
-        <p className="text-gray-500">נא לבדוק את הקישור ולנסות שוב</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839]" dir="rtl">
+        <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">😕</span></div>
+        <h1 className="text-2xl font-bold text-white">האירוע לא נמצא</h1>
+        <p className="text-white/50">נא לבדוק את הקישור ולנסות שוב</p>
       </div>
     );
   }
 
   const venue = event.venues as any;
   const venueId = venue?.id;
+  const bannerUrl = venue?.banner_url || "/landing/hero-banquet.png";
 
   const eventTypeLabel = (() => {
     switch (event.event_type) {
@@ -74,104 +105,140 @@ export default function EventWelcome() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden" dir="rtl" style={{ background: `url('/landing/bg-hexagon.png') center/cover no-repeat` }}>
+    <div className="min-h-screen flex flex-col relative overflow-hidden" dir="rtl">
 
-      {/* ═══════ Hero Image ═══════ */}
-      <div className="relative w-full flex-shrink-0">
+      {/* ═══════ FULL BACKGROUND IMAGE ═══════ */}
+      <div className="absolute inset-0 z-0">
         <img
-          src="/landing/hero-banquet.png"
-          alt="אולם אירועים"
-          className="w-full object-cover"
-          style={{ maxHeight: "200px" }}
+          src={bannerUrl}
+          alt=""
+          className="w-full h-full object-cover"
         />
-        {/* Curved bottom */}
-        <div className="absolute -bottom-1 left-0 right-0 h-12">
-          <svg viewBox="0 0 1440 60" preserveAspectRatio="none" className="w-full h-full">
-            <path d="M0,60 Q720,0 1440,60 L1440,60 L0,60 Z" fill="white" fillOpacity="0" />
-          </svg>
-        </div>
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0" style={{
+          background: "linear-gradient(180deg, rgba(5,24,57,0.3) 0%, rgba(5,24,57,0.6) 30%, rgba(5,24,57,0.92) 60%, rgba(5,24,57,1) 80%)"
+        }} />
       </div>
 
-      {/* ═══════ Logo + Venue ═══════ */}
-      <div className="relative z-10 -mt-10 flex flex-col items-center flex-shrink-0">
+      {/* Sparkle particles */}
+      <SparkleField />
+
+      {/* ═══════ TOP: VENUE LOGO ═══════ */}
+      <div className={`relative z-20 pt-8 flex flex-col items-center transition-all duration-1000 ${showContent ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"}`}>
         <div
-          className={`relative ${venueId ? "cursor-pointer" : ""}`}
+          className={`relative ${venueId ? "cursor-pointer" : ""} group`}
           onClick={handleVenuePage}
         >
-          <div className="absolute -inset-1.5 bg-[#C4A35A]/20 rounded-full blur-lg animate-pulse" />
+          <div className="absolute -inset-3 bg-[#C4A35A]/25 rounded-full blur-xl animate-pulse" />
           {venue?.logo_url ? (
             <img
               src={venue.logo_url}
               alt={venue?.name || ""}
-              className="relative w-20 h-20 rounded-full border-[3px] border-white shadow-xl object-cover bg-white"
+              className="relative w-20 h-20 rounded-full border-2 border-[#C4A35A]/50 shadow-2xl object-cover bg-white/10 backdrop-blur-sm group-hover:scale-105 transition-transform"
             />
           ) : (
-            <div className="relative w-20 h-20 rounded-full border-[3px] border-white shadow-xl bg-[#051839] flex items-center justify-center">
+            <div className="relative w-20 h-20 rounded-full border-2 border-[#C4A35A]/50 shadow-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
               <img src={logo} alt="Giftkal" className="h-8 w-auto brightness-0 invert" />
             </div>
           )}
         </div>
 
         {venue?.name && (
-          <h3
-            className={`mt-2 text-sm font-bold text-[#051839] ${venueId ? "cursor-pointer hover:underline" : ""}`}
+          <p
+            className={`mt-2 text-sm font-semibold text-white/80 ${venueId ? "cursor-pointer hover:text-[#C4A35A] transition-colors" : ""}`}
             onClick={handleVenuePage}
           >
             {venue.name}
-          </h3>
-        )}
-
-        {venueId && (
-          <button
-            onClick={handleVenuePage}
-            className="text-[#C4A35A] text-xs font-medium flex items-center gap-1 mt-0.5 hover:underline"
-          >
-            דברו איתנו
-            <ArrowLeft className="w-2.5 h-2.5" />
-          </button>
+          </p>
         )}
       </div>
 
-      {/* ═══════ Main Content ═══════ */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-4">
-        {/* Cheers Image */}
-        <img
-          src={cheersImg}
-          alt="לחיים"
-          className="w-32 h-auto mx-auto drop-shadow-2xl mb-3 flex-shrink-0"
-        />
+      {/* ═══════ CENTER: EVENT INFO ═══════ */}
+      <div className="relative z-20 flex-1 flex flex-col items-center justify-center px-6">
+        <div className={`flex flex-col items-center transition-all duration-1000 delay-300 ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
 
-        {/* Mazel Tov */}
-        <h1 className="text-5xl font-extrabold text-[#051839] mb-2 text-center tracking-tight">
-          מזל טוב
-        </h1>
+          {/* Decorative line */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#C4A35A]/60" />
+            <Sparkles className="w-4 h-4 text-[#C4A35A]" />
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#C4A35A]/60" />
+          </div>
 
-        {/* Names */}
-        <h2 className="text-3xl font-extrabold text-[#C4A35A] mb-1 text-center">
-          {getEventNames()}
-        </h2>
+          {/* Event Type Label */}
+          <p className="text-[#C4A35A]/80 text-sm font-medium tracking-widest uppercase mb-2">
+            {eventTypeLabel}
+          </p>
 
-        {/* Event Type */}
-        <p className="text-base text-gray-400 mb-6 text-center">
-          {eventTypeLabel}
-        </p>
+          {/* Mazel Tov */}
+          <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-3 text-center leading-none"
+            style={{ textShadow: "0 4px 30px rgba(196,163,90,0.3)" }}>
+            מזל טוב
+          </h1>
+
+          {/* Names */}
+          <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-2 leading-tight"
+            style={{
+              background: "linear-gradient(135deg, #C4A35A 0%, #E8D5A3 50%, #C4A35A 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              filter: "drop-shadow(0 2px 10px rgba(196,163,90,0.3))",
+            }}>
+            {getEventNames()}
+          </h2>
+
+          {/* Decorative line */}
+          <div className="flex items-center gap-3 mt-3">
+            <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#C4A35A]/40" />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#C4A35A]/60" />
+            <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#C4A35A]/40" />
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════ BOTTOM: CTA + FOOTER ═══════ */}
+      <div className={`relative z-20 pb-6 px-5 transition-all duration-1000 delay-500 ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
 
         {/* CTA Button */}
         <button
           onClick={handleContinue}
-          className="bg-[#C41E3A] text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-lg shadow-[#C41E3A]/25 hover:bg-[#A8182F] active:scale-[0.97] transition-all flex items-center gap-3 animate-pulse hover:animate-none flex-shrink-0"
+          className="w-full relative overflow-hidden group py-5 rounded-2xl font-bold text-xl text-white flex items-center justify-center gap-3 shadow-2xl active:scale-[0.97] transition-transform"
+          style={{
+            background: "linear-gradient(135deg, #C41E3A 0%, #E8344E 50%, #C41E3A 100%)",
+            boxShadow: "0 8px 32px rgba(196,30,58,0.4), 0 0 60px rgba(196,30,58,0.15)",
+          }}
         >
-          <Gift className="w-5 h-5" />
-          כאן נותנים מתנה בקליק
-          <ArrowLeft className="w-4 h-4" />
+          {/* Shimmer effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          <Gift className="w-6 h-6 relative z-10" />
+          <span className="relative z-10">שלחו מתנה בקליק</span>
+          <ArrowLeft className="w-5 h-5 relative z-10" />
         </button>
+
+        {/* Venue contact link */}
+        {venueId && (
+          <button
+            onClick={handleVenuePage}
+            className="w-full mt-3 py-3 rounded-xl border border-white/15 bg-white/5 backdrop-blur-sm text-white/70 text-sm font-medium flex items-center justify-center gap-2 hover:bg-white/10 transition-colors active:scale-[0.98]"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            צרו קשר עם האולם
+          </button>
+        )}
+
+        {/* Footer */}
+        <div className="mt-5 flex items-center justify-center gap-2">
+          <span className="text-white/25 text-[10px]">Powered by</span>
+          <img src={logo} alt="Giftkal" className="h-3 w-auto opacity-20" />
+        </div>
       </div>
 
-      {/* ═══════ Footer ═══════ */}
-      <div className="py-3 flex items-center justify-center gap-2 flex-shrink-0">
-        <span className="text-gray-300 text-xs">Powered by</span>
-        <img src={logo} alt="Giftkal" className="h-4 w-auto opacity-40" />
-      </div>
+      {/* ═══════ CSS for sparkle animation ═══════ */}
+      <style>{`
+        @keyframes sparkleFloat {
+          0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+          50% { transform: translateY(-20px) scale(1.5); opacity: 0.8; }
+        }
+      `}</style>
     </div>
   );
 }
