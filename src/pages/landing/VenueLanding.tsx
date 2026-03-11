@@ -112,7 +112,7 @@ export default function VenueLanding() {
       </div>
 
       {/* Hero Section */}
-      <div className="relative h-[50vh] md:h-[60vh] flex items-center justify-center">
+      <div className="relative flex flex-col items-center justify-center pt-8 pb-4">
         {/* Banner Background */}
         {venue.banner_url && (
           <img 
@@ -125,6 +125,15 @@ export default function VenueLanding() {
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/50 to-slate-900" />
         
+        {/* Banquet Hero Image */}
+        <div className="relative z-10 w-full max-w-2xl mx-auto px-4 mb-6">
+          <img 
+            src="/landing/hero-banquet.png" 
+            alt="אולם אירועים" 
+            className="w-full rounded-[2rem] shadow-2xl"
+          />
+        </div>
+
         {/* Content */}
         <div className="relative z-10 text-center px-4">
           {/* Logo */}
