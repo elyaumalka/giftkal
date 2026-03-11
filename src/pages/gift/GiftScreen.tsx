@@ -29,6 +29,7 @@ const BLESSING_DESIGNS = [
 export default function GiftScreen() {
   const { eventId } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("amount");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
