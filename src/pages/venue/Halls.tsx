@@ -347,6 +347,49 @@ export default function VenueHalls() {
         </DialogContent>
       </Dialog>
 
+      {/* Link Event Dialog */}
+      <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>שייך אירוע לאולם</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            {unlinkedEvents && unlinkedEvents.length > 0 ? (
+              <>
+                <div>
+                  <Label>בחר אירוע</Label>
+                  <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="בחר אירוע לשיוך" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unlinkedEvents.map((ev: any) => (
+                        <SelectItem key={ev.id} value={ev.id}>
+                          {getEventLabel(ev)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={() => eventLinkingHallId && selectedEventId && linkEventMutation.mutate({ eventId: selectedEventId, hallId: eventLinkingHallId })}
+                  disabled={!selectedEventId || linkEventMutation.isPending}
+                  className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl"
+                >
+                  {linkEventMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "שייך אירוע"}
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-4 space-y-2">
+                <CalendarX2 className="w-10 h-10 mx-auto text-gray-300" />
+                <p className="text-gray-500 text-sm">אין אירועים זמינים לשיוך</p>
+                <p className="text-gray-400 text-xs">כל האירועים כבר משויכים לאולמות</p>
+              </div>
+            )}
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+
       {/* Halls Grid */}
       {isLoading ? (
         <div className="flex justify-center py-12">
