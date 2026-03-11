@@ -190,32 +190,52 @@ export default function VenueLanding() {
         )}
       </div>
 
-      {/* ═══════ GALLERY — auto-scrolling carousel ═══════ */}
+      {/* ═══════ GALLERY — Stories Style ═══════ */}
       {galleryImages.length > 0 && (
         <div
           ref={revealGallery.ref}
-          className={`mt-12 transition-all duration-700 ${revealGallery.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          className={`mt-12 px-4 max-w-lg mx-auto transition-all duration-700 ${revealGallery.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
-          {/* Full-width dark-blue frame */}
-          <div className="bg-[#051839] rounded-[2rem] mx-3 md:mx-6 py-10 px-2 overflow-hidden">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white text-center mb-8">גלריית תמונות</h2>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-[#051839] text-center mb-6">גלריית תמונות</h2>
 
-            {/* Scrolling strip */}
-            <div
-              ref={galleryRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide px-4 snap-x snap-mandatory"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              {scrollImages.map((url, i) => (
-                <div
-                  key={i}
-                  onClick={() => setLightboxIndex(i % galleryImages.length)}
-                  className="flex-shrink-0 w-56 h-72 md:w-64 md:h-80 rounded-2xl overflow-hidden cursor-pointer group snap-center relative"
-                >
-                  <img src={url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* Stories viewer */}
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-black aspect-[9/14]">
+            {/* Progress bars */}
+            <div className="absolute top-3 left-3 right-3 z-20 flex gap-1.5">
+              {galleryImages.map((_: string, i: number) => (
+                <div key={i} className="flex-1 h-1 rounded-full bg-white/30 overflow-hidden">
+                  <div
+                    className="h-full bg-white rounded-full"
+                    style={{
+                      width: i < storyIndex ? "100%" : i === storyIndex ? `${storyProgress}%` : "0%",
+                      transition: i === storyIndex ? "width 30ms linear" : "none",
+                    }}
+                  />
                 </div>
               ))}
+            </div>
+
+            {/* Image */}
+            <img
+              src={galleryImages[storyIndex]}
+              alt={`תמונה ${storyIndex + 1}`}
+              className="w-full h-full object-cover"
+              key={storyIndex}
+            />
+
+            {/* Tap zones */}
+            <div
+              className="absolute inset-y-0 right-0 w-1/3 z-10 cursor-pointer"
+              onClick={() => { setStoryIndex((storyIndex - 1 + galleryImages.length) % galleryImages.length); setStoryProgress(0); }}
+            />
+            <div
+              className="absolute inset-y-0 left-0 w-1/3 z-10 cursor-pointer"
+              onClick={() => { setStoryIndex((storyIndex + 1) % galleryImages.length); setStoryProgress(0); }}
+            />
+
+            {/* Counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white/80 text-xs font-medium">
+              {storyIndex + 1} / {galleryImages.length}
             </div>
           </div>
         </div>
