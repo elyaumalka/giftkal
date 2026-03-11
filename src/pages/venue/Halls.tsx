@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogBody } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Building2, Monitor, Copy, Check, Pencil, Trash2, ExternalLink, Loader2 } from "lucide-react";
+import { Plus, Building2, Monitor, Copy, Check, Pencil, Trash2, ExternalLink, Loader2, Link2, Unlink } from "lucide-react";
 
 export default function VenueHalls() {
   const { toast } = useToast();
@@ -20,6 +21,9 @@ export default function VenueHalls() {
   const [editingHall, setEditingHall] = useState<any>(null);
   const [formData, setFormData] = useState({ name: "", default_message: "ברוכים הבאים" });
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkingHallId, setLinkingHallId] = useState<string | null>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
 
   // Get venue for current user
   useEffect(() => {
@@ -47,6 +51,21 @@ export default function VenueHalls() {
         .eq("venue_id", venueId)
         .order("created_at");
       if (error) throw error;
+      return data || [];
+    },
+    enabled: !!venueId,
+  });
+
+  // Fetch unlinked devices for this venue
+  const { data: unlinkedDevices } = useQuery({
+    queryKey: ["venue-unlinked-devices", venueId],
+    queryFn: async () => {
+      if (!venueId) return [];
+      const { data } = await supabase
+        .from("devices")
+        .select("id, name, serial_number")
+        .eq("venue_id", venueId)
+        .is("hall_id", null);
       return data || [];
     },
     enabled: !!venueId,
@@ -115,6 +134,35 @@ export default function VenueHalls() {
     },
   });
 
+  // Link device to hall
+  const linkDeviceMutation = useMutation({
+    mutationFn: async ({ deviceId, hallId }: { deviceId: string; hallId: string }) => {
+      const { error } = await supabase.from("devices").update({ hall_id: hallId }).eq("id", deviceId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venue-halls"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-unlinked-devices"] });
+      setLinkDialogOpen(false);
+      setSelectedDeviceId("");
+      toast({ title: "המכשיר קושר לאולם" });
+    },
+    onError: () => toast({ title: "שגיאה בקישור מכשיר", variant: "destructive" }),
+  });
+
+  // Unlink device from hall
+  const unlinkDeviceMutation = useMutation({
+    mutationFn: async (deviceId: string) => {
+      const { error } = await supabase.from("devices").update({ hall_id: null }).eq("id", deviceId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venue-halls"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-unlinked-devices"] });
+      toast({ title: "המכשיר נותק מהאולם" });
+    },
+  });
+
   const copyKioskLink = (hallId: string) => {
     const url = `${window.location.origin}/kiosk/${hallId}`;
     navigator.clipboard.writeText(url);
@@ -133,6 +181,12 @@ export default function VenueHalls() {
     setEditingHall(null);
     setFormData({ name: "", default_message: "ברוכים הבאים" });
     setDialogOpen(true);
+  };
+
+  const openLinkDialog = (hallId: string) => {
+    setLinkingHallId(hallId);
+    setSelectedDeviceId("");
+    setLinkDialogOpen(true);
   };
 
   return (
@@ -154,7 +208,7 @@ export default function VenueHalls() {
             <DialogHeader>
               <DialogTitle>{editingHall ? "ערוך אולם" : "הוסף אולם חדש"}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+            <DialogBody>
               <div>
                 <Label>שם האולם</Label>
                 <Input
@@ -181,10 +235,53 @@ export default function VenueHalls() {
               >
                 {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : editingHall ? "שמור שינויים" : "הוסף אולם"}
               </Button>
-            </div>
+            </DialogBody>
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Link Device Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>קשר מכשיר לאולם</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            {unlinkedDevices && unlinkedDevices.length > 0 ? (
+              <>
+                <div>
+                  <Label>בחר מכשיר</Label>
+                  <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="בחר מכשיר לקישור" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unlinkedDevices.map((d: any) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name} (S/N: {d.serial_number})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={() => linkingHallId && selectedDeviceId && linkDeviceMutation.mutate({ deviceId: selectedDeviceId, hallId: linkingHallId })}
+                  disabled={!selectedDeviceId || linkDeviceMutation.isPending}
+                  className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl"
+                >
+                  {linkDeviceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "קשר מכשיר"}
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-4 space-y-2">
+                <Monitor className="w-10 h-10 mx-auto text-gray-300" />
+                <p className="text-gray-500 text-sm">אין מכשירים זמינים לקישור</p>
+                <p className="text-gray-400 text-xs">פנה למנהל המערכת להוספת מכשירים חדשים</p>
+              </div>
+            )}
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
 
       {/* Halls Grid */}
       {isLoading ? (
@@ -249,18 +346,43 @@ export default function VenueHalls() {
 
                   {/* Devices */}
                   <div>
-                    <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
-                      <Monitor className="w-3 h-3" />
-                      מכשירים מקושרים ({devices.length})
-                    </p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <Monitor className="w-3 h-3" />
+                        מכשירים מקושרים ({devices.length})
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs gap-1 h-7 rounded-lg"
+                        onClick={() => openLinkDialog(hall.id)}
+                      >
+                        <Link2 className="w-3 h-3" />
+                        קשר מכשיר
+                      </Button>
+                    </div>
                     {devices.length > 0 ? (
                       <div className="space-y-1">
                         {devices.map((device: any) => (
                           <div key={device.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-sm">
-                            <span>{device.name}</span>
-                            <Badge variant={device.is_active ? "default" : "secondary"} className="text-xs">
-                              {device.is_active ? "פעיל" : "לא פעיל"}
-                            </Badge>
+                            <div>
+                              <span>{device.name}</span>
+                              <span className="text-xs text-gray-300 mr-2">({device.serial_number})</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={device.is_active ? "default" : "secondary"} className="text-xs">
+                                {device.is_active ? "פעיל" : "לא פעיל"}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => unlinkDeviceMutation.mutate(device.id)}
+                                title="נתק מכשיר"
+                              >
+                                <Unlink className="w-3 h-3 text-red-400" />
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
