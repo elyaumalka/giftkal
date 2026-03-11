@@ -33,6 +33,8 @@ export default function VenueLanding() {
   const [eventDate, setEventDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [storyIndex, setStoryIndex] = useState(0);
+  const [storyProgress, setStoryProgress] = useState(0);
 
   const galleryRef = useRef<HTMLDivElement>(null);
 
