@@ -183,6 +183,37 @@ export default function VenueHalls() {
     },
   });
 
+  // Link event to hall
+  const linkEventMutation = useMutation({
+    mutationFn: async ({ eventId, hallId }: { eventId: string; hallId: string }) => {
+      const { error } = await supabase.from("events").update({ hall_id: hallId }).eq("id", eventId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venue-halls"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-hall-events"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-unlinked-events"] });
+      setEventDialogOpen(false);
+      setSelectedEventId("");
+      toast({ title: "האירוע שויך לאולם" });
+    },
+    onError: () => toast({ title: "שגיאה בשיוך אירוע", variant: "destructive" }),
+  });
+
+  // Unlink event from hall
+  const unlinkEventMutation = useMutation({
+    mutationFn: async (eventId: string) => {
+      const { error } = await supabase.from("events").update({ hall_id: null }).eq("id", eventId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venue-halls"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-hall-events"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-unlinked-events"] });
+      toast({ title: "האירוע נותק מהאולם" });
+    },
+  });
+
   const copyKioskLink = (hallId: string) => {
     const url = `${window.location.origin}/kiosk/${hallId}`;
     navigator.clipboard.writeText(url);
@@ -207,6 +238,19 @@ export default function VenueHalls() {
     setLinkingHallId(hallId);
     setSelectedDeviceId("");
     setLinkDialogOpen(true);
+  };
+
+  const openEventDialog = (hallId: string) => {
+    setEventLinkingHallId(hallId);
+    setSelectedEventId("");
+    setEventDialogOpen(true);
+  };
+
+  const getEventLabel = (event: any) => {
+    const name = event.event_type === "חתונה" || event.event_type === "אירוסין"
+      ? `${event.groom_name || ""} & ${event.bride_name || ""}`
+      : event.child_name || event.family_name || "";
+    return `${name} - ${event.event_date} (${event.event_type})`;
   };
 
   return (
