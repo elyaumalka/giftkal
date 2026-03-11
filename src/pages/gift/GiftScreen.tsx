@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Heart, CreditCard, Check, ArrowLeft, Sparkles, Loader2, X } from "lucide-react";
+import { Gift, Heart, CreditCard, Check, ArrowLeft, ArrowRight, Sparkles, Loader2, X, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
