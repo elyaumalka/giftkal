@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Mail, MessageCircle, Send, Loader2, ArrowLeft } from "lucide-react";
+import { Phone, Mail, MessageCircle, Send, Loader2, ArrowLeft, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function VenueLanding() {
   const { venueId } = useParams();
@@ -15,6 +15,7 @@ export default function VenueLanding() {
   const [email, setEmail] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const { data: venue, isLoading } = useQuery({
     queryKey: ["landing-venue", venueId],
@@ -171,13 +172,81 @@ export default function VenueLanding() {
 
       {/* Gallery Section */}
       {galleryImages.length > 0 && (
-        <div className="mt-10 px-4 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold text-[#051839] text-center mb-5">גלריית תמונות</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="mt-10 px-4 max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-[#051839] text-center mb-6">גלריית תמונות</h2>
+
+          {/* Masonry-style grid */}
+          <div className="columns-2 sm:columns-3 gap-3 space-y-3">
             {galleryImages.map((url: string, i: number) => (
-              <div key={i} className="aspect-square rounded-xl overflow-hidden">
-                <img src={url} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
+              <div
+                key={i}
+                onClick={() => setLightboxIndex(i)}
+                className="break-inside-avoid rounded-2xl overflow-hidden cursor-pointer group relative"
+              >
+                <img
+                  src={url}
+                  alt={`Gallery ${i + 1}`}
+                  className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  style={{ aspectRatio: i % 3 === 0 ? "3/4" : i % 3 === 1 ? "1/1" : "4/3" }}
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && galleryImages.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
+            className="absolute top-4 left-4 text-white/80 hover:text-white p-2 rounded-full bg-white/10 backdrop-blur-sm"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          {galleryImages.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((lightboxIndex + 1) % galleryImages.length);
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 rounded-full bg-white/10 backdrop-blur-sm"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex((lightboxIndex - 1 + galleryImages.length) % galleryImages.length);
+                }}
+                className="absolute left-14 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 rounded-full bg-white/10 backdrop-blur-sm"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
+          <img
+            src={galleryImages[lightboxIndex]}
+            alt=""
+            className="max-w-full max-h-[85vh] rounded-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Dots */}
+          <div className="absolute bottom-6 flex gap-2">
+            {galleryImages.map((_: string, i: number) => (
+              <button
+                key={i}
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
+                className={`w-2.5 h-2.5 rounded-full transition-colors ${i === lightboxIndex ? "bg-white" : "bg-white/30"}`}
+              />
             ))}
           </div>
         </div>
