@@ -76,16 +76,19 @@ export default function GiftScreen() {
     else if (paymentStatus === 'failed') { setPaymentError('התשלום נכשל. אנא נסו שוב.'); setStep('failed'); }
   }, [searchParams]);
 
-  // Fetch PayMe API key
+  // Fetch PayMe API key for this specific event
   useEffect(() => {
+    if (!eventId) return;
     const fetchPaymeKey = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('get-payme-key');
+        const { data, error } = await supabase.functions.invoke('get-payme-key', {
+          body: { eventId },
+        });
         if (!error && data?.clientKey) { setPaymeApiKey(data.clientKey); setPaymeTestMode(data.testMode ?? true); }
       } catch (e) { console.error('Failed to fetch PayMe key:', e); }
     };
     fetchPaymeKey();
-  }, []);
+  }, [eventId]);
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["event-public", eventId],

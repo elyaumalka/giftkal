@@ -242,10 +242,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update event with seller ID
+    // Update event with seller ID and HF API key (uuid from response)
+    const updateData: Record<string, string> = { seller_payme_id: paymeResult.seller_payme_id };
+    if (paymeResult.uuid) {
+      updateData.hf_api_key = paymeResult.uuid;
+    }
     const { error: updateError } = await supabase
       .from('events')
-      .update({ seller_payme_id: paymeResult.seller_payme_id })
+      .update(updateData)
       .eq('id', body.eventId);
 
     if (updateError) {
