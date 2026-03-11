@@ -107,8 +107,22 @@ export default function VenueLanding() {
   const whatsappNumber = config.whatsapp || "";
   const emailAddress = config.email || "";
 
-  // duplicate images for seamless scroll
-  const scrollImages = galleryImages.length > 0 ? [...galleryImages, ...galleryImages] : [];
+  /* ── stories auto-advance ── */
+  useEffect(() => {
+    if (galleryImages.length === 0) return;
+    const tick = 30;
+    let elapsed = 0;
+    const timer = setInterval(() => {
+      elapsed += tick;
+      setStoryProgress((elapsed / STORY_DURATION) * 100);
+      if (elapsed >= STORY_DURATION) {
+        elapsed = 0;
+        setStoryIndex((prev) => (prev + 1) % galleryImages.length);
+        setStoryProgress(0);
+      }
+    }, tick);
+    return () => clearInterval(timer);
+  }, [storyIndex, galleryImages.length]);
 
   return (
     <div className="min-h-screen overflow-x-hidden" dir="rtl" style={{ background: `url('/landing/bg-hexagon.png') center/cover no-repeat fixed` }}>
