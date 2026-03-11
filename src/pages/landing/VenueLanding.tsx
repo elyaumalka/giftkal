@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Mail, MessageCircle, Send, Loader2, ArrowLeft } from "lucide-react";
+import { Phone, Mail, MessageCircle, Send, Loader2, ArrowLeft, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function VenueLanding() {
   const { venueId } = useParams();
