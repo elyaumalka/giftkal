@@ -262,64 +262,66 @@ export default function VenueLanding() {
 
       {/* Lead Form */}
       <div className="mt-10 px-4 pb-12 max-w-md mx-auto">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-[#051839]">השאירו פרטים כאן בטופס</h2>
-          <p className="text-[#C4A35A] font-medium mt-1">וקבלו הצעת מחיר משתלמת במיוחד!</p>
+        <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-[#051839]">השאירו פרטים כאן בטופס</h2>
+            <p className="text-[#C4A35A] font-medium mt-1">וקבלו הצעת מחיר משתלמת במיוחד!</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-center text-gray-500 text-sm mb-1">שם פרטי ומשפחה</label>
+              <Input
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="h-12 rounded-xl bg-gray-50 border-gray-200 text-center text-[#051839]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-center text-gray-500 text-sm mb-1">טלפון</label>
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="h-12 rounded-xl bg-gray-50 border-gray-200 text-center text-[#051839]"
+                type="tel"
+              />
+            </div>
+            <div>
+              <label className="block text-center text-gray-500 text-sm mb-1">כתובת מייל</label>
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-12 rounded-xl bg-gray-50 border-gray-200 text-center text-[#051839]"
+                type="email"
+              />
+            </div>
+            <div>
+              <label className="block text-center text-gray-500 text-sm mb-1">תאריך האירוע</label>
+              <Input
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="h-12 rounded-xl bg-gray-50 border-gray-200 text-center text-[#051839]"
+                type="date"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-14 rounded-2xl bg-[#C41E3A] text-white text-lg font-bold hover:bg-[#A8182F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  לשליחת הפרטים
+                  <ArrowLeft className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </form>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-center text-gray-500 text-sm mb-1">שם פרטי ומשפחה</label>
-            <Input
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="h-12 rounded-xl bg-white border-gray-200 text-center text-[#051839]"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-center text-gray-500 text-sm mb-1">טלפון</label>
-            <Input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="h-12 rounded-xl bg-white border-gray-200 text-center text-[#051839]"
-              type="tel"
-            />
-          </div>
-          <div>
-            <label className="block text-center text-gray-500 text-sm mb-1">כתובת מייל</label>
-            <Input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-12 rounded-xl bg-white border-gray-200 text-center text-[#051839]"
-              type="email"
-            />
-          </div>
-          <div>
-            <label className="block text-center text-gray-500 text-sm mb-1">תאריך האירוע</label>
-            <Input
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              className="h-12 rounded-xl bg-white border-gray-200 text-center text-[#051839]"
-              type="date"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full h-14 rounded-2xl bg-[#C41E3A] text-white text-lg font-bold hover:bg-[#A8182F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
-          >
-            {isSubmitting ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                לשליחת הפרטים
-                <ArrowLeft className="w-5 h-5" />
-              </>
-            )}
-          </button>
-        </form>
       </div>
 
       {/* Footer */}
