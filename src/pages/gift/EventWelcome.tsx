@@ -259,8 +259,8 @@ function VenueLandingPopup({ venueId, onClose }: { venueId: string; onClose: () 
                       </div>
                     ))}
                     <button type="submit" disabled={isSubmitting}
-                      className="w-full h-13 rounded-2xl bg-[#C41E3A] text-white text-base font-bold hover:bg-[#A8182F] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2 shadow-lg shadow-[#C41E3A]/25">
-                      {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <>לשליחת הפרטים <ArrowLeft className="w-4 h-4" /></>}
+                      className="w-full h-16 rounded-2xl bg-[#C41E3A] text-white text-xl font-bold hover:bg-[#A8182F] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-3 shadow-lg shadow-[#C41E3A]/25">
+                      {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <>לשליחת הפרטים <ArrowLeft className="w-5 h-5" /></>}
                     </button>
                   </form>
                 </div>
