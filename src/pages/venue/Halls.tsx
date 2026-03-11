@@ -24,6 +24,9 @@ export default function VenueHalls() {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkingHallId, setLinkingHallId] = useState<string | null>(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [eventLinkingHallId, setEventLinkingHallId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState("");
 
   // Get venue for current user
   useEffect(() => {
