@@ -439,15 +439,35 @@ export default function VenueHalls() {
 
                   {/* Today's event */}
                   {hallEvent ? (
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-sm text-green-700 font-medium">
-                        אירוע פעיל: {hallEvent.groom_name} & {hallEvent.bride_name}
-                      </span>
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-sm text-green-700 font-medium">
+                          אירוע פעיל: {hallEvent.groom_name} & {hallEvent.bride_name}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => unlinkEventMutation.mutate(hallEvent.id)}
+                        title="נתק אירוע מאולם"
+                      >
+                        <CalendarX2 className="w-3 h-3 text-red-400" />
+                      </Button>
                     </div>
                   ) : (
-                    <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-400 text-center">
-                      אין אירוע היום
+                    <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
+                      <span className="text-sm text-gray-400">אין אירוע היום</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs gap-1 h-7 rounded-lg"
+                        onClick={() => openEventDialog(hall.id)}
+                      >
+                        <CalendarPlus className="w-3 h-3" />
+                        שייך אירוע
+                      </Button>
                     </div>
                   )}
 
