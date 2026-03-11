@@ -90,6 +90,23 @@ export default function VenueHalls() {
     enabled: !!venueId,
   });
 
+  // Fetch unlinked events (no hall_id) for this venue
+  const { data: unlinkedEvents } = useQuery({
+    queryKey: ["venue-unlinked-events", venueId],
+    queryFn: async () => {
+      if (!venueId) return [];
+      const { data } = await supabase
+        .from("events")
+        .select("id, groom_name, bride_name, child_name, family_name, event_type, event_date")
+        .eq("venue_id", venueId)
+        .is("hall_id", null)
+        .gte("event_date", today)
+        .order("event_date");
+      return data || [];
+    },
+    enabled: !!venueId,
+  });
+
   // Create/update hall
   const saveMutation = useMutation({
     mutationFn: async () => {
