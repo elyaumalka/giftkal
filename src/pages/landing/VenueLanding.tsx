@@ -80,6 +80,25 @@ export default function VenueLanding() {
   };
 
   const STORY_DURATION = 4000;
+  const config = (venue?.landing_page_config as any) || {};
+  const galleryImages: string[] = config.gallery || [];
+
+  /* ── stories auto-advance ── */
+  useEffect(() => {
+    if (galleryImages.length === 0) return;
+    const tick = 30;
+    let elapsed = 0;
+    const timer = setInterval(() => {
+      elapsed += tick;
+      setStoryProgress((elapsed / STORY_DURATION) * 100);
+      if (elapsed >= STORY_DURATION) {
+        elapsed = 0;
+        setStoryIndex((prev) => (prev + 1) % galleryImages.length);
+        setStoryProgress(0);
+      }
+    }, tick);
+    return () => clearInterval(timer);
+  }, [storyIndex, galleryImages.length]);
 
   if (isLoading) {
     return (
@@ -99,30 +118,11 @@ export default function VenueLanding() {
     );
   }
 
-  const config = (venue.landing_page_config as any) || {};
   const venueName = config.venue_name || venue.name;
   const aboutText = config.about || "";
   const phoneNumber = config.phone || "";
-  const galleryImages: string[] = config.gallery || [];
   const whatsappNumber = config.whatsapp || "";
   const emailAddress = config.email || "";
-
-  /* ── stories auto-advance ── */
-  useEffect(() => {
-    if (galleryImages.length === 0) return;
-    const tick = 30;
-    let elapsed = 0;
-    const timer = setInterval(() => {
-      elapsed += tick;
-      setStoryProgress((elapsed / STORY_DURATION) * 100);
-      if (elapsed >= STORY_DURATION) {
-        elapsed = 0;
-        setStoryIndex((prev) => (prev + 1) % galleryImages.length);
-        setStoryProgress(0);
-      }
-    }, tick);
-    return () => clearInterval(timer);
-  }, [storyIndex, galleryImages.length]);
 
   return (
     <div className="min-h-screen overflow-x-hidden" dir="rtl" style={{ background: `url('/landing/bg-hexagon.png') center/cover no-repeat fixed` }}>
