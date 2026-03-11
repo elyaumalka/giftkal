@@ -207,6 +207,19 @@ export default function KioskPage() {
           <p className="text-lg">{dateStr}</p>
         </div>
 
+        {/* Install button */}
+        {!isInstalled && deferredPrompt && (
+          <div className="pt-4">
+            <Button
+              onClick={handleInstall}
+              className="bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-full px-8 py-3 text-lg gap-3 shadow-xl"
+            >
+              <Download className="w-5 h-5" />
+              התקן אפליקציה
+            </Button>
+          </div>
+        )}
+
         {/* Subtle gift icon */}
         <div className="pt-8">
           <Gift className="w-12 h-12 mx-auto text-[#C4A35A]/30" />
