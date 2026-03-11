@@ -36,6 +36,13 @@ export default function KioskPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
+  // Save kiosk hallId for PWA reopening
+  useEffect(() => {
+    if (hallId) {
+      localStorage.setItem("kiosk_hall_id", hallId);
+    }
+  }, [hallId]);
+
   // Listen for PWA install prompt
   useEffect(() => {
     const handler = (e: Event) => {
