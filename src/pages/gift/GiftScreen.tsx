@@ -330,12 +330,21 @@ export default function GiftScreen() {
         >
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
           
-          {/* Logos Row */}
-          <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-6">
-            {/* Giftkal Logo */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl p-2 shadow-lg">
-              <img src={logo} alt="Giftkal" className="h-10 w-auto" />
-            </div>
+          {/* Back button */}
+            <button
+              onClick={() => navigate(`/gift/${eventId}`)}
+              className="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white transition-colors"
+              aria-label="חזרה למסך הראשי"
+            >
+              <ArrowRight className="w-5 h-5 text-[#051839]" />
+            </button>
+
+            {/* Logos Row */}
+            <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-6 pr-16">
+              {/* Giftkal Logo */}
+              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-2 shadow-lg">
+                <img src={logo} alt="Giftkal" className="h-10 w-auto" />
+              </div>
             
             {/* Venue Logo */}
             {event.venues?.logo_url && (
