@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Gift, Monitor } from "lucide-react";
+import { Loader2, Gift, Monitor, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
 
 interface HallInfo {
@@ -32,6 +33,34 @@ export default function KioskPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  // Listen for PWA install prompt
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+
+    // Check if already installed
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setIsInstalled(true);
+    }
+
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    if (result.outcome === "accepted") {
+      setIsInstalled(true);
+    }
+    setDeferredPrompt(null);
+  };
 
   // Update clock every minute
   useEffect(() => {
@@ -177,6 +206,19 @@ export default function KioskPage() {
           <p className="text-6xl font-light tracking-wider">{timeStr}</p>
           <p className="text-lg">{dateStr}</p>
         </div>
+
+        {/* Install button */}
+        {!isInstalled && deferredPrompt && (
+          <div className="pt-4">
+            <Button
+              onClick={handleInstall}
+              className="bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-full px-8 py-3 text-lg gap-3 shadow-xl"
+            >
+              <Download className="w-5 h-5" />
+              התקן אפליקציה
+            </Button>
+          </div>
+        )}
 
         {/* Subtle gift icon */}
         <div className="pt-8">
