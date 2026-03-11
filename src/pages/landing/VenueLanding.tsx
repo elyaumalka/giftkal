@@ -15,6 +15,7 @@ export default function VenueLanding() {
   const [email, setEmail] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const { data: venue, isLoading } = useQuery({
     queryKey: ["landing-venue", venueId],
