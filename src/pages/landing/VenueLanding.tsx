@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Mail, MessageCircle, Loader2, ArrowLeft, X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Phone, Mail, MessageCircle, Loader2, ArrowLeft, Sparkles } from "lucide-react";
 
 /* ── tiny hook: fade-in on scroll ── */
 function useReveal() {
