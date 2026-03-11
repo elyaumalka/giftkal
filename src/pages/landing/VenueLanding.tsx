@@ -36,7 +36,7 @@ export default function VenueLanding() {
   const [storyIndex, setStoryIndex] = useState(0);
   const [storyProgress, setStoryProgress] = useState(0);
 
-  const galleryRef = useRef<HTMLDivElement>(null);
+  
   const revealGallery = useReveal();
   const revealAbout = useReveal();
   const revealForm = useReveal();
