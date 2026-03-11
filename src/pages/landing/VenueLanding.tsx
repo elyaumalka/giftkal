@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Mail, MessageCircle, Loader2, ArrowLeft, X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Phone, Mail, MessageCircle, Loader2, ArrowLeft, Sparkles } from "lucide-react";
 
 /* ── tiny hook: fade-in on scroll ── */
 function useReveal() {
@@ -32,10 +32,11 @@ export default function VenueLanding() {
   const [email, setEmail] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  
+  const [storyIndex, setStoryIndex] = useState(0);
+  const [storyProgress, setStoryProgress] = useState(0);
 
-  const galleryRef = useRef<HTMLDivElement>(null);
-
+  
   const revealGallery = useReveal();
   const revealAbout = useReveal();
   const revealForm = useReveal();
@@ -78,24 +79,26 @@ export default function VenueLanding() {
     setIsSubmitting(false);
   };
 
-  /* ── gallery auto-scroll ── */
+  const STORY_DURATION = 4000;
+  const config = (venue?.landing_page_config as any) || {};
+  const galleryImages: string[] = config.gallery || [];
+
+  /* ── stories auto-advance ── */
   useEffect(() => {
-    const el = galleryRef.current;
-    if (!el) return;
-    let raf: number;
-    let speed = 0.5;
-    const step = () => {
-      el.scrollLeft += speed;
-      if (el.scrollLeft >= el.scrollWidth - el.clientWidth) el.scrollLeft = 0;
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    const pause = () => cancelAnimationFrame(raf);
-    const resume = () => { raf = requestAnimationFrame(step); };
-    el.addEventListener("pointerenter", pause);
-    el.addEventListener("pointerleave", resume);
-    return () => { cancelAnimationFrame(raf); el.removeEventListener("pointerenter", pause); el.removeEventListener("pointerleave", resume); };
-  }, [venue]);
+    if (galleryImages.length === 0) return;
+    const tick = 30;
+    let elapsed = 0;
+    const timer = setInterval(() => {
+      elapsed += tick;
+      setStoryProgress((elapsed / STORY_DURATION) * 100);
+      if (elapsed >= STORY_DURATION) {
+        elapsed = 0;
+        setStoryIndex((prev) => (prev + 1) % galleryImages.length);
+        setStoryProgress(0);
+      }
+    }, tick);
+    return () => clearInterval(timer);
+  }, [storyIndex, galleryImages.length]);
 
   if (isLoading) {
     return (
@@ -115,16 +118,11 @@ export default function VenueLanding() {
     );
   }
 
-  const config = (venue.landing_page_config as any) || {};
   const venueName = config.venue_name || venue.name;
   const aboutText = config.about || "";
   const phoneNumber = config.phone || "";
-  const galleryImages: string[] = config.gallery || [];
   const whatsappNumber = config.whatsapp || "";
   const emailAddress = config.email || "";
-
-  // duplicate images for seamless scroll
-  const scrollImages = galleryImages.length > 0 ? [...galleryImages, ...galleryImages] : [];
 
   return (
     <div className="min-h-screen overflow-x-hidden" dir="rtl" style={{ background: `url('/landing/bg-hexagon.png') center/cover no-repeat fixed` }}>
@@ -192,32 +190,52 @@ export default function VenueLanding() {
         )}
       </div>
 
-      {/* ═══════ GALLERY — auto-scrolling carousel ═══════ */}
+      {/* ═══════ GALLERY — Stories Style ═══════ */}
       {galleryImages.length > 0 && (
         <div
           ref={revealGallery.ref}
-          className={`mt-12 transition-all duration-700 ${revealGallery.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          className={`mt-12 px-4 max-w-lg mx-auto transition-all duration-700 ${revealGallery.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
-          {/* Full-width dark-blue frame */}
-          <div className="bg-[#051839] rounded-[2rem] mx-3 md:mx-6 py-10 px-2 overflow-hidden">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white text-center mb-8">גלריית תמונות</h2>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-[#051839] text-center mb-6">גלריית תמונות</h2>
 
-            {/* Scrolling strip */}
-            <div
-              ref={galleryRef}
-              className="flex gap-4 overflow-x-auto scrollbar-hide px-4 snap-x snap-mandatory"
-              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-            >
-              {scrollImages.map((url, i) => (
-                <div
-                  key={i}
-                  onClick={() => setLightboxIndex(i % galleryImages.length)}
-                  className="flex-shrink-0 w-56 h-72 md:w-64 md:h-80 rounded-2xl overflow-hidden cursor-pointer group snap-center relative"
-                >
-                  <img src={url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* Stories viewer */}
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-black aspect-[9/14]">
+            {/* Progress bars */}
+            <div className="absolute top-3 left-3 right-3 z-20 flex gap-1.5">
+              {galleryImages.map((_: string, i: number) => (
+                <div key={i} className="flex-1 h-1 rounded-full bg-white/30 overflow-hidden">
+                  <div
+                    className="h-full bg-white rounded-full"
+                    style={{
+                      width: i < storyIndex ? "100%" : i === storyIndex ? `${storyProgress}%` : "0%",
+                      transition: i === storyIndex ? "width 30ms linear" : "none",
+                    }}
+                  />
                 </div>
               ))}
+            </div>
+
+            {/* Image */}
+            <img
+              src={galleryImages[storyIndex]}
+              alt={`תמונה ${storyIndex + 1}`}
+              className="w-full h-full object-cover"
+              key={storyIndex}
+            />
+
+            {/* Tap zones */}
+            <div
+              className="absolute inset-y-0 right-0 w-1/3 z-10 cursor-pointer"
+              onClick={() => { setStoryIndex((storyIndex - 1 + galleryImages.length) % galleryImages.length); setStoryProgress(0); }}
+            />
+            <div
+              className="absolute inset-y-0 left-0 w-1/3 z-10 cursor-pointer"
+              onClick={() => { setStoryIndex((storyIndex + 1) % galleryImages.length); setStoryProgress(0); }}
+            />
+
+            {/* Counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white/80 text-xs font-medium">
+              {storyIndex + 1} / {galleryImages.length}
             </div>
           </div>
         </div>
@@ -286,35 +304,6 @@ export default function VenueLanding() {
           </form>
         </div>
       </div>
-
-      {/* ═══════ LIGHTBOX ═══════ */}
-      {lightboxIndex !== null && galleryImages.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxIndex(null)}>
-          <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
-            className="absolute top-4 left-4 text-white/80 hover:text-white p-2 rounded-full bg-white/10 backdrop-blur-sm">
-            <X className="w-6 h-6" />
-          </button>
-          {galleryImages.length > 1 && (
-            <>
-              <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % galleryImages.length); }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 rounded-full bg-white/10 backdrop-blur-sm">
-                <ChevronRight className="w-7 h-7" />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + galleryImages.length) % galleryImages.length); }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 rounded-full bg-white/10 backdrop-blur-sm">
-                <ChevronLeft className="w-7 h-7" />
-              </button>
-            </>
-          )}
-          <img src={galleryImages[lightboxIndex]} alt="" className="max-w-full max-h-[85vh] rounded-2xl object-contain" onClick={(e) => e.stopPropagation()} />
-          <div className="absolute bottom-6 flex gap-2">
-            {galleryImages.map((_: string, i: number) => (
-              <button key={i} onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
-                className={`w-2.5 h-2.5 rounded-full transition-colors ${i === lightboxIndex ? "bg-white" : "bg-white/30"}`} />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ═══════ FOOTER ═══════ */}
       <div className="py-8 text-center">
