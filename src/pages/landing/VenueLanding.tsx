@@ -305,35 +305,6 @@ export default function VenueLanding() {
         </div>
       </div>
 
-      {/* ═══════ LIGHTBOX ═══════ */}
-      {lightboxIndex !== null && galleryImages.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightboxIndex(null)}>
-          <button onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
-            className="absolute top-4 left-4 text-white/80 hover:text-white p-2 rounded-full bg-white/10 backdrop-blur-sm">
-            <X className="w-6 h-6" />
-          </button>
-          {galleryImages.length > 1 && (
-            <>
-              <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % galleryImages.length); }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 rounded-full bg-white/10 backdrop-blur-sm">
-                <ChevronRight className="w-7 h-7" />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + galleryImages.length) % galleryImages.length); }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 rounded-full bg-white/10 backdrop-blur-sm">
-                <ChevronLeft className="w-7 h-7" />
-              </button>
-            </>
-          )}
-          <img src={galleryImages[lightboxIndex]} alt="" className="max-w-full max-h-[85vh] rounded-2xl object-contain" onClick={(e) => e.stopPropagation()} />
-          <div className="absolute bottom-6 flex gap-2">
-            {galleryImages.map((_: string, i: number) => (
-              <button key={i} onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
-                className={`w-2.5 h-2.5 rounded-full transition-colors ${i === lightboxIndex ? "bg-white" : "bg-white/30"}`} />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ═══════ FOOTER ═══════ */}
       <div className="py-8 text-center">
         <p className="text-gray-400 text-xs">
