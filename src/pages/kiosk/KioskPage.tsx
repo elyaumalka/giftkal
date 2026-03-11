@@ -172,13 +172,14 @@ export default function KioskPage() {
           </div>
         </div>
 
-        {/* Gift page iframe - full screen */}
-        <iframe
-          src={`/gift/${activeEvent.id}`}
-          className="w-full border-0"
-          style={{ height: "calc(100vh - 56px)" }}
-          title={`מתנה ל${eventTitle}`}
-        />
+        {/* Gift page iframe - mobile width, centered on tablet */}
+        <div className="flex justify-center" style={{ height: "calc(100vh - 56px)" }}>
+          <iframe
+            src={`/gift/${activeEvent.id}`}
+            className="border-0 w-full max-w-[430px] h-full"
+            title={`מתנה ל${eventTitle}`}
+          />
+        </div>
       </div>
     );
   }

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Heart, CreditCard, Check, ArrowLeft, Sparkles, Loader2, X } from "lucide-react";
+import { Gift, Heart, CreditCard, Check, ArrowLeft, ArrowRight, Sparkles, Loader2, X, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
@@ -29,6 +29,7 @@ const BLESSING_DESIGNS = [
 export default function GiftScreen() {
   const { eventId } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("amount");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
@@ -747,9 +748,16 @@ export default function GiftScreen() {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-6 text-sm text-[#5A4A2A]/60">
-          <p>מופעל על ידי Giftkal</p>
+        {/* Footer with back button */}
+        <div className="text-center mt-6 space-y-3">
+          <button
+            onClick={() => navigate(`/gift/${eventId}`)}
+            className="inline-flex items-center gap-2 text-[#C4A35A] hover:text-[#B4943A] font-medium text-sm transition-colors"
+          >
+            <ArrowRight className="w-4 h-4" />
+            חזרה למסך הראשי
+          </button>
+          <p className="text-sm text-[#5A4A2A]/60">מופעל על ידי Giftkal</p>
         </div>
       </div>
     </div>
