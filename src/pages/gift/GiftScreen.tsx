@@ -748,9 +748,16 @@ export default function GiftScreen() {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-6 text-sm text-[#5A4A2A]/60">
-          <p>מופעל על ידי Giftkal</p>
+        {/* Footer with back button */}
+        <div className="text-center mt-6 space-y-3">
+          <button
+            onClick={() => navigate(`/gift/${eventId}`)}
+            className="inline-flex items-center gap-2 text-[#C4A35A] hover:text-[#B4943A] font-medium text-sm transition-colors"
+          >
+            <ArrowRight className="w-4 h-4" />
+            חזרה למסך הראשי
+          </button>
+          <p className="text-sm text-[#5A4A2A]/60">מופעל על ידי Giftkal</p>
         </div>
       </div>
     </div>
