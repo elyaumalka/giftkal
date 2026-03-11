@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Building2, Monitor, Copy, Check, Pencil, Trash2, ExternalLink, Loader2, Link2, Unlink } from "lucide-react";
+import { Plus, Building2, Monitor, Copy, Check, Pencil, Trash2, ExternalLink, Loader2, Link2, Unlink, CalendarPlus, CalendarX2 } from "lucide-react";
 
 export default function VenueHalls() {
   const { toast } = useToast();
