@@ -261,6 +261,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         sellerPaymeId: paymeResult.seller_payme_id,
+        hfApiKey: paymeResult.uuid || null,
         message: 'Seller created successfully',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
