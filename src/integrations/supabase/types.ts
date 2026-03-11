@@ -230,6 +230,7 @@ export type Database = {
           groom_name: string | null
           groom_parents: string | null
           hall_id: string | null
+          hf_api_key: string | null
           id: string
           invitation_design_url: string | null
           invitation_notes: string | null
@@ -266,6 +267,7 @@ export type Database = {
           groom_name?: string | null
           groom_parents?: string | null
           hall_id?: string | null
+          hf_api_key?: string | null
           id?: string
           invitation_design_url?: string | null
           invitation_notes?: string | null
@@ -302,6 +304,7 @@ export type Database = {
           groom_name?: string | null
           groom_parents?: string | null
           hall_id?: string | null
+          hf_api_key?: string | null
           id?: string
           invitation_design_url?: string | null
           invitation_notes?: string | null
