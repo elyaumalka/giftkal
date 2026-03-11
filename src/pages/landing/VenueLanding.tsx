@@ -80,24 +80,23 @@ export default function VenueLanding() {
     setIsSubmitting(false);
   };
 
-  /* ── gallery auto-scroll ── */
+  /* ── stories auto-advance ── */
+  const STORY_DURATION = 4000; // ms per image
   useEffect(() => {
-    const el = galleryRef.current;
-    if (!el) return;
-    let raf: number;
-    let speed = 0.5;
-    const step = () => {
-      el.scrollLeft += speed;
-      if (el.scrollLeft >= el.scrollWidth - el.clientWidth) el.scrollLeft = 0;
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    const pause = () => cancelAnimationFrame(raf);
-    const resume = () => { raf = requestAnimationFrame(step); };
-    el.addEventListener("pointerenter", pause);
-    el.addEventListener("pointerleave", resume);
-    return () => { cancelAnimationFrame(raf); el.removeEventListener("pointerenter", pause); el.removeEventListener("pointerleave", resume); };
-  }, [venue]);
+    if (galleryImages.length === 0) return;
+    const interval = 30; // progress tick
+    let elapsed = 0;
+    const timer = setInterval(() => {
+      elapsed += interval;
+      setStoryProgress((elapsed / STORY_DURATION) * 100);
+      if (elapsed >= STORY_DURATION) {
+        elapsed = 0;
+        setStoryIndex((prev) => (prev + 1) % galleryImages.length);
+        setStoryProgress(0);
+      }
+    }, interval);
+    return () => clearInterval(timer);
+  }, [storyIndex, galleryImages.length]);
 
   if (isLoading) {
     return (
