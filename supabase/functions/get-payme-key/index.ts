@@ -1,28 +1,60 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const paymeClientKey = Deno.env.get('PAYME_CLIENT_KEY');
+    // Get eventId from query params or body
+    const url = new URL(req.url);
+    let eventId = url.searchParams.get('eventId');
+    
+    if (!eventId && req.method === 'POST') {
+      const body = await req.json();
+      eventId = body.eventId;
+    }
 
-    if (!paymeClientKey) {
+    if (!eventId) {
       return new Response(
-        JSON.stringify({ error: 'PayMe not configured' }),
+        JSON.stringify({ error: 'eventId is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Return the client key (this is safe - it's a public/publishable key for tokenization only)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get event's HF API key
+    const { data: event, error } = await supabase
+      .from('events')
+      .select('hf_api_key, seller_payme_id')
+      .eq('id', eventId)
+      .single();
+
+    if (error || !event) {
+      return new Response(
+        JSON.stringify({ error: 'Event not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!event.hf_api_key) {
+      return new Response(
+        JSON.stringify({ error: 'Payment not configured for this event' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ 
-        clientKey: paymeClientKey,
+        clientKey: event.hf_api_key,
         testMode: true, // Change to false for production
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
