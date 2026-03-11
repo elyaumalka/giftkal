@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Building2, Monitor, Copy, Check, Pencil, Trash2, ExternalLink, Loader2, Link2, Unlink } from "lucide-react";
+import { Plus, Building2, Monitor, Copy, Check, Pencil, Trash2, ExternalLink, Loader2, Link2, Unlink, CalendarPlus, CalendarX2 } from "lucide-react";
 
 export default function VenueHalls() {
   const { toast } = useToast();
@@ -24,6 +24,9 @@ export default function VenueHalls() {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkingHallId, setLinkingHallId] = useState<string | null>(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [eventLinkingHallId, setEventLinkingHallId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState("");
 
   // Get venue for current user
   useEffect(() => {
@@ -82,6 +85,23 @@ export default function VenueHalls() {
         .select("id, hall_id, groom_name, bride_name, event_type, event_date")
         .eq("venue_id", venueId)
         .eq("event_date", today);
+      return data || [];
+    },
+    enabled: !!venueId,
+  });
+
+  // Fetch unlinked events (no hall_id) for this venue
+  const { data: unlinkedEvents } = useQuery({
+    queryKey: ["venue-unlinked-events", venueId],
+    queryFn: async () => {
+      if (!venueId) return [];
+      const { data } = await supabase
+        .from("events")
+        .select("id, groom_name, bride_name, child_name, family_name, event_type, event_date")
+        .eq("venue_id", venueId)
+        .is("hall_id", null)
+        .gte("event_date", today)
+        .order("event_date");
       return data || [];
     },
     enabled: !!venueId,
@@ -163,6 +183,37 @@ export default function VenueHalls() {
     },
   });
 
+  // Link event to hall
+  const linkEventMutation = useMutation({
+    mutationFn: async ({ eventId, hallId }: { eventId: string; hallId: string }) => {
+      const { error } = await supabase.from("events").update({ hall_id: hallId }).eq("id", eventId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venue-halls"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-hall-events"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-unlinked-events"] });
+      setEventDialogOpen(false);
+      setSelectedEventId("");
+      toast({ title: "האירוע שויך לאולם" });
+    },
+    onError: () => toast({ title: "שגיאה בשיוך אירוע", variant: "destructive" }),
+  });
+
+  // Unlink event from hall
+  const unlinkEventMutation = useMutation({
+    mutationFn: async (eventId: string) => {
+      const { error } = await supabase.from("events").update({ hall_id: null }).eq("id", eventId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venue-halls"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-hall-events"] });
+      queryClient.invalidateQueries({ queryKey: ["venue-unlinked-events"] });
+      toast({ title: "האירוע נותק מהאולם" });
+    },
+  });
+
   const copyKioskLink = (hallId: string) => {
     const url = `${window.location.origin}/kiosk/${hallId}`;
     navigator.clipboard.writeText(url);
@@ -187,6 +238,19 @@ export default function VenueHalls() {
     setLinkingHallId(hallId);
     setSelectedDeviceId("");
     setLinkDialogOpen(true);
+  };
+
+  const openEventDialog = (hallId: string) => {
+    setEventLinkingHallId(hallId);
+    setSelectedEventId("");
+    setEventDialogOpen(true);
+  };
+
+  const getEventLabel = (event: any) => {
+    const name = event.event_type === "חתונה" || event.event_type === "אירוסין"
+      ? `${event.groom_name || ""} & ${event.bride_name || ""}`
+      : event.child_name || event.family_name || "";
+    return `${name} - ${event.event_date} (${event.event_type})`;
   };
 
   return (
@@ -283,6 +347,49 @@ export default function VenueHalls() {
         </DialogContent>
       </Dialog>
 
+      {/* Link Event Dialog */}
+      <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>שייך אירוע לאולם</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            {unlinkedEvents && unlinkedEvents.length > 0 ? (
+              <>
+                <div>
+                  <Label>בחר אירוע</Label>
+                  <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="בחר אירוע לשיוך" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unlinkedEvents.map((ev: any) => (
+                        <SelectItem key={ev.id} value={ev.id}>
+                          {getEventLabel(ev)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={() => eventLinkingHallId && selectedEventId && linkEventMutation.mutate({ eventId: selectedEventId, hallId: eventLinkingHallId })}
+                  disabled={!selectedEventId || linkEventMutation.isPending}
+                  className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl"
+                >
+                  {linkEventMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "שייך אירוע"}
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-4 space-y-2">
+                <CalendarX2 className="w-10 h-10 mx-auto text-gray-300" />
+                <p className="text-gray-500 text-sm">אין אירועים זמינים לשיוך</p>
+                <p className="text-gray-400 text-xs">כל האירועים כבר משויכים לאולמות</p>
+              </div>
+            )}
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+
       {/* Halls Grid */}
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -332,15 +439,35 @@ export default function VenueHalls() {
 
                   {/* Today's event */}
                   {hallEvent ? (
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-sm text-green-700 font-medium">
-                        אירוע פעיל: {hallEvent.groom_name} & {hallEvent.bride_name}
-                      </span>
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-sm text-green-700 font-medium">
+                          אירוע פעיל: {hallEvent.groom_name} & {hallEvent.bride_name}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => unlinkEventMutation.mutate(hallEvent.id)}
+                        title="נתק אירוע מאולם"
+                      >
+                        <CalendarX2 className="w-3 h-3 text-red-400" />
+                      </Button>
                     </div>
                   ) : (
-                    <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-400 text-center">
-                      אין אירוע היום
+                    <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
+                      <span className="text-sm text-gray-400">אין אירוע היום</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs gap-1 h-7 rounded-lg"
+                        onClick={() => openEventDialog(hall.id)}
+                      >
+                        <CalendarPlus className="w-3 h-3" />
+                        שייך אירוע
+                      </Button>
                     </div>
                   )}
 
