@@ -2,11 +2,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Gift, Heart, CreditCard, Check, ArrowLeft, ArrowRight, Sparkles, Loader2, X, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,13 +16,36 @@ const GIFT_AMOUNTS = [100, 200, 300, 500, 1000];
 
 type Step = "amount" | "details" | "blessing" | "card-payment" | "processing" | "success" | "failed";
 
-// Blessing card designs
 const BLESSING_DESIGNS = [
   { id: 1, name: "קלאסי זהב", bg: "from-[#FDF8E8] to-[#F5EDD6]", border: "border-[#C4A35A]", text: "text-[#5A4A2A]" },
   { id: 2, name: "רומנטי ורוד", bg: "from-[#FFF5F5] to-[#FDE8E8]", border: "border-[#E8B4BC]", text: "text-[#8B4B5B]" },
   { id: 3, name: "מודרני כחול", bg: "from-[#F0F4F8] to-[#E0E8F0]", border: "border-[#051839]", text: "text-[#051839]" },
   { id: 4, name: "אלגנטי ירוק", bg: "from-[#F0F5F0] to-[#E8F0E8]", border: "border-[#4A7C59]", text: "text-[#2D4A32]" },
 ];
+
+/* ── floating sparkle particles ── */
+function SparkleField() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
+      {Array.from({ length: 14 }).map((_, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: `${2 + Math.random() * 3}px`,
+            height: `${2 + Math.random() * 3}px`,
+            background: `hsl(${38 + Math.random() * 10}, 92%, ${55 + Math.random() * 20}%)`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animation: `sparkleFloat ${3 + Math.random() * 4}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 5}s`,
+            opacity: 0.4 + Math.random() * 0.5,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function GiftScreen() {
   const { eventId } = useParams();
@@ -47,212 +68,99 @@ export default function GiftScreen() {
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
 
-  // Check if returning from PayMe payment (fallback for popup blockers)
+  // Check if returning from PayMe payment
   useEffect(() => {
     const paymentStatus = searchParams.get('payment_status');
     const transactionId = searchParams.get('transaction_id');
-    
-    if (paymentStatus === 'success' && transactionId) {
-      setStep('success');
-    } else if (paymentStatus === 'failed') {
-      setPaymentError('התשלום נכשל. אנא נסו שוב.');
-      setStep('failed');
-    }
+    if (paymentStatus === 'success' && transactionId) setStep('success');
+    else if (paymentStatus === 'failed') { setPaymentError('התשלום נכשל. אנא נסו שוב.'); setStep('failed'); }
   }, [searchParams]);
 
-  // Fetch PayMe API key for Hosted Fields iframe
+  // Fetch PayMe API key
   useEffect(() => {
     const fetchPaymeKey = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('get-payme-key');
-        if (!error && data?.clientKey) {
-          setPaymeApiKey(data.clientKey);
-          setPaymeTestMode(data.testMode ?? true);
-        }
-      } catch (e) {
-        console.error('Failed to fetch PayMe key:', e);
-      }
+        if (!error && data?.clientKey) { setPaymeApiKey(data.clientKey); setPaymeTestMode(data.testMode ?? true); }
+      } catch (e) { console.error('Failed to fetch PayMe key:', e); }
     };
     fetchPaymeKey();
   }, []);
 
-  // Fetch event details
   const { data: event, isLoading } = useQuery({
     queryKey: ["event-public", eventId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
-        .select(`
-          *,
-          venues (name, address, logo_url, banner_url, phone, email)
-        `)
+        .select(`*, venues (name, address, logo_url, banner_url, phone, email)`)
         .eq("id", eventId)
         .maybeSingle();
-      
       if (error) throw error;
       return data;
     },
     enabled: !!eventId,
   });
 
-  // Save blessing card as image and upload to storage
+  // Save blessing card as image
   const saveBlessingAsImage = async (): Promise<string | null> => {
     if (!blessingCardRef.current) return null;
-    
     try {
-      // Public gift flow is usually anonymous; avoid direct storage upload when no authenticated user
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        console.log('[GiftScreen] Skipping blessing image upload for anonymous guest');
-        return null;
-      }
-
-      const canvas = await html2canvas(blessingCardRef.current, {
-        scale: 2,
-        backgroundColor: null,
-        useCORS: true,
-      });
-      
-      // Convert canvas to blob
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob((b) => resolve(b), "image/png", 0.95);
-      });
-      
+      if (!session?.user) { console.log('[GiftScreen] Skipping blessing image upload for anonymous guest'); return null; }
+      const canvas = await html2canvas(blessingCardRef.current, { scale: 2, backgroundColor: null, useCORS: true });
+      const blob = await new Promise<Blob | null>((resolve) => { canvas.toBlob((b) => resolve(b), "image/png", 0.95); });
       if (!blob) return null;
-      
-      // Generate unique filename - use only ASCII characters for Supabase Storage compatibility
-      const safePayerName = payerName
-        .replace(/[^\w\s-]/g, '') // Remove non-word characters except spaces and dashes
-        .replace(/\s+/g, '_')     // Replace spaces with underscores
-        .substring(0, 50)         // Limit length
-        || 'guest';               // Fallback if empty
+      const safePayerName = payerName.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_').substring(0, 50) || 'guest';
       const fileName = `blessings/${eventId}/${Date.now()}-${safePayerName}.png`;
-      
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .upload(fileName, blob, {
-          contentType: "image/png",
-          upsert: false,
-        });
-      
-      if (error) {
-        console.error("Error uploading blessing image:", error);
-        return null;
-      }
-      
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("documents")
-        .getPublicUrl(fileName);
-      
+      const { data, error } = await supabase.storage.from("documents").upload(fileName, blob, { contentType: "image/png", upsert: false });
+      if (error) { console.error("Error uploading blessing image:", error); return null; }
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(fileName);
       return urlData.publicUrl;
-    } catch (error) {
-      console.error("Error saving blessing card:", error);
-      return null;
-    }
+    } catch (error) { console.error("Error saving blessing card:", error); return null; }
   };
 
-  // Charge token via edge function after Hosted Fields tokenization
   const chargeToken = useMutation({
     mutationFn: async (token: string) => {
       const amount = selectedAmount || Number(customAmount);
       const response = await supabase.functions.invoke('payme-charge-token', {
-        body: {
-          token,
-          eventId,
-          amount,
-          payerName,
-          payerEmail: payerEmail || undefined,
-          payerPhone: payerPhone || undefined,
-          relationship: relationship || undefined,
-          blessing: blessing || undefined,
-          blessingImageUrl: blessingImageUrl || undefined,
-          installments: selectedInstallments,
-        },
+        body: { token, eventId, amount, payerName, payerEmail: payerEmail || undefined, payerPhone: payerPhone || undefined, relationship: relationship || undefined, blessing: blessing || undefined, blessingImageUrl: blessingImageUrl || undefined, installments: selectedInstallments },
       });
       if (response.error) throw new Error(response.error.message || 'שגיאה בביצוע התשלום');
       if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה בביצוע התשלום');
       return response.data;
     },
     onSuccess: () => setStep("success"),
-    onError: (error: Error) => {
-      setPaymentError(error.message);
-      setStep("failed");
-      toast({ title: "שגיאה", description: error.message, variant: "destructive" });
-    },
+    onError: (error: Error) => { setPaymentError(error.message); setStep("failed"); toast({ title: "שגיאה", description: error.message, variant: "destructive" }); },
   });
 
-  // Legacy transaction creation (for when PayMe is not configured)
   const createTransaction = useMutation({
     mutationFn: async () => {
       const imageUrl = await saveBlessingAsImage();
       const amount = selectedAmount || Number(customAmount);
-      const { error } = await supabase.from("transactions").insert({
-        event_id: eventId,
-        venue_id: event?.venue_id,
-        payer_name: payerName,
-        payer_email: payerEmail,
-        payer_phone: payerPhone,
-        amount,
-        relationship,
-        blessing_text: blessing,
-        receipt_url: imageUrl,
-        payment_status: 'completed',
-      });
+      const { error } = await supabase.from("transactions").insert({ event_id: eventId, venue_id: event?.venue_id, payer_name: payerName, payer_email: payerEmail, payer_phone: payerPhone, amount, relationship, blessing_text: blessing, receipt_url: imageUrl, payment_status: 'completed' });
       if (error) throw error;
     },
     onSuccess: () => setStep("success"),
-    onError: (error: Error) => {
-      toast({ title: "שגיאה", description: error.message, variant: "destructive" });
-    },
+    onError: (error: Error) => { toast({ title: "שגיאה", description: error.message, variant: "destructive" }); },
   });
 
   const finalAmount = selectedAmount || Number(customAmount);
 
-  const validateEmail = (email: string): boolean => {
-    if (!email) return true;
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const validatePhone = (phone: string): boolean => {
-    if (!phone) return true;
-    return /^[\d\-\+\(\)\s]{7,15}$/.test(phone);
-  };
+  const validateEmail = (email: string): boolean => { if (!email) return true; return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); };
+  const validatePhone = (phone: string): boolean => { if (!phone) return true; return /^[\d\-\+\(\)\s]{7,15}$/.test(phone); };
 
   const handleProceedToDetails = () => {
-    if (!finalAmount || finalAmount <= 0) {
-      toast({ title: "⚠️ סכום לא תקין", description: "יש לבחור סכום מתנה או להזין סכום גדול מ-0", variant: "destructive" });
-      return;
-    }
-    if (finalAmount < 10) {
-      toast({ title: "⚠️ סכום מינימלי", description: "סכום המתנה המינימלי הוא ₪10", variant: "destructive" });
-      return;
-    }
-    if (finalAmount > 100000) {
-      toast({ title: "⚠️ סכום חריג", description: "סכום המתנה המקסימלי הוא ₪100,000", variant: "destructive" });
-      return;
-    }
+    if (!finalAmount || finalAmount <= 0) { toast({ title: "⚠️ סכום לא תקין", description: "יש לבחור סכום מתנה או להזין סכום גדול מ-0", variant: "destructive" }); return; }
+    if (finalAmount < 10) { toast({ title: "⚠️ סכום מינימלי", description: "סכום המתנה המינימלי הוא ₪10", variant: "destructive" }); return; }
+    if (finalAmount > 100000) { toast({ title: "⚠️ סכום חריג", description: "סכום המתנה המקסימלי הוא ₪100,000", variant: "destructive" }); return; }
     setStep("details");
   };
 
   const handleProceedToBlessing = () => {
-    if (!payerName.trim()) {
-      toast({ title: "⚠️ שם חסר", description: "יש להזין שם מלא כדי להמשיך", variant: "destructive" });
-      return;
-    }
-    if (payerName.trim().length < 2) {
-      toast({ title: "⚠️ שם קצר מדי", description: "יש להזין שם מלא (לפחות 2 תווים)", variant: "destructive" });
-      return;
-    }
-    if (payerEmail && !validateEmail(payerEmail)) {
-      toast({ title: "⚠️ כתובת מייל לא תקינה", description: "יש להזין כתובת מייל תקינה, לדוגמה: name@email.com", variant: "destructive" });
-      return;
-    }
-    if (payerPhone && !validatePhone(payerPhone)) {
-      toast({ title: "⚠️ מספר טלפון לא תקין", description: "יש להזין מספר טלפון תקין (7-15 ספרות)", variant: "destructive" });
-      return;
-    }
+    if (!payerName.trim()) { toast({ title: "⚠️ שם חסר", description: "יש להזין שם מלא כדי להמשיך", variant: "destructive" }); return; }
+    if (payerName.trim().length < 2) { toast({ title: "⚠️ שם קצר מדי", description: "יש להזין שם מלא (לפחות 2 תווים)", variant: "destructive" }); return; }
+    if (payerEmail && !validateEmail(payerEmail)) { toast({ title: "⚠️ כתובת מייל לא תקינה", description: "יש להזין כתובת מייל תקינה", variant: "destructive" }); return; }
+    if (payerPhone && !validatePhone(payerPhone)) { toast({ title: "⚠️ מספר טלפון לא תקין", description: "יש להזין מספר טלפון תקין", variant: "destructive" }); return; }
     setStep("blessing");
   };
 
@@ -260,144 +168,134 @@ export default function GiftScreen() {
     setStep("processing");
     const imageUrl = await saveBlessingAsImage();
     setBlessingImageUrl(imageUrl);
-    
-    if (event?.seller_payme_id && paymeApiKey) {
-      setStep("card-payment");
-    } else if (event?.seller_payme_id) {
-      toast({ title: "שגיאה", description: "מערכת התשלום לא זמינה כרגע", variant: "destructive" });
-      setStep("blessing");
-    } else {
-      createTransaction.mutate();
-    }
+    if (event?.seller_payme_id && paymeApiKey) { setStep("card-payment"); }
+    else if (event?.seller_payme_id) { toast({ title: "שגיאה", description: "מערכת התשלום לא זמינה כרגע", variant: "destructive" }); setStep("blessing"); }
+    else { createTransaction.mutate(); }
   };
 
-  const handleTokenize = (token: string) => {
-    setStep("processing");
-    chargeToken.mutate(token);
-  };
+  const handleTokenize = (token: string) => { setStep("processing"); chargeToken.mutate(token); };
+  const handlePaymentError = (error: string) => { setPaymentError(error); };
 
-  const handlePaymentError = (error: string) => {
-    setPaymentError(error);
-  };
+  const bannerUrl = (event?.venues as any)?.banner_url || "/landing/hero-banquet.png";
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FDF8E8] to-[#F5EDD6] flex items-center justify-center">
-        <div className="animate-pulse text-center">
-          <Sparkles className="w-12 h-12 text-[#C4A35A] mx-auto mb-4 animate-spin" />
-          <p className="text-[#5A4A2A] font-medium">טוען...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-[#051839]">
+        <Loader2 className="w-10 h-10 animate-spin text-[#C4A35A]" />
       </div>
     );
   }
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FDF8E8] to-[#F5EDD6] flex items-center justify-center p-4">
-        <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl">
-          <Gift className="w-16 h-16 text-[#C4A35A] mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-[#051839] mb-2">האירוע לא נמצא</h1>
-          <p className="text-[#5A4A2A]">נא לבדוק את הקישור ולנסות שוב</p>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839]" dir="rtl">
+        <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">😕</span></div>
+        <h1 className="text-2xl font-bold text-white">האירוע לא נמצא</h1>
+        <p className="text-white/50">נא לבדוק את הקישור ולנסות שוב</p>
       </div>
     );
   }
 
   const eventDate = new Date(event.event_date);
-  const formattedDate = eventDate.toLocaleDateString("he-IL", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = eventDate.toLocaleDateString("he-IL", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  const stepTitles: Record<string, string> = {
+    amount: "בחרו סכום מתנה",
+    details: "פרטי השולח",
+    blessing: "כתבו ברכה",
+    "card-payment": "תשלום מאובטח",
+    processing: "מעבד...",
+    success: "תודה רבה!",
+    failed: "התשלום נכשל",
+  };
+
+  const stepNumber = step === "amount" ? 1 : step === "details" ? 2 : step === "blessing" ? 3 : step === "card-payment" ? 4 : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FDF8E8] via-white to-[#F5EDD6]" dir="rtl">
-      {/* Decorative Elements */}
-      <div className="fixed top-0 left-0 w-64 h-64 bg-[#C4A35A]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-      <div className="fixed bottom-0 right-0 w-96 h-96 bg-[#E8B4BC]/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-      
-      {/* Header with Logos */}
-      <div className="relative">
-        {/* Banner Background */}
-        <div 
-          className="h-56 relative overflow-hidden"
-          style={{
-            background: event.venues?.banner_url 
-              ? `url(${event.venues.banner_url}) center/cover` 
-              : "linear-gradient(135deg, #051839 0%, #0A2F5C 50%, #051839 100%)",
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-          
-          {/* Back button */}
-            <button
-              onClick={() => navigate(`/gift/${eventId}`)}
-              className="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg hover:bg-white transition-colors"
-              aria-label="חזרה למסך הראשי"
-            >
-              <ArrowRight className="w-5 h-5 text-[#051839]" />
-            </button>
+    <div className="min-h-screen flex flex-col relative overflow-hidden" dir="rtl">
+      {/* ── Immersive Background ── */}
+      <div className="absolute inset-0 z-0">
+        <img src={bannerUrl} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0" style={{
+          background: "linear-gradient(180deg, rgba(5,24,57,0.4) 0%, rgba(5,24,57,0.85) 25%, rgba(5,24,57,0.97) 50%, rgba(5,24,57,1) 70%)"
+        }} />
+      </div>
 
-            {/* Logos Row */}
-            <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-6 pr-16">
-              {/* Giftkal Logo */}
-              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-2 shadow-lg">
-                <img src={logo} alt="Giftkal" className="h-10 w-auto" />
-              </div>
-            
-            {/* Venue Logo */}
-            {event.venues?.logo_url && (
-              <div className="bg-white/95 backdrop-blur-sm rounded-xl p-2 shadow-lg">
-                <img src={event.venues.logo_url} alt={event.venues.name} className="h-10 w-auto" />
-              </div>
-            )}
-          </div>
-          
-          {/* Event Info - Centered */}
-          <div className="absolute bottom-0 left-0 right-0 text-center text-white pb-6">
-            <div className="inline-block bg-[#C4A35A] px-4 py-1 rounded-full text-sm font-medium mb-3">
-              {event.event_type}
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg">
-              {event.groom_name} <span className="text-[#C4A35A]">♥</span> {event.bride_name}
-            </h1>
-            <p className="text-white/90 text-lg">{formattedDate}</p>
-            {event.venues?.name && (
-              <p className="text-white/70 text-sm mt-1">{event.venues.name}</p>
-            )}
-          </div>
+      <SparkleField />
+
+      {/* ── Top Bar ── */}
+      <div className="relative z-20 flex items-center justify-between px-4 pt-5 pb-2">
+        <button
+          onClick={() => navigate(`/gift/${eventId}`)}
+          className="bg-white/10 backdrop-blur-sm rounded-full p-2.5 hover:bg-white/20 transition-colors border border-white/10"
+        >
+          <ArrowRight className="w-5 h-5 text-white" />
+        </button>
+
+        <div className="flex items-center gap-3">
+          {(event.venues as any)?.logo_url && (
+            <img src={(event.venues as any).logo_url} alt="" className="w-9 h-9 rounded-full border border-[#C4A35A]/40 object-cover" />
+          )}
+          <img src={logo} alt="Giftkal" className="h-6 w-auto brightness-0 invert opacity-60" />
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-lg mx-auto px-4 -mt-6 pb-12 relative z-10">
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
-          
-          {/* Step: Amount Selection */}
+      {/* ── Event Header (compact) ── */}
+      <div className="relative z-20 text-center px-4 pb-4">
+        <p className="text-[#C4A35A]/70 text-xs font-medium tracking-widest uppercase">{event.event_type}</p>
+        <h1 className="text-2xl font-extrabold mt-1" style={{
+          background: "linear-gradient(135deg, #C4A35A 0%, #E8D5A3 50%, #C4A35A 100%)",
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+        }}>
+          {event.groom_name} {event.bride_name ? `& ${event.bride_name}` : event.child_name || event.family_name || ""}
+        </h1>
+        <p className="text-white/40 text-xs mt-1">{formattedDate}</p>
+      </div>
+
+      {/* ── Step Progress ── */}
+      {stepNumber > 0 && (
+        <div className="relative z-20 px-6 pb-4">
+          <div className="flex gap-1.5">
+            {[1, 2, 3, 4].map((s) => (
+              <div key={s} className="flex-1 h-1 rounded-full overflow-hidden bg-white/10">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: s < stepNumber ? "100%" : s === stepNumber ? "50%" : "0%",
+                    background: s <= stepNumber ? "linear-gradient(90deg, #C4A35A, #E8D5A3)" : "transparent",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Main Card ── */}
+      <div className="relative z-20 flex-1 flex flex-col px-4 pb-6">
+        <div className="bg-white/[0.07] backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex-1 flex flex-col">
+
+          {/* Step: Amount */}
           {step === "amount" && (
-            <div className="p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="p-6 space-y-5 animate-fade-in flex-1 flex flex-col">
               <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#C4A35A] to-[#D4B36A] flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Gift className="w-8 h-8 text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#C4A35A] to-[#E8D5A3] flex items-center justify-center mx-auto mb-3 shadow-lg">
+                  <Gift className="w-7 h-7 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-[#051839]">בחרו סכום מתנה</h2>
-                <p className="text-[#5A4A2A] mt-1">כמה תרצו להעניק לזוג המאושר?</p>
+                <h2 className="text-2xl font-bold text-white">בחרו סכום מתנה</h2>
+                <p className="text-white/40 mt-1 text-sm">כמה תרצו להעניק?</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2.5">
                 {GIFT_AMOUNTS.map((amount) => (
                   <button
                     key={amount}
-                    onClick={() => {
-                      setSelectedAmount(amount);
-                      setCustomAmount("");
-                    }}
+                    onClick={() => { setSelectedAmount(amount); setCustomAmount(""); }}
                     className={cn(
-                      "relative py-4 px-3 rounded-xl font-bold text-lg transition-all duration-300 border-2",
+                      "relative py-4 px-3 rounded-xl font-bold text-lg transition-all duration-300 border",
                       selectedAmount === amount
-                        ? "bg-gradient-to-br from-[#C4A35A] to-[#D4B36A] text-white border-[#C4A35A] shadow-lg scale-105"
-                        : "bg-white border-gray-200 text-[#051839] hover:border-[#C4A35A] hover:shadow-md"
+                        ? "bg-gradient-to-br from-[#C4A35A] to-[#E8D5A3] text-white border-[#C4A35A] shadow-lg shadow-[#C4A35A]/20 scale-105"
+                        : "bg-white/5 border-white/15 text-white/80 hover:border-[#C4A35A]/50 hover:bg-white/10"
                     )}
                   >
                     ₪{amount}
@@ -409,217 +307,157 @@ export default function GiftScreen() {
                   </button>
                 ))}
               </div>
-              
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-white px-4 text-sm text-[#5A4A2A]">או סכום אחר</span>
-                </div>
+
+              <div className="relative flex items-center gap-3">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-white/30 text-xs">או סכום אחר</span>
+                <div className="flex-1 h-px bg-white/10" />
               </div>
-              
+
               <div className="relative">
                 <Input
                   type="number"
                   placeholder="הזינו סכום..."
                   value={customAmount}
-                  onChange={(e) => {
-                    setCustomAmount(e.target.value);
-                    setSelectedAmount(null);
-                  }}
-                  className="text-center text-xl font-bold h-14 rounded-xl border-2 border-gray-200 focus:border-[#C4A35A] pr-12"
+                  onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
+                  className="text-center text-xl font-bold h-14 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A] pr-12"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#C4A35A] font-bold text-xl">₪</span>
               </div>
 
-              <Button
-                className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white shadow-lg"
+              <div className="flex-1" />
+
+              <button
                 onClick={handleProceedToDetails}
+                className="w-full relative overflow-hidden group py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 shadow-2xl active:scale-[0.97] transition-transform"
+                style={{ background: "linear-gradient(135deg, #C41E3A 0%, #E8344E 50%, #C41E3A 100%)", boxShadow: "0 8px 32px rgba(196,30,58,0.35)" }}
               >
-                המשך
-                <ArrowLeft className="w-5 h-5 mr-2" />
-              </Button>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <span className="relative z-10">המשך</span>
+                <ArrowLeft className="w-5 h-5 relative z-10" />
+              </button>
             </div>
           )}
 
-          {/* Step: Payer Details */}
+          {/* Step: Details */}
           {step === "details" && (
-            <div className="p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="p-6 space-y-5 animate-fade-in flex-1 flex flex-col">
               <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#051839] to-[#0A2F5C] flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Heart className="w-8 h-8 text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#051839] to-[#1a3a6c] flex items-center justify-center mx-auto mb-3 shadow-lg border border-white/10">
+                  <Heart className="w-7 h-7 text-[#C4A35A]" />
                 </div>
-                <h2 className="text-2xl font-bold text-[#051839]">פרטי השולח</h2>
-                <div className="inline-block bg-[#C4A35A]/10 px-4 py-2 rounded-full mt-2">
-                  <span className="text-[#5A4A2A]">סכום המתנה: </span>
-                  <span className="font-bold text-[#C4A35A] text-xl">₪{finalAmount}</span>
+                <h2 className="text-2xl font-bold text-white">פרטי השולח</h2>
+                <div className="inline-block bg-[#C4A35A]/10 px-4 py-1.5 rounded-full mt-2 border border-[#C4A35A]/20">
+                  <span className="text-white/50 text-sm">סכום: </span>
+                  <span className="font-bold text-[#C4A35A] text-lg">₪{finalAmount}</span>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 <div>
-                  <Label className="text-[#051839] font-medium">שם מלא *</Label>
-                  <Input
-                    value={payerName}
-                    onChange={(e) => setPayerName(e.target.value)}
-                    placeholder="ישראל ישראלי"
-                    className="mt-1 h-12 rounded-xl border-2 border-gray-200 focus:border-[#C4A35A]"
-                    required
-                  />
+                  <Label className="text-white/70 font-medium text-sm">שם מלא *</Label>
+                  <Input value={payerName} onChange={(e) => setPayerName(e.target.value)} placeholder="ישראל ישראלי"
+                    className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-[#051839] font-medium">טלפון</Label>
-                    <Input
-                      type="tel"
-                      value={payerPhone}
-                      onChange={(e) => setPayerPhone(e.target.value)}
-                      placeholder="050-1234567"
-                      className="mt-1 h-12 rounded-xl border-2 border-gray-200 focus:border-[#C4A35A]"
-                    />
+                    <Label className="text-white/70 font-medium text-sm">טלפון</Label>
+                    <Input type="tel" value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} placeholder="050-1234567"
+                      className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
                   </div>
                   <div>
-                    <Label className="text-[#051839] font-medium">קרבה</Label>
-                    <Input
-                      value={relationship}
-                      onChange={(e) => setRelationship(e.target.value)}
-                      placeholder="חבר, דוד..."
-                      className="mt-1 h-12 rounded-xl border-2 border-gray-200 focus:border-[#C4A35A]"
-                    />
+                    <Label className="text-white/70 font-medium text-sm">קרבה</Label>
+                    <Input value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="חבר, דוד..."
+                      className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-[#051839] font-medium">מייל (לקבלה)</Label>
-                  <Input
-                    type="email"
-                    value={payerEmail}
-                    onChange={(e) => setPayerEmail(e.target.value)}
-                    placeholder="example@email.com"
-                    className="mt-1 h-12 rounded-xl border-2 border-gray-200 focus:border-[#C4A35A]"
-                  />
+                  <Label className="text-white/70 font-medium text-sm">מייל (לקבלה)</Label>
+                  <Input type="email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="example@email.com"
+                    className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
                 </div>
 
-                {/* Installments Selection */}
                 <div>
-                  <Label className="text-[#051839] font-medium">מספר תשלומים</Label>
+                  <Label className="text-white/70 font-medium text-sm">מספר תשלומים</Label>
                   <div className="grid grid-cols-5 gap-2 mt-2">
                     {[1, 2, 3, 4, 5].map((num) => (
-                      <button
-                        key={num}
-                        type="button"
-                        onClick={() => setSelectedInstallments(num)}
+                      <button key={num} type="button" onClick={() => setSelectedInstallments(num)}
                         className={cn(
-                          "py-3 rounded-xl font-bold text-lg transition-all duration-200 border-2",
+                          "py-3 rounded-xl font-bold text-lg transition-all duration-200 border",
                           selectedInstallments === num
-                            ? "bg-gradient-to-br from-[#C4A35A] to-[#D4B36A] text-white border-[#C4A35A] shadow-md"
-                            : "bg-white border-gray-200 text-[#051839] hover:border-[#C4A35A]"
-                        )}
-                      >
+                            ? "bg-gradient-to-br from-[#C4A35A] to-[#E8D5A3] text-white border-[#C4A35A] shadow-md"
+                            : "bg-white/5 border-white/15 text-white/60 hover:border-[#C4A35A]/50"
+                        )}>
                         {num}
                       </button>
                     ))}
                   </div>
                   {selectedInstallments > 1 && (
-                    <p className="text-sm text-gray-500 mt-2 text-center">
+                    <p className="text-sm text-white/40 mt-2 text-center">
                       {selectedInstallments} תשלומים של ₪{Math.ceil(finalAmount / selectedInstallments).toLocaleString()}
                     </p>
                   )}
                 </div>
               </div>
 
+              <div className="flex-1" />
+
               <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep("amount")}
-                  className="flex-1 h-12 rounded-xl border-2"
-                >
+                <button onClick={() => setStep("amount")}
+                  className="flex-1 h-12 rounded-xl border border-white/15 text-white/60 font-medium hover:bg-white/5 transition-colors">
                   חזרה
-                </Button>
-                <Button
-                  onClick={handleProceedToBlessing}
-                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
-                >
+                </button>
+                <button onClick={handleProceedToBlessing}
+                  className="flex-1 h-12 rounded-xl font-bold text-white"
+                  style={{ background: "linear-gradient(135deg, #C41E3A 0%, #E8344E 50%, #C41E3A 100%)" }}>
                   המשך לברכה
-                </Button>
+                </button>
               </div>
             </div>
           )}
 
           {/* Step: Blessing Card */}
           {step === "blessing" && (
-            <div className="p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="p-6 space-y-5 animate-fade-in flex-1 flex flex-col">
               <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E8B4BC] to-[#D4A5AD] flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Heart className="w-8 h-8 text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#E8B4BC] to-[#D4A5AD] flex items-center justify-center mx-auto mb-3 shadow-lg">
+                  <Heart className="w-7 h-7 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-[#051839]">כתבו ברכה לזוג</h2>
-                <p className="text-[#5A4A2A] mt-1">הברכה תישמר כתמונה יפה</p>
+                <h2 className="text-2xl font-bold text-white">כתבו ברכה לזוג</h2>
+                <p className="text-white/40 mt-1 text-sm">הברכה תישמר כתמונה יפה</p>
               </div>
 
               {/* Design Selection */}
               <div className="flex justify-center gap-2">
                 {BLESSING_DESIGNS.map((design) => (
-                  <button
-                    key={design.id}
-                    onClick={() => setSelectedDesign(design)}
+                  <button key={design.id} onClick={() => setSelectedDesign(design)}
                     className={cn(
-                      "w-12 h-12 rounded-xl border-2 bg-gradient-to-br transition-all",
-                      design.bg,
-                      selectedDesign.id === design.id 
-                        ? "border-[#C4A35A] ring-2 ring-[#C4A35A]/30 scale-110" 
-                        : "border-gray-200"
-                    )}
-                    title={design.name}
-                  />
+                      "w-10 h-10 rounded-xl border-2 bg-gradient-to-br transition-all", design.bg,
+                      selectedDesign.id === design.id ? "border-[#C4A35A] ring-2 ring-[#C4A35A]/30 scale-110" : "border-white/20"
+                    )} title={design.name} />
                 ))}
               </div>
 
               {/* Blessing Card Preview */}
-              <div 
-                ref={blessingCardRef}
-                className={cn(
-                  "relative p-6 rounded-2xl border-2 bg-gradient-to-br min-h-[300px] flex flex-col",
-                  selectedDesign.bg,
-                  selectedDesign.border
-                )}
-              >
-                {/* Card Header */}
-                <div className="text-center mb-4">
+              <div ref={blessingCardRef}
+                className={cn("relative p-6 rounded-2xl border-2 bg-gradient-to-br min-h-[280px] flex flex-col", selectedDesign.bg, selectedDesign.border)}>
+                <div className="text-center mb-3">
                   <p className={cn("text-sm font-medium", selectedDesign.text)}>ברכה ל</p>
-                  <h3 className={cn("text-xl font-bold", selectedDesign.text)}>
-                    {event.groom_name} & {event.bride_name}
-                  </h3>
+                  <h3 className={cn("text-xl font-bold", selectedDesign.text)}>{event.groom_name} & {event.bride_name}</h3>
                 </div>
-
-                {/* Decorative Divider */}
-                <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="flex items-center justify-center gap-2 mb-3">
                   <div className={cn("h-px w-12", selectedDesign.border.replace("border-", "bg-"))} />
                   <Heart className={cn("w-4 h-4", selectedDesign.text)} />
                   <div className={cn("h-px w-12", selectedDesign.border.replace("border-", "bg-"))} />
                 </div>
-
-                {/* Blessing Text Area */}
-                <Textarea
-                  value={blessing}
-                  onChange={(e) => setBlessing(e.target.value)}
+                <Textarea value={blessing} onChange={(e) => setBlessing(e.target.value)}
                   placeholder="מזל טוב! מאחלים לכם חיים מאושרים מלאים באהבה, שמחה והצלחה..."
-                  className={cn(
-                    "flex-1 bg-transparent border-0 text-center text-lg resize-none focus:ring-0 placeholder:opacity-50",
-                    selectedDesign.text
-                  )}
-                  rows={6}
-                />
-
-                {/* Card Footer */}
-                <div className={cn("text-center mt-4 pt-4 border-t", selectedDesign.border)}>
+                  className={cn("flex-1 bg-transparent border-0 text-center text-lg resize-none focus:ring-0 placeholder:opacity-50", selectedDesign.text)}
+                  rows={5} />
+                <div className={cn("text-center mt-3 pt-3 border-t", selectedDesign.border)}>
                   <p className={cn("font-bold", selectedDesign.text)}>{payerName}</p>
-                  {relationship && (
-                    <p className={cn("text-sm opacity-70", selectedDesign.text)}>{relationship}</p>
-                  )}
+                  {relationship && <p className={cn("text-sm opacity-70", selectedDesign.text)}>{relationship}</p>}
                 </div>
-
-                {/* Corner Decorations */}
                 <div className={cn("absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 rounded-tr-lg", selectedDesign.border)} />
                 <div className={cn("absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 rounded-tl-lg", selectedDesign.border)} />
                 <div className={cn("absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 rounded-br-lg", selectedDesign.border)} />
@@ -627,148 +465,122 @@ export default function GiftScreen() {
               </div>
 
               <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep("details")}
-                  className="flex-1 h-12 rounded-xl border-2"
-                >
+                <button onClick={() => setStep("details")}
+                  className="flex-1 h-12 rounded-xl border border-white/15 text-white/60 font-medium hover:bg-white/5 transition-colors">
                   חזרה
-                </Button>
-                <Button
-                  onClick={handleProceedToPayment}
-                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
-                  disabled={createTransaction.isPending}
-                >
+                </button>
+                <button onClick={handleProceedToPayment} disabled={createTransaction.isPending}
+                  className="flex-1 h-12 rounded-xl font-bold text-white disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg, #C41E3A 0%, #E8344E 50%, #C41E3A 100%)" }}>
                   {event?.seller_payme_id ? `שלם ₪${finalAmount}` : "שלח ברכה"}
-                </Button>
+                </button>
               </div>
             </div>
           )}
 
-          {/* Step: Card Payment with Hosted Fields in isolated iframe */}
+          {/* Step: Card Payment */}
           {step === "card-payment" && paymeApiKey && (
-            <div className="p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className="p-6 space-y-5 animate-fade-in">
               <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#051839] to-[#0A2F5C] flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <CreditCard className="w-8 h-8 text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#051839] to-[#1a3a6c] flex items-center justify-center mx-auto mb-3 shadow-lg border border-white/10">
+                  <CreditCard className="w-7 h-7 text-[#C4A35A]" />
                 </div>
-                <h2 className="text-2xl font-bold text-[#051839]">תשלום מאובטח</h2>
-                <div className="inline-block bg-[#C4A35A]/10 px-4 py-2 rounded-full mt-2">
-                  <span className="text-[#5A4A2A]">סכום לתשלום: </span>
-                  <span className="font-bold text-[#C4A35A] text-xl">₪{finalAmount}</span>
+                <h2 className="text-2xl font-bold text-white">תשלום מאובטח</h2>
+                <div className="inline-block bg-[#C4A35A]/10 px-4 py-1.5 rounded-full mt-2 border border-[#C4A35A]/20">
+                  <span className="text-white/50 text-sm">סכום: </span>
+                  <span className="font-bold text-[#C4A35A] text-lg">₪{finalAmount}</span>
                 </div>
               </div>
 
-              <PayMeIframe
-                apiKey={paymeApiKey}
-                testMode={paymeTestMode}
-                amount={finalAmount}
-                payerName={payerName}
-                payerEmail={payerEmail}
-                payerPhone={payerPhone}
-                productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
-                onTokenize={handleTokenize}
-                onError={handlePaymentError}
-                disabled={chargeToken.isPending}
-              />
+              <PayMeIframe apiKey={paymeApiKey} testMode={paymeTestMode} amount={finalAmount} payerName={payerName}
+                payerEmail={payerEmail} payerPhone={payerPhone} productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
+                onTokenize={handleTokenize} onError={handlePaymentError} disabled={chargeToken.isPending} />
 
-              <Button
-                variant="outline"
-                onClick={() => setStep("blessing")}
-                className="w-full h-12 rounded-xl border-2"
-                disabled={chargeToken.isPending}
-              >
+              <button onClick={() => setStep("blessing")} disabled={chargeToken.isPending}
+                className="w-full h-12 rounded-xl border border-white/15 text-white/60 font-medium hover:bg-white/5 transition-colors disabled:opacity-50">
                 חזרה
-              </Button>
+              </button>
             </div>
           )}
 
-          {/* Step: Processing Payment */}
+          {/* Step: Processing */}
           {step === "processing" && (
-            <div className="p-6 md:p-8 space-y-6 animate-fade-in text-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#C4A35A] to-[#D4B36A] flex items-center justify-center mx-auto shadow-xl">
-                <Loader2 className="w-12 h-12 text-white animate-spin" />
+            <div className="p-8 space-y-6 animate-fade-in text-center flex-1 flex flex-col items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#C4A35A] to-[#E8D5A3] flex items-center justify-center shadow-xl shadow-[#C4A35A]/20">
+                <Loader2 className="w-10 h-10 text-white animate-spin" />
               </div>
-              
               <div>
-                <h2 className="text-2xl font-bold text-[#051839]">מעבד...</h2>
-                <p className="text-[#5A4A2A] mt-2">
-                  שומר את הברכה שלכם
-                </p>
+                <h2 className="text-2xl font-bold text-white">מעבד...</h2>
+                <p className="text-white/40 mt-2">שומר את הברכה שלכם</p>
               </div>
             </div>
           )}
 
-          {/* Step: Payment Failed */}
+          {/* Step: Failed */}
           {step === "failed" && (
-            <div className="p-6 md:p-8 space-y-6 animate-fade-in text-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center mx-auto shadow-xl">
-                <span className="text-4xl text-white">✕</span>
+            <div className="p-8 space-y-6 animate-fade-in text-center flex-1 flex flex-col items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-xl shadow-red-500/20">
+                <span className="text-3xl text-white">✕</span>
               </div>
-              
               <div>
-                <h2 className="text-2xl font-bold text-[#051839]">התשלום נכשל</h2>
-                <p className="text-[#5A4A2A] mt-2">
-                  {paymentError || 'אירעה שגיאה בעיבוד התשלום'}
-                </p>
+                <h2 className="text-2xl font-bold text-white">התשלום נכשל</h2>
+                <p className="text-white/40 mt-2">{paymentError || 'אירעה שגיאה בעיבוד התשלום'}</p>
               </div>
-
-              <Button
-                onClick={() => setStep("card-payment")}
-                className="w-full h-12 rounded-xl bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] hover:from-[#B4943A] hover:to-[#C4A35A] text-white font-bold"
-              >
+              <button onClick={() => setStep("card-payment")}
+                className="w-full h-12 rounded-xl font-bold text-white"
+                style={{ background: "linear-gradient(135deg, #C41E3A 0%, #E8344E 50%, #C41E3A 100%)" }}>
                 נסה שוב
-              </Button>
+              </button>
             </div>
           )}
 
           {/* Step: Success */}
           {step === "success" && (
-            <div className="p-6 md:p-8 space-y-6 animate-fade-in text-center">
+            <div className="p-8 space-y-6 animate-fade-in text-center flex-1 flex flex-col items-center justify-center">
               <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mx-auto shadow-xl">
-                  <Check className="w-12 h-12 text-white" />
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-xl shadow-green-500/20">
+                  <Check className="w-10 h-10 text-white" />
                 </div>
-                <Sparkles className="absolute top-0 right-1/4 w-6 h-6 text-[#C4A35A] animate-pulse" />
-                <Sparkles className="absolute bottom-0 left-1/4 w-4 h-4 text-[#E8B4BC] animate-pulse delay-150" />
+                <Sparkles className="absolute top-0 right-0 w-5 h-5 text-[#C4A35A] animate-pulse" />
+                <Sparkles className="absolute bottom-0 left-0 w-4 h-4 text-[#E8B4BC] animate-pulse delay-150" />
               </div>
-              
+
               <div>
-                <h2 className="text-3xl font-bold text-[#051839]">תודה רבה!</h2>
-                <p className="text-[#5A4A2A] mt-2 text-lg">
-                  המתנה והברכה נשלחו בהצלחה
-                </p>
-                <p className="text-[#5A4A2A]/70">
-                  ל{event?.groom_name} ו{event?.bride_name}
-                </p>
+                <h2 className="text-3xl font-bold text-white">תודה רבה!</h2>
+                <p className="text-white/60 mt-2 text-lg">המתנה והברכה נשלחו בהצלחה</p>
+                <p className="text-white/30 text-sm mt-1">ל{event?.groom_name} ו{event?.bride_name}</p>
               </div>
-              
-              <div className="bg-gradient-to-br from-[#C4A35A]/10 to-[#D4B36A]/10 p-6 rounded-2xl border border-[#C4A35A]/20">
-                <p className="text-sm text-[#5A4A2A]">סכום המתנה</p>
+
+              <div className="bg-white/5 backdrop-blur-sm p-5 rounded-2xl border border-[#C4A35A]/20 w-full">
+                <p className="text-sm text-white/40">סכום המתנה</p>
                 <p className="text-4xl font-bold text-[#C4A35A] mt-1">₪{finalAmount || searchParams.get('amount') || ''}</p>
               </div>
 
-              <div className="pt-4">
-                <p className="text-sm text-[#5A4A2A]/60">
-                  מזל טוב! 🎉
-                </p>
-              </div>
+              <p className="text-white/30 text-sm">מזל טוב! 🎉</p>
             </div>
           )}
         </div>
 
-        {/* Footer with back button */}
-        <div className="text-center mt-6 space-y-3">
-          <button
-            onClick={() => navigate(`/gift/${eventId}`)}
-            className="inline-flex items-center gap-2 text-[#C4A35A] hover:text-[#B4943A] font-medium text-sm transition-colors"
-          >
-            <ArrowRight className="w-4 h-4" />
+        {/* Footer */}
+        <div className="text-center mt-5 space-y-2">
+          <button onClick={() => navigate(`/gift/${eventId}`)}
+            className="inline-flex items-center gap-2 text-white/30 hover:text-white/50 font-medium text-xs transition-colors">
+            <ArrowRight className="w-3.5 h-3.5" />
             חזרה למסך הראשי
           </button>
-          <p className="text-sm text-[#5A4A2A]/60">מופעל על ידי Giftkal</p>
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-white/20 text-[10px]">Powered by</span>
+            <img src={logo} alt="Giftkal" className="h-3 w-auto opacity-15" />
+          </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes sparkleFloat {
+          0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+          50% { transform: translateY(-20px) scale(1.5); opacity: 0.8; }
+        }
+      `}</style>
     </div>
   );
 }
