@@ -398,7 +398,6 @@ export default function GiftScreen() {
                     </Select>
                   </div>
                 </div>
-                </div>
                 <div>
                   <Label className="text-white/70 font-medium text-sm">מייל (לקבלה)</Label>
                   <Input type="email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="example@email.com"
