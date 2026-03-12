@@ -117,7 +117,6 @@ Deno.serve(async (req) => {
       product_name: productName,
       transaction_id: transaction.id,
       buyer_key: token, // The token from Hosted Fields tokenization
-      capture_buyer: '1',
       sale_callback_url: callbackUrl,
       sale_name: payerName,
       language: 'he',
