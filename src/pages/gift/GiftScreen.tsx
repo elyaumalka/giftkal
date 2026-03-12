@@ -11,6 +11,20 @@ import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
 import PayMeIframe from "@/components/payment/PayMeIframe";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const RELATIONSHIP_OPTIONS = [
+  "אח/אחות",
+  "הורה",
+  "דוד/דודה",
+  "סבא/סבתא",
+  "בן/בת דוד",
+  "חבר/ה",
+  "שכן/ה",
+  "עמית/ה לעבודה",
+  "משפחה רחוקה",
+  "אחר",
+];
 
 const GIFT_AMOUNTS = [100, 200, 300, 500, 1000];
 
@@ -370,8 +384,18 @@ export default function GiftScreen() {
                   </div>
                   <div>
                     <Label className="text-white/70 font-medium text-sm">קרבה</Label>
-                    <Input value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="חבר, דוד..."
-                      className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
+                    <Select value={relationship} onValueChange={setRelationship}>
+                      <SelectTrigger className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white focus:border-[#C4A35A] [&>span]:text-white/25 data-[state=open]:border-[#C4A35A]">
+                        <SelectValue placeholder="בחרו קרבה..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0a2040] border-white/15 text-white">
+                        {RELATIONSHIP_OPTIONS.map((opt) => (
+                          <SelectItem key={opt} value={opt} className="focus:bg-white/10 focus:text-white">
+                            {opt}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div>
