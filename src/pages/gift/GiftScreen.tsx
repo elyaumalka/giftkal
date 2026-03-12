@@ -397,7 +397,7 @@ export default function GiftScreen() {
                       </SelectContent>
                     </Select>
                   </div>
-                  </div>
+                </div>
                 </div>
                 <div>
                   <Label className="text-white/70 font-medium text-sm">מייל (לקבלה)</Label>
