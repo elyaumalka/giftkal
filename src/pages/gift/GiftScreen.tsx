@@ -384,8 +384,19 @@ export default function GiftScreen() {
                   </div>
                   <div>
                     <Label className="text-white/70 font-medium text-sm">קרבה</Label>
-                    <Input value={relationship} onChange={(e) => setRelationship(e.target.value)} placeholder="חבר, דוד..."
-                      className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
+                    <Select value={relationship} onValueChange={setRelationship}>
+                      <SelectTrigger className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white focus:border-[#C4A35A] [&>span]:text-white/25 data-[state=open]:border-[#C4A35A]">
+                        <SelectValue placeholder="בחרו קרבה..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0a2040] border-white/15 text-white">
+                        {RELATIONSHIP_OPTIONS.map((opt) => (
+                          <SelectItem key={opt} value={opt} className="focus:bg-white/10 focus:text-white">
+                            {opt}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   </div>
                 </div>
                 <div>
