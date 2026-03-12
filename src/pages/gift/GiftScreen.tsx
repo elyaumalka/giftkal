@@ -11,6 +11,20 @@ import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
 import PayMeIframe from "@/components/payment/PayMeIframe";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const RELATIONSHIP_OPTIONS = [
+  "אח/אחות",
+  "הורה",
+  "דוד/דודה",
+  "סבא/סבתא",
+  "בן/בת דוד",
+  "חבר/ה",
+  "שכן/ה",
+  "עמית/ה לעבודה",
+  "משפחה רחוקה",
+  "אחר",
+];
 
 const GIFT_AMOUNTS = [100, 200, 300, 500, 1000];
 
