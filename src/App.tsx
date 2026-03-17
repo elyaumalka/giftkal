@@ -105,6 +105,7 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
             <Route path="halls-devices" element={<AdminHallsDevices />} />
+            <Route path="billing" element={<AdminBilling />} />
             <Route path="seed" element={<SeedData />} />
           </Route>
 
