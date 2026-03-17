@@ -176,7 +176,7 @@ export default function NedarimBillingDialog({
     );
   };
 
-  const amount = fixedAmount || Number(selectedPlan);
+  const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
