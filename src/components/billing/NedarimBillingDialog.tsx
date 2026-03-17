@@ -219,7 +219,7 @@ export default function NedarimBillingDialog({
 
               {/* Plan Selection */}
               {!fixedAmount && (
-                <div>
+                <div className="space-y-2">
                   <Label>בחר מסלול</Label>
                   <Select value={selectedPlan} onValueChange={setSelectedPlan}>
                     <SelectTrigger>
@@ -231,6 +231,15 @@ export default function NedarimBillingDialog({
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedPlan === "custom" && (
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="הזן סכום ב-₪"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                    />
+                  )}
                 </div>
               )}
 
