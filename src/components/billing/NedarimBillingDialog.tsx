@@ -53,7 +53,8 @@ export default function NedarimBillingDialog({
   const [name, setName] = useState(customerName);
   const [phone, setPhone] = useState(customerPhone);
   const [email, setEmail] = useState(customerEmail);
-  const [selectedPlan, setSelectedPlan] = useState(fixedAmount ? String(fixedAmount) : "200");
+  const [selectedPlan, setSelectedPlan] = useState(fixedAmount ? String(fixedAmount) : "1");
+  const [customAmount, setCustomAmount] = useState("");
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeHeight, setIframeHeight] = useState(0);
   const [processing, setProcessing] = useState(false);
