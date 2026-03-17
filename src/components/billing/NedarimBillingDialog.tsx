@@ -31,8 +31,10 @@ interface NedarimBillingDialogProps {
 }
 
 const PLAN_OPTIONS = [
+  { label: "₪1 - טסט", value: "1" },
   { label: "מסלול רגיל - ₪200", value: "200" },
   { label: "מסלול + אישורי הגעה - ₪400", value: "400" },
+  { label: "סכום מותאם אישית", value: "custom" },
 ];
 
 export default function NedarimBillingDialog({
