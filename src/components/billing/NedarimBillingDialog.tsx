@@ -22,6 +22,8 @@ interface NedarimBillingDialogProps {
   customerEmail?: string;
   /** Fixed amount or let user choose */
   fixedAmount?: number;
+  /** Allow typing a custom amount */
+  allowCustomAmount?: boolean;
   /** Description shown in the dialog */
   description?: string;
   /** Callback on success */
