@@ -307,8 +307,26 @@ export default function VenueLanding() {
         </div>
       </div>
 
+      {/* ═══════ PAYMENT BUTTON — Floating ═══════ */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+        <button
+          onClick={() => setBillingOpen(true)}
+          className="flex items-center gap-2 bg-[#C4A35A] hover:bg-[#B8963E] text-white font-bold px-8 py-4 rounded-full shadow-2xl shadow-[#C4A35A]/30 transition-all hover:scale-105 active:scale-95 text-lg"
+        >
+          <CreditCard className="w-5 h-5" />
+          שלם עכשיו
+        </button>
+      </div>
+
+      <NedarimBillingDialog
+        open={billingOpen}
+        onOpenChange={setBillingOpen}
+        description={`תשלום עבור שירותי ${venueName}`}
+        onSuccess={() => setBillingOpen(false)}
+      />
+
       {/* ═══════ FOOTER ═══════ */}
-      <div className="py-8 text-center">
+      <div className="py-8 pb-24 text-center">
         <p className="text-gray-400 text-xs">
           Powered by <span className="text-[#C4A35A] font-semibold">Giftkal</span>
         </p>
