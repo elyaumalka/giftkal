@@ -125,6 +125,11 @@ export default function NedarimBillingDialog({
 
   // Request iframe height after load
   const handleIframeLoad = () => {
+    // Mark as loaded after a short delay even if height response doesn't come
+    setTimeout(() => {
+      setIframeLoaded(true);
+    }, 2000);
+    
     setTimeout(() => {
       iframeRef.current?.contentWindow?.postMessage(
         { Name: "NedarimGetHeight" },
@@ -244,9 +249,9 @@ export default function NedarimBillingDialog({
               )}
 
               {/* Nedarim Plus iframe */}
-              <div className="relative min-h-[200px]">
+              <div className="relative">
                 {!iframeLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-xl">
+                  <div className="flex items-center justify-center py-6">
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     <span className="mr-2 text-sm text-muted-foreground">מתחבר לשרת תשלומים מאובטח...</span>
                   </div>
@@ -256,10 +261,11 @@ export default function NedarimBillingDialog({
                   src="https://www.matara.pro/nedarimplus/iframe/?Language=he&HideHeader=1"
                   style={{
                     width: "100%",
-                    height: iframeHeight ? `${iframeHeight}px` : "250px",
+                    height: iframeHeight ? `${iframeHeight}px` : "320px",
                     border: "none",
                     borderRadius: "12px",
                     transition: "height 0.3s",
+                    display: iframeLoaded ? "block" : "none",
                   }}
                   scrolling="no"
                   onLoad={handleIframeLoad}
