@@ -94,47 +94,28 @@ export default function NedarimBillingDialog({
 
   // Listen for PostMessage from iframe
   const handleMessage = useCallback((event: MessageEvent) => {
-    // Accept messages from matara.pro
-    if (event.origin !== "https://www.matara.pro" && event.origin !== "https://matara.pro") return;
-
     const data = event.data;
+    if (!data || typeof data !== "object" || !data.Name) return;
+
     console.log("[Nedarim] PostMessage received:", data);
-    
-    if (!data) return;
 
-    // Handle string responses (Nedarim sometimes sends strings)
-    if (typeof data === "string") {
-      try {
-        const parsed = JSON.parse(data);
-        handleNedarimResponse(parsed);
-      } catch {
-        console.log("[Nedarim] Non-JSON string message:", data);
-      }
-      return;
-    }
+    switch (data.Name) {
+      case "Height":
+        setIframeHeight(parseInt(data.Value) + 15);
+        setIframeLoaded(true);
+        break;
 
-    handleNedarimResponse(data);
-  }, [onSuccess, toast]);
-
-  const handleNedarimResponse = useCallback((data: any) => {
-    // Iframe height response
-    if (data.NedarimIframeHeight) {
-      setIframeHeight(Number(data.NedarimIframeHeight));
-      setIframeLoaded(true);
-    }
-
-    // Transaction response - check various status field names
-    const status = data.Status || data.status;
-    if (status !== undefined) {
-      setProcessing(false);
-      console.log("[Nedarim] Transaction result:", data);
-      if (status === "OK" || status === "ok" || status === "success") {
-        setSuccess(true);
-        toast({ title: "התשלום בוצע בהצלחה! ✅" });
-        onSuccess?.(data.TransactionId || data.transactionId || "");
-      } else {
-        setError(data.Message || data.message || data.ErrorMessage || "שגיאה בביצוע התשלום");
-      }
+      case "TransactionResponse":
+        setProcessing(false);
+        console.log("[Nedarim] Transaction result:", data.Value);
+        if (data.Value?.Status === "Error") {
+          setError(data.Value.Message || "שגיאה בביצוע התשלום");
+        } else {
+          setSuccess(true);
+          toast({ title: "התשלום בוצע בהצלחה! ✅" });
+          onSuccess?.(data.Value?.TransactionId || "");
+        }
+        break;
     }
   }, [onSuccess, toast]);
 
@@ -145,17 +126,8 @@ export default function NedarimBillingDialog({
 
   // Request iframe height after load
   const handleIframeLoad = () => {
-    // Mark as loaded after a short delay even if height response doesn't come
-    setTimeout(() => {
-      setIframeLoaded(true);
-    }, 2000);
-    
-    setTimeout(() => {
-      iframeRef.current?.contentWindow?.postMessage(
-        { Name: "NedarimGetHeight" },
-        "https://www.matara.pro"
-      );
-    }, 500);
+    // Fallback: mark loaded after 3s even without height response
+    setTimeout(() => setIframeLoaded(true), 3000);
   };
 
   // Submit payment
@@ -172,33 +144,30 @@ export default function NedarimBillingDialog({
     setProcessing(true);
 
     const paymentData = {
-      Name: "NedarimSendData",
-      Mosad: mosadId,
-      ApiValid: apiValid,
-      Zeout: "",
-      FirstName: name.split(" ")[0] || "",
-      LastName: name.split(" ").slice(1).join(" ") || "",
-      Street: "",
-      City: "",
-      Phone: phone,
-      Mail: email,
-      PaymentType: "Ragil",
-      Amount: String(amount),
-      Tashlumim: "1",
-      Currency: "1",
-      Groupe: "GiftKal",
-      Comment: description || `חיוב שירות GiftKal - ₪${amount}`,
-      Param1: "",
-      Param2: "",
-      CallBack: "",
-      CallBackMailError: "",
-      ForceUpdateMatching: "0",
+      Name: "FinishTransaction2",
+      Value: {
+        Mosad: mosadId,
+        ApiValid: apiValid,
+        Zeout: "",
+        FirstName: name.split(" ")[0] || "",
+        LastName: name.split(" ").slice(1).join(" ") || "",
+        Street: "",
+        City: "",
+        Phone: phone,
+        Mail: email,
+        PaymentType: "Ragil",
+        Amount: String(amount),
+        Tashlumim: "1",
+        Currency: "1",
+        Groupe: "GiftKal",
+        Comment: description || `חיוב שירות GiftKal - ₪${amount}`,
+        CallBack: "",
+        Tokef: "",
+      },
     };
 
-    iframeRef.current?.contentWindow?.postMessage(
-      paymentData,
-      "https://www.matara.pro"
-    );
+    console.log("[Nedarim] Sending payment data:", paymentData);
+    iframeRef.current?.contentWindow?.postMessage(paymentData, "*");
   };
 
   const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
