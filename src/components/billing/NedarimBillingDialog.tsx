@@ -22,6 +22,8 @@ interface NedarimBillingDialogProps {
   customerEmail?: string;
   /** Fixed amount or let user choose */
   fixedAmount?: number;
+  /** Allow typing a custom amount */
+  allowCustomAmount?: boolean;
   /** Description shown in the dialog */
   description?: string;
   /** Callback on success */
@@ -29,8 +31,10 @@ interface NedarimBillingDialogProps {
 }
 
 const PLAN_OPTIONS = [
+  { label: "₪1 - טסט", value: "1" },
   { label: "מסלול רגיל - ₪200", value: "200" },
   { label: "מסלול + אישורי הגעה - ₪400", value: "400" },
+  { label: "סכום מותאם אישית", value: "custom" },
 ];
 
 export default function NedarimBillingDialog({
@@ -49,7 +53,8 @@ export default function NedarimBillingDialog({
   const [name, setName] = useState(customerName);
   const [phone, setPhone] = useState(customerPhone);
   const [email, setEmail] = useState(customerEmail);
-  const [selectedPlan, setSelectedPlan] = useState(fixedAmount ? String(fixedAmount) : "200");
+  const [selectedPlan, setSelectedPlan] = useState(fixedAmount ? String(fixedAmount) : "1");
+  const [customAmount, setCustomAmount] = useState("");
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeHeight, setIframeHeight] = useState(0);
   const [processing, setProcessing] = useState(false);
@@ -133,8 +138,8 @@ export default function NedarimBillingDialog({
     if (!name.trim()) {
       setError("נא למלא שם"); return;
     }
-    const amount = fixedAmount || Number(selectedPlan);
-    if (!amount) {
+    const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
+    if (!amount || amount <= 0) {
       setError("נא לבחור מסלול"); return;
     }
 
@@ -171,7 +176,7 @@ export default function NedarimBillingDialog({
     );
   };
 
-  const amount = fixedAmount || Number(selectedPlan);
+  const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -214,7 +219,7 @@ export default function NedarimBillingDialog({
 
               {/* Plan Selection */}
               {!fixedAmount && (
-                <div>
+                <div className="space-y-2">
                   <Label>בחר מסלול</Label>
                   <Select value={selectedPlan} onValueChange={setSelectedPlan}>
                     <SelectTrigger>
@@ -226,6 +231,15 @@ export default function NedarimBillingDialog({
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedPlan === "custom" && (
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="הזן סכום ב-₪"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                    />
+                  )}
                 </div>
               )}
 
