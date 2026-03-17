@@ -247,7 +247,7 @@ export default function NedarimBillingDialog({
                 )}
                 <iframe
                   ref={iframeRef}
-                  src="https://www.matara.pro/nedarimplus/iframe/?Language=he&HideHeader=1"
+                  src="https://matara.pro/nedarimplus/iframe?Language=he"
                   style={{
                     width: "100%",
                     height: iframeHeight ? `${iframeHeight}px` : "320px",
