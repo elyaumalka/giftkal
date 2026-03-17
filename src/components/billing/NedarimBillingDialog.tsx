@@ -94,27 +94,28 @@ export default function NedarimBillingDialog({
 
   // Listen for PostMessage from iframe
   const handleMessage = useCallback((event: MessageEvent) => {
-    if (event.origin !== "https://www.matara.pro") return;
-
     const data = event.data;
-    if (!data || typeof data !== "object") return;
+    if (!data || typeof data !== "object" || !data.Name) return;
 
-    // Iframe height response
-    if (data.NedarimIframeHeight) {
-      setIframeHeight(Number(data.NedarimIframeHeight));
-      setIframeLoaded(true);
-    }
+    console.log("[Nedarim] PostMessage received:", data);
 
-    // Transaction response
-    if (data.Status !== undefined) {
-      setProcessing(false);
-      if (data.Status === "OK" || data.Status === "ok") {
-        setSuccess(true);
-        toast({ title: "התשלום בוצע בהצלחה! ✅" });
-        onSuccess?.(data.TransactionId || "");
-      } else {
-        setError(data.Message || "שגיאה בביצוע התשלום");
-      }
+    switch (data.Name) {
+      case "Height":
+        setIframeHeight(parseInt(data.Value) + 15);
+        setIframeLoaded(true);
+        break;
+
+      case "TransactionResponse":
+        setProcessing(false);
+        console.log("[Nedarim] Transaction result:", data.Value);
+        if (data.Value?.Status === "Error") {
+          setError(data.Value.Message || "שגיאה בביצוע התשלום");
+        } else {
+          setSuccess(true);
+          toast({ title: "התשלום בוצע בהצלחה! ✅" });
+          onSuccess?.(data.Value?.TransactionId || "");
+        }
+        break;
     }
   }, [onSuccess, toast]);
 
@@ -125,17 +126,8 @@ export default function NedarimBillingDialog({
 
   // Request iframe height after load
   const handleIframeLoad = () => {
-    // Mark as loaded after a short delay even if height response doesn't come
-    setTimeout(() => {
-      setIframeLoaded(true);
-    }, 2000);
-    
-    setTimeout(() => {
-      iframeRef.current?.contentWindow?.postMessage(
-        { Name: "NedarimGetHeight" },
-        "https://www.matara.pro"
-      );
-    }, 500);
+    // Fallback: mark loaded after 3s even without height response
+    setTimeout(() => setIframeLoaded(true), 3000);
   };
 
   // Submit payment
@@ -152,33 +144,30 @@ export default function NedarimBillingDialog({
     setProcessing(true);
 
     const paymentData = {
-      Name: "NedarimSendData",
-      Mosad: mosadId,
-      ApiValid: apiValid,
-      Zeout: "",
-      FirstName: name.split(" ")[0] || "",
-      LastName: name.split(" ").slice(1).join(" ") || "",
-      Street: "",
-      City: "",
-      Phone: phone,
-      Mail: email,
-      PaymentType: "Ragil",
-      Amount: String(amount),
-      Tashlumim: "1",
-      Currency: "1",
-      Groupe: "GiftKal",
-      Comment: description || `חיוב שירות GiftKal - ₪${amount}`,
-      Param1: "",
-      Param2: "",
-      CallBack: "",
-      CallBackMailError: "",
-      ForceUpdateMatching: "0",
+      Name: "FinishTransaction2",
+      Value: {
+        Mosad: mosadId,
+        ApiValid: apiValid,
+        Zeout: "",
+        FirstName: name.split(" ")[0] || "",
+        LastName: name.split(" ").slice(1).join(" ") || "",
+        Street: "",
+        City: "",
+        Phone: phone,
+        Mail: email,
+        PaymentType: "Ragil",
+        Amount: String(amount),
+        Tashlumim: "1",
+        Currency: "1",
+        Groupe: "GiftKal",
+        Comment: description || `חיוב שירות GiftKal - ₪${amount}`,
+        CallBack: "",
+        Tokef: "",
+      },
     };
 
-    iframeRef.current?.contentWindow?.postMessage(
-      paymentData,
-      "https://www.matara.pro"
-    );
+    console.log("[Nedarim] Sending payment data:", paymentData);
+    iframeRef.current?.contentWindow?.postMessage(paymentData, "*");
   };
 
   const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
@@ -258,7 +247,7 @@ export default function NedarimBillingDialog({
                 )}
                 <iframe
                   ref={iframeRef}
-                  src="https://www.matara.pro/nedarimplus/iframe/?Language=he&HideHeader=1"
+                  src="https://matara.pro/nedarimplus/iframe?Language=he"
                   style={{
                     width: "100%",
                     height: iframeHeight ? `${iframeHeight}px` : "320px",
