@@ -94,26 +94,46 @@ export default function NedarimBillingDialog({
 
   // Listen for PostMessage from iframe
   const handleMessage = useCallback((event: MessageEvent) => {
-    if (event.origin !== "https://www.matara.pro") return;
+    // Accept messages from matara.pro
+    if (event.origin !== "https://www.matara.pro" && event.origin !== "https://matara.pro") return;
 
     const data = event.data;
-    if (!data || typeof data !== "object") return;
+    console.log("[Nedarim] PostMessage received:", data);
+    
+    if (!data) return;
 
+    // Handle string responses (Nedarim sometimes sends strings)
+    if (typeof data === "string") {
+      try {
+        const parsed = JSON.parse(data);
+        handleNedarimResponse(parsed);
+      } catch {
+        console.log("[Nedarim] Non-JSON string message:", data);
+      }
+      return;
+    }
+
+    handleNedarimResponse(data);
+  }, [onSuccess, toast]);
+
+  const handleNedarimResponse = useCallback((data: any) => {
     // Iframe height response
     if (data.NedarimIframeHeight) {
       setIframeHeight(Number(data.NedarimIframeHeight));
       setIframeLoaded(true);
     }
 
-    // Transaction response
-    if (data.Status !== undefined) {
+    // Transaction response - check various status field names
+    const status = data.Status || data.status;
+    if (status !== undefined) {
       setProcessing(false);
-      if (data.Status === "OK" || data.Status === "ok") {
+      console.log("[Nedarim] Transaction result:", data);
+      if (status === "OK" || status === "ok" || status === "success") {
         setSuccess(true);
         toast({ title: "התשלום בוצע בהצלחה! ✅" });
-        onSuccess?.(data.TransactionId || "");
+        onSuccess?.(data.TransactionId || data.transactionId || "");
       } else {
-        setError(data.Message || "שגיאה בביצוע התשלום");
+        setError(data.Message || data.message || data.ErrorMessage || "שגיאה בביצוע התשלום");
       }
     }
   }, [onSuccess, toast]);
