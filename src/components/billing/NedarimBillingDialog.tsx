@@ -125,6 +125,11 @@ export default function NedarimBillingDialog({
 
   // Request iframe height after load
   const handleIframeLoad = () => {
+    // Mark as loaded after a short delay even if height response doesn't come
+    setTimeout(() => {
+      setIframeLoaded(true);
+    }, 2000);
+    
     setTimeout(() => {
       iframeRef.current?.contentWindow?.postMessage(
         { Name: "NedarimGetHeight" },
