@@ -57,6 +57,11 @@ const menuItems = [
     path: "/admin/reports",
   },
   {
+    title: "חיוב לקוחות",
+    icon: TransactionsIcon,
+    path: "/admin/billing",
+  },
+  {
     title: "פניות ותקלות",
     icon: ToolsIcon,
     path: "/admin/support",

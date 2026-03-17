@@ -28,6 +28,7 @@ import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 import SeedData from "./pages/admin/SeedData";
 import AdminHallsDevices from "./pages/admin/HallsDevices";
+import AdminBilling from "./pages/admin/Billing";
 
 // Venue
 import { VenueLayout } from "./components/layout/VenueLayout";
@@ -104,6 +105,7 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
             <Route path="halls-devices" element={<AdminHallsDevices />} />
+            <Route path="billing" element={<AdminBilling />} />
             <Route path="seed" element={<SeedData />} />
           </Route>
 
