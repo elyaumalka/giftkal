@@ -148,9 +148,14 @@ export default function Settings() {
 
   const addApiKey = useMutation({
     mutationFn: async () => {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(newApiKey);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const keyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       const { error } = await supabase.from("api_keys").insert({
         name: newApiName,
-        key_hash: newApiKey,
+        key_hash: keyHash,
       });
       if (error) throw error;
     },
