@@ -758,7 +758,7 @@ async function handleSettings(action: string, supabase: any, url: URL, body: any
 
 const actionHandlers: Record<string, (action: string, supabase: any, url: URL, body: any) => Promise<Response | null>> = {
   // Events
-  GetEvent: handleEvents, ListEvents: handleEvents, UpdateEvent: handleEvents,
+  GetEvent: handleEvents, ListEvents: handleEvents, UpdateEvent: handleEvents, CreateEvent: handleEvents,
   // Guests
   ListGuests: handleGuests, AddGuest: handleGuests, UpdateGuest: handleGuests,
   UpdateRSVP: handleGuests, DeleteGuest: handleGuests, BulkAddGuests: handleGuests, BulkUpdateRSVP: handleGuests,
