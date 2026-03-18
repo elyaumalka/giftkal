@@ -65,6 +65,23 @@ async function handleEvents(action: string, supabase: any, url: URL, body: any) 
       if (error) return errorResponse(error.message, 400);
       return okResponse({ event: data });
     }
+    case 'CreateEvent': {
+      const { owner_id, event_date, event_type, groom_name, bride_name, child_name, family_name, venue_id, hall_id, custom_venue_name, custom_venue_location, reception_time, ceremony_time } = body;
+      if (!owner_id || !event_date) return errorResponse('owner_id and event_date are required', 400);
+      // Verify owner exists
+      const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', owner_id).maybeSingle();
+      if (!profile) return errorResponse('Owner not found. Use CreateEventOwner for new users.', 404);
+      const { data, error } = await supabase.from('events').insert({
+        owner_id, event_date, event_type: event_type || 'חתונה',
+        groom_name: groom_name || null, bride_name: bride_name || null,
+        child_name: child_name || null, family_name: family_name || null,
+        venue_id: venue_id || null, hall_id: hall_id || null,
+        custom_venue_name: custom_venue_name || null, custom_venue_location: custom_venue_location || null,
+        reception_time: reception_time || null, ceremony_time: ceremony_time || null,
+      }).select().single();
+      if (error) return errorResponse(error.message, 400);
+      return okResponse({ event: data });
+    }
   }
   return null;
 }
@@ -741,7 +758,7 @@ async function handleSettings(action: string, supabase: any, url: URL, body: any
 
 const actionHandlers: Record<string, (action: string, supabase: any, url: URL, body: any) => Promise<Response | null>> = {
   // Events
-  GetEvent: handleEvents, ListEvents: handleEvents, UpdateEvent: handleEvents,
+  GetEvent: handleEvents, ListEvents: handleEvents, UpdateEvent: handleEvents, CreateEvent: handleEvents,
   // Guests
   ListGuests: handleGuests, AddGuest: handleGuests, UpdateGuest: handleGuests,
   UpdateRSVP: handleGuests, DeleteGuest: handleGuests, BulkAddGuests: handleGuests, BulkUpdateRSVP: handleGuests,
