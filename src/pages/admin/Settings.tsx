@@ -613,12 +613,32 @@ export default function Settings() {
                     <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">לא פעיל</span>
                   )}
                 </span>
-                <button
-                  onClick={() => deleteApiKey.mutate(key.id)}
-                  className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent dir="rtl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>מחיקת מפתח API</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        האם אתה בטוח שברצונך למחוק את המפתח "{key.name}"? פעולה זו בלתי הפיכה וכל אינטגרציה שמשתמשת במפתח זה תפסיק לעבוד מיידית.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-row-reverse gap-2">
+                      <AlertDialogCancel>ביטול</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteApiKey.mutate(key.id)}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        מחק מפתח
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             ))}
             {!apiKeys?.length && (
