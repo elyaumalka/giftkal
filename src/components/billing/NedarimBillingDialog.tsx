@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CreditCard, CheckCircle2 } from "lucide-react";
+import { Loader2, CreditCard, CheckCircle2, Copy } from "lucide-react";
 
 interface NedarimBillingDialogProps {
   open: boolean;
@@ -63,6 +63,8 @@ export default function NedarimBillingDialog({
   const [error, setError] = useState("");
   const [mosadId, setMosadId] = useState("");
   const [apiValid, setApiValid] = useState("");
+  const [lastRequestPayload, setLastRequestPayload] = useState<Record<string, unknown> | null>(null);
+  const [lastResponsePayload, setLastResponsePayload] = useState<Record<string, unknown> | null>(null);
 
   // Fetch credentials
   useEffect(() => {
@@ -73,8 +75,8 @@ export default function NedarimBillingDialog({
         toast({ title: "שגיאה בטעינת מערכת התשלום", variant: "destructive" });
         return;
       }
-      setMosadId(data.mosadId);
-      setApiValid(data.apiValid);
+      setMosadId(String(data.mosadId ?? "").trim());
+      setApiValid(String(data.apiValid ?? "").trim());
     };
     fetchConfig();
   }, [open, toast]);
@@ -91,31 +93,41 @@ export default function NedarimBillingDialog({
       setProcessing(false);
       setSuccess(false);
       setError("");
+      setLastRequestPayload(null);
+      setLastResponsePayload(null);
     }
   }, [open, customerName, customerPhone, customerEmail]);
 
   // Listen for PostMessage from iframe
   const handleMessage = useCallback((event: MessageEvent) => {
-    const data = event.data;
-    if (!data || typeof data !== "object" || !data.Name) return;
+    const payload = event.data as { Name?: string; Value?: any };
+    if (!payload || typeof payload !== "object" || !payload.Name) return;
 
-    console.log("[Nedarim] PostMessage received:", data);
+    console.log("[Nedarim] PostMessage received:", payload);
 
-    switch (data.Name) {
-      case "Height":
-        setIframeHeight(parseInt(data.Value) + 15);
+    switch (payload.Name) {
+      case "Height": {
+        const nextHeight = Number(payload.Value);
+        if (Number.isFinite(nextHeight)) {
+          setIframeHeight(nextHeight + 15);
+        }
         setIframeLoaded(true);
         break;
+      }
 
       case "TransactionResponse":
         setProcessing(false);
-        console.log("[Nedarim] Transaction result:", data.Value);
-        if (data.Value?.Status === "Error") {
-          setError(data.Value.Message || "שגיאה בביצוע התשלום");
+        setLastResponsePayload({
+          Name: payload.Name,
+          Value: payload.Value,
+        });
+        console.log("[Nedarim] Transaction result:", payload.Value);
+        if (payload.Value?.Status === "Error") {
+          setError(payload.Value.Message || "שגיאה בביצוע התשלום");
         } else {
           setSuccess(true);
           toast({ title: "התשלום בוצע בהצלחה! ✅" });
-          onSuccess?.(data.Value?.TransactionId || "");
+          onSuccess?.(payload.Value?.TransactionId || "");
         }
         break;
     }
@@ -130,6 +142,26 @@ export default function NedarimBillingDialog({
   const handleIframeLoad = () => {
     // Fallback: mark loaded after 3s even without height response
     setTimeout(() => setIframeLoaded(true), 3000);
+  };
+
+  const copyDebugPayload = async () => {
+    if (!lastRequestPayload) {
+      toast({ title: "עדיין אין פנייה להעתקה", variant: "destructive" });
+      return;
+    }
+
+    const debugPayload = {
+      request: lastRequestPayload,
+      response: lastResponsePayload,
+      generatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(debugPayload, null, 2));
+      toast({ title: "הפנייה והתגובה הועתקו ללוח ✅" });
+    } catch {
+      toast({ title: "לא ניתן להעתיק אוטומטית", description: "אפשר להעתיק מהקונסול את [Nedarim]", variant: "destructive" });
+    }
   };
 
   // Submit payment
@@ -148,12 +180,13 @@ export default function NedarimBillingDialog({
 
     setError("");
     setProcessing(true);
+    setLastResponsePayload(null);
 
     const paymentData = {
       Name: "FinishTransaction2",
       Value: {
-        Mosad: mosadId,
-        ApiValid: apiValid,
+        Mosad: mosadId.trim(),
+        ApiValid: apiValid.trim(),
         Zeout: sanitizedId,
         FirstName: name.split(" ")[0] || "",
         LastName: name.split(" ").slice(1).join(" ") || "",
@@ -177,6 +210,7 @@ export default function NedarimBillingDialog({
       },
     };
 
+    setLastRequestPayload(paymentData as unknown as Record<string, unknown>);
     console.log("[Nedarim] Sending payment data:", paymentData);
     iframeRef.current?.contentWindow?.postMessage(paymentData, "*");
   };
@@ -283,6 +317,18 @@ export default function NedarimBillingDialog({
 
               {error && (
                 <p className="text-destructive text-sm font-medium text-center">{error}</p>
+              )}
+
+              {lastRequestPayload && (
+                <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    שלח לנדרים את הפנייה והתגובה בלחיצה על הכפתור:
+                  </p>
+                  <Button type="button" variant="outline" size="sm" onClick={copyDebugPayload} className="gap-2">
+                    <Copy className="w-4 h-4" />
+                    העתק פנייה + תגובה לנדרים
+                  </Button>
+                </div>
               )}
 
               <Button
