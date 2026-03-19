@@ -53,6 +53,7 @@ export default function NedarimBillingDialog({
   const [name, setName] = useState(customerName);
   const [phone, setPhone] = useState(customerPhone);
   const [email, setEmail] = useState(customerEmail);
+  const [idNumber, setIdNumber] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(fixedAmount ? String(fixedAmount) : "1");
   const [customAmount, setCustomAmount] = useState("");
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -76,7 +77,7 @@ export default function NedarimBillingDialog({
       setApiValid(data.apiValid);
     };
     fetchConfig();
-  }, [open]);
+  }, [open, toast]);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function NedarimBillingDialog({
       setName(customerName);
       setPhone(customerPhone);
       setEmail(customerEmail);
+      setIdNumber("");
       setIframeLoaded(false);
       setIframeHeight(0);
       setProcessing(false);
@@ -133,12 +135,16 @@ export default function NedarimBillingDialog({
   // Submit payment
   const handlePay = () => {
     if (!name.trim()) {
-      setError("נא למלא שם"); return;
+      setError("נא למלא שם");
+      return;
     }
     const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
     if (!amount || amount <= 0) {
-      setError("נא לבחור מסלול"); return;
+      setError("נא לבחור מסלול");
+      return;
     }
+
+    const sanitizedId = idNumber.replace(/\D/g, "").slice(0, 9);
 
     setError("");
     setProcessing(true);
@@ -148,7 +154,7 @@ export default function NedarimBillingDialog({
       Value: {
         Mosad: mosadId,
         ApiValid: apiValid,
-        Zeout: "",
+        Zeout: sanitizedId,
         FirstName: name.split(" ")[0] || "",
         LastName: name.split(" ").slice(1).join(" ") || "",
         Street: "",
@@ -158,11 +164,16 @@ export default function NedarimBillingDialog({
         PaymentType: "Ragil",
         Amount: String(amount),
         Tashlumim: "1",
+        Day: "",
         Currency: "1",
         Groupe: "GiftKal",
         Comment: description || `חיוב שירות GiftKal - ₪${amount}`,
+        Param1: "",
+        Param2: "",
         CallBack: "",
         Tokef: "",
+        ForceUpdateMatching: "0",
+        ThirdPartyReceipt: "0",
       },
     };
 
@@ -196,7 +207,7 @@ export default function NedarimBillingDialog({
 
             <div className="px-6 pb-6 space-y-4">
               {/* Customer Info */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <Label>שם מלא *</Label>
                   <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="שם מלא" />
@@ -204,6 +215,15 @@ export default function NedarimBillingDialog({
                 <div>
                   <Label>טלפון</Label>
                   <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="050-0000000" />
+                </div>
+                <div>
+                  <Label>תעודת זהות (אופציונלי)</Label>
+                  <Input
+                    value={idNumber}
+                    onChange={(e) => setIdNumber(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                    placeholder="123456789"
+                    inputMode="numeric"
+                  />
                 </div>
               </div>
               <div>
