@@ -50,6 +50,10 @@ export default function NedarimBillingDialog({
   customerEmail = "",
   fixedAmount,
   description,
+  eventId,
+  ownerId,
+  venueName,
+  eventName,
   onSuccess,
 }: NedarimBillingDialogProps) {
   const { toast } = useToast();
