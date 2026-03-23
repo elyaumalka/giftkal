@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Eye, FileText, Copy, Filter, MessageCircle } from "lucide-react";
+import { Search, Eye, FileText, Copy, Filter, MessageCircle, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EventOwners() {
