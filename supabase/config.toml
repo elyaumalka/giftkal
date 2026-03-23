@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.get-nedarim-config]
 verify_jwt = false
+
+[functions.nedarim-gift]
+verify_jwt = false
