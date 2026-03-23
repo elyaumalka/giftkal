@@ -64,12 +64,6 @@ Deno.serve(async (req) => {
 
     const { event_id, payer_name, payer_phone, payer_email, payer_id, amount, relationship, blessing_text, event_type, venue_name, venue_location, event_date, event_owner_name } = body;
 
-    if (!api_key || api_key !== nedarimApiValid) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid api_key' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     if (!event_id || !amount || !payer_name) {
       return new Response(
