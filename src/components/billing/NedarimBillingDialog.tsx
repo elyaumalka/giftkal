@@ -26,6 +26,11 @@ interface NedarimBillingDialogProps {
   allowCustomAmount?: boolean;
   /** Description shown in the dialog */
   description?: string;
+  /** Event metadata for saving billing record */
+  eventId?: string;
+  ownerId?: string;
+  venueName?: string;
+  eventName?: string;
   /** Callback on success */
   onSuccess?: (transactionId: string) => void;
 }
