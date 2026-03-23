@@ -134,6 +134,23 @@ export default function NedarimBillingDialog({
         if (payload.Value?.Status === "Error") {
           setError(payload.Value.Message || "שגיאה בביצוע התשלום");
         } else {
+          // Save billing record
+          const chargeAmount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
+          const planLabel = PLAN_OPTIONS.find(p => p.value === selectedPlan)?.label || selectedPlan;
+          try {
+            await supabase.from("billing_charges" as any).insert({
+              event_id: eventId || null,
+              owner_id: ownerId || "",
+              owner_name: name,
+              venue_name: venueName || null,
+              event_name: eventName || null,
+              amount: chargeAmount,
+              plan_name: planLabel,
+              nedarim_transaction_id: payload.Value?.TransactionId || null,
+            });
+          } catch (e) {
+            console.error("[Nedarim] Failed to save billing record:", e);
+          }
           setSuccess(true);
           toast({ title: "התשלום בוצע בהצלחה! ✅" });
           onSuccess?.(payload.Value?.TransactionId || "");
