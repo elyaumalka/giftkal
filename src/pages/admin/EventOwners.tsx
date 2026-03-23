@@ -115,13 +115,14 @@ export default function EventOwners() {
       </div>
 
       {/* Table Header - Right to Left */}
-      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
         <span>תאריך אירוע</span>
         <span>בעל האירוע</span>
         <span>טלפון</span>
         <span>שם האולם</span>
         <span>כמות עסקאות</span>
         <span>סך כל העסקאות</span>
+        <span>סטטוס חיוב</span>
         <span className="w-28"></span>
         <span className="w-10"></span>
         <span className="w-10"></span>
