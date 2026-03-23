@@ -108,7 +108,7 @@ export default function NedarimBillingDialog({
   }, [open, customerName, customerPhone, customerEmail]);
 
   // Listen for PostMessage from iframe
-  const handleMessage = useCallback((event: MessageEvent) => {
+  const handleMessage = useCallback(async (event: MessageEvent) => {
     const payload = event.data as { Name?: string; Value?: any };
     if (!payload || typeof payload !== "object" || !payload.Name) return;
 
