@@ -2,7 +2,25 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+}
+
+async function validateApiKey(supabase: any, apiKey: string): Promise<boolean> {
+  if (!apiKey) return false;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(apiKey);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const keyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+  const { data: keyData } = await supabase
+    .from('api_keys')
+    .select('id, is_active')
+    .eq('key_hash', keyHash)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  return !!keyData;
 }
 
 /**
@@ -10,12 +28,11 @@ const corsHeaders = {
  * 
  * Flow:
  * 1. Nedarim form sends gift details (event_id, payer info, amount)
- * 2. We find the event's PayMe seller
- * 3. We create a transaction record (pending)
- * 4. We generate a PayMe sale for the event owner's seller
- * 5. We return the sale_url for redirect
- * 
- * Authentication: via shared secret (NEDARIM_API_VALID)
+ * 2. We validate the API key (from api_keys table, managed in admin panel)
+ * 3. We find the event's PayMe seller
+ * 4. We create a transaction record (pending)
+ * 5. We generate a PayMe sale for the event owner's seller
+ * 6. We return the sale_url for redirect
  */
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,25 +43,27 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const paymeClientKey = Deno.env.get('PAYME_CLIENT_KEY');
-    const paymeClientSecret = Deno.env.get('PAYME_CLIENT_SECRET');
-    const nedarimApiValid = Deno.env.get('NEDARIM_API_VALID');
 
     if (!paymeClientKey) {
       throw new Error('PayMe credentials not configured');
     }
 
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body = await req.json();
     console.log('[nedarim-gift] Received:', JSON.stringify(body));
 
-    // Validate API key from Nedarim form
-    const { api_key, event_id, payer_name, payer_phone, payer_email, payer_id, amount, relationship, blessing_text, event_type, venue_name, venue_location, event_date, event_owner_name } = body;
-
-    if (!api_key || api_key !== nedarimApiValid) {
+    // Validate API key - from header or body
+    const apiKey = req.headers.get('x-api-key') || body.api_key;
+    const isValid = await validateApiKey(supabase, apiKey);
+    if (!isValid) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid api_key' }),
+        JSON.stringify({ error: 'Unauthorized - invalid or missing API key' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const { event_id, payer_name, payer_phone, payer_email, payer_id, amount, relationship, blessing_text, event_type, venue_name, venue_location, event_date, event_owner_name } = body;
+
 
     if (!event_id || !amount || !payer_name) {
       return new Response(
