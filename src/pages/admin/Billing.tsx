@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, CreditCard } from "lucide-react";
+import { Search, Filter, CreditCard, CheckCircle2 } from "lucide-react";
 import NedarimBillingDialog from "@/components/billing/NedarimBillingDialog";
 
 export default function Billing() {
@@ -12,7 +12,7 @@ export default function Billing() {
   const [selectedOwner, setSelectedOwner] = useState<any>(null);
 
   // Fetch event owners with their events
-  const { data: eventOwners } = useQuery({
+  const { data: eventOwners, refetch } = useQuery({
     queryKey: ["billing-event-owners"],
     queryFn: async () => {
       const { data: events } = await supabase
@@ -26,15 +26,32 @@ export default function Billing() {
         .select("user_id, full_name, email, phone")
         .in("user_id", ownerIds);
 
+      // Fetch billing charges
+      const eventIds = events?.map(e => e.id) || [];
+      const { data: charges } = await supabase
+        .from("billing_charges" as any)
+        .select("event_id, amount, plan_name, created_at, nedarim_transaction_id")
+        .in("event_id", eventIds);
+
+      const chargeMap = new Map<string, any>();
+      (charges || []).forEach((c: any) => {
+        // Keep latest charge per event
+        if (!chargeMap.has(c.event_id) || new Date(c.created_at) > new Date(chargeMap.get(c.event_id).created_at)) {
+          chargeMap.set(c.event_id, c);
+        }
+      });
+
       const profileMap = new Map(profiles?.map((p) => [p.user_id, p]));
 
       return events?.map((event) => {
         const profile = profileMap.get(event.owner_id);
+        const charge = chargeMap.get(event.id);
         return {
           ...event,
           ownerName: profile?.full_name || `${event.groom_name || ""} & ${event.bride_name || ""}`,
           ownerEmail: profile?.email || "",
           ownerPhone: profile?.phone || "",
+          charge,
         };
       }) || [];
     },
@@ -68,11 +85,12 @@ export default function Billing() {
       </div>
 
       {/* Table Header */}
-      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
         <span>תאריך אירוע</span>
         <span>בעל האירוע</span>
         <span>שם האולם</span>
         <span>אירוע</span>
+        <span>סטטוס חיוב</span>
         <span className="w-40"></span>
       </div>
 
@@ -81,7 +99,7 @@ export default function Billing() {
         {filtered?.map((event) => (
           <div
             key={event.id}
-            className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+            className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
           >
             <span className="text-center font-medium">
               {new Date(event.event_date).toLocaleDateString("he-IL")}
@@ -93,6 +111,16 @@ export default function Billing() {
                 ? `${event.groom_name} & ${event.bride_name}`
                 : "—"}
             </span>
+            <span className="text-center">
+              {event.charge ? (
+                <span className="inline-flex items-center gap-1 text-green-600 font-bold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  שולם ₪{Number(event.charge.amount).toLocaleString()}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">לא שולם</span>
+              )}
+            </span>
             <div className="flex justify-end w-40">
               <Button
                 onClick={() => handleCharge(event)}
@@ -101,7 +129,7 @@ export default function Billing() {
                 size="sm"
               >
                 <CreditCard className="w-4 h-4" />
-                חייב לקוח
+                {event.charge ? "חייב שוב" : "חייב לקוח"}
               </Button>
             </div>
           </div>
@@ -122,9 +150,14 @@ export default function Billing() {
         customerPhone={selectedOwner?.ownerPhone || ""}
         customerEmail={selectedOwner?.ownerEmail || ""}
         description={`חיוב שירות GiftKal - ${selectedOwner?.groom_name || ""} & ${selectedOwner?.bride_name || ""}`}
+        eventId={selectedOwner?.id}
+        ownerId={selectedOwner?.owner_id}
+        venueName={selectedOwner?.venues?.name}
+        eventName={selectedOwner?.groom_name && selectedOwner?.bride_name ? `${selectedOwner.groom_name} & ${selectedOwner.bride_name}` : undefined}
         onSuccess={(txId) => {
           console.log("Payment successful:", txId);
           setBillingOpen(false);
+          refetch();
         }}
       />
     </div>

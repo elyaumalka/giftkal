@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Eye, FileText, Copy, Filter, MessageCircle } from "lucide-react";
+import { Search, Eye, FileText, Copy, Filter, MessageCircle, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EventOwners() {
@@ -35,10 +35,25 @@ export default function EventOwners() {
         .select("user_id, full_name, phone, email")
         .in("user_id", ownerIds);
 
+      // Fetch billing charges
+      const eventIds = events?.map(e => e.id) || [];
+      const { data: charges } = await supabase
+        .from("billing_charges" as any)
+        .select("event_id, amount, created_at")
+        .in("event_id", eventIds);
+
+      const chargeMap = new Map<string, any>();
+      (charges || []).forEach((c: any) => {
+        if (!chargeMap.has(c.event_id) || new Date(c.created_at) > new Date(chargeMap.get(c.event_id).created_at)) {
+          chargeMap.set(c.event_id, c);
+        }
+      });
+
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
 
       return events?.map((event) => {
         const profile = profileMap.get(event.owner_id);
+        const charge = chargeMap.get(event.id);
         return {
           ...event,
           ownerName: profile?.full_name || (event.groom_name && event.bride_name ? `${event.groom_name} & ${event.bride_name}` : "—"),
@@ -46,6 +61,7 @@ export default function EventOwners() {
           ownerEmail: profile?.email || "",
           transactionCount: event.transactions?.length || 0,
           totalAmount: event.transactions?.reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0,
+          charge,
         };
       }) || [];
     },
@@ -99,13 +115,14 @@ export default function EventOwners() {
       </div>
 
       {/* Table Header - Right to Left */}
-      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
         <span>תאריך אירוע</span>
         <span>בעל האירוע</span>
         <span>טלפון</span>
         <span>שם האולם</span>
         <span>כמות עסקאות</span>
         <span>סך כל העסקאות</span>
+        <span>סטטוס חיוב</span>
         <span className="w-28"></span>
         <span className="w-10"></span>
         <span className="w-10"></span>
@@ -116,7 +133,7 @@ export default function EventOwners() {
         {filteredEvents?.map((event) => (
           <div
             key={event.id}
-            className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+            className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
           >
             {/* תאריך אירוע */}
             <span className="text-center font-bold">
@@ -146,6 +163,18 @@ export default function EventOwners() {
             {/* סך כל העסקאות */}
             <span className="text-center font-bold text-[#c9a54e]">
               ₪ {event.totalAmount.toLocaleString()}
+            </span>
+
+            {/* סטטוס חיוב */}
+            <span className="text-center">
+              {event.charge ? (
+                <span className="inline-flex items-center gap-1 text-green-600 font-bold text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  ₪{Number(event.charge.amount).toLocaleString()}
+                </span>
+              ) : (
+                <span className="text-muted-foreground text-xs">לא שולם</span>
+              )}
             </span>
 
             {/* העתקת כתובת מייל */}

@@ -38,6 +38,53 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_charges: {
+        Row: {
+          amount: number
+          created_at: string
+          event_id: string | null
+          event_name: string | null
+          id: string
+          nedarim_transaction_id: string | null
+          owner_id: string
+          owner_name: string
+          plan_name: string | null
+          venue_name: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          event_id?: string | null
+          event_name?: string | null
+          id?: string
+          nedarim_transaction_id?: string | null
+          owner_id: string
+          owner_name: string
+          plan_name?: string | null
+          venue_name?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          event_id?: string | null
+          event_name?: string | null
+          id?: string
+          nedarim_transaction_id?: string | null
+          owner_id?: string
+          owner_name?: string
+          plan_name?: string | null
+          venue_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_charges_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budget_categories: {
         Row: {
           created_at: string | null

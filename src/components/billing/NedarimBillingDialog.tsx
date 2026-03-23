@@ -26,6 +26,11 @@ interface NedarimBillingDialogProps {
   allowCustomAmount?: boolean;
   /** Description shown in the dialog */
   description?: string;
+  /** Event metadata for saving billing record */
+  eventId?: string;
+  ownerId?: string;
+  venueName?: string;
+  eventName?: string;
   /** Callback on success */
   onSuccess?: (transactionId: string) => void;
 }
@@ -45,6 +50,10 @@ export default function NedarimBillingDialog({
   customerEmail = "",
   fixedAmount,
   description,
+  eventId,
+  ownerId,
+  venueName,
+  eventName,
   onSuccess,
 }: NedarimBillingDialogProps) {
   const { toast } = useToast();
@@ -99,7 +108,7 @@ export default function NedarimBillingDialog({
   }, [open, customerName, customerPhone, customerEmail]);
 
   // Listen for PostMessage from iframe
-  const handleMessage = useCallback((event: MessageEvent) => {
+  const handleMessage = useCallback(async (event: MessageEvent) => {
     const payload = event.data as { Name?: string; Value?: any };
     if (!payload || typeof payload !== "object" || !payload.Name) return;
 
@@ -125,6 +134,23 @@ export default function NedarimBillingDialog({
         if (payload.Value?.Status === "Error") {
           setError(payload.Value.Message || "שגיאה בביצוע התשלום");
         } else {
+          // Save billing record
+          const chargeAmount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
+          const planLabel = PLAN_OPTIONS.find(p => p.value === selectedPlan)?.label || selectedPlan;
+          try {
+            await supabase.from("billing_charges" as any).insert({
+              event_id: eventId || null,
+              owner_id: ownerId || "",
+              owner_name: name,
+              venue_name: venueName || null,
+              event_name: eventName || null,
+              amount: chargeAmount,
+              plan_name: planLabel,
+              nedarim_transaction_id: payload.Value?.TransactionId || null,
+            });
+          } catch (e) {
+            console.error("[Nedarim] Failed to save billing record:", e);
+          }
           setSuccess(true);
           toast({ title: "התשלום בוצע בהצלחה! ✅" });
           onSuccess?.(payload.Value?.TransactionId || "");
