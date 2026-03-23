@@ -165,6 +165,18 @@ export default function EventOwners() {
               ₪ {event.totalAmount.toLocaleString()}
             </span>
 
+            {/* סטטוס חיוב */}
+            <span className="text-center">
+              {event.charge ? (
+                <span className="inline-flex items-center gap-1 text-green-600 font-bold text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  ₪{Number(event.charge.amount).toLocaleString()}
+                </span>
+              ) : (
+                <span className="text-muted-foreground text-xs">לא שולם</span>
+              )}
+            </span>
+
             {/* העתקת כתובת מייל */}
             <Button
               variant="ghost"
