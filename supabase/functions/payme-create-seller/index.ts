@@ -182,8 +182,7 @@ Deno.serve(async (req) => {
       : cleanPhone;
 
     // PayMe environment
-    const paymeEnv = 'sandbox'; // Change to 'ng' for production
-    const paymeBaseUrl = `https://${paymeEnv}.payme.io`;
+    const paymeBaseUrl = 'https://ng.payme.io';
 
     // Create seller payload
     const sellerPayload = {
