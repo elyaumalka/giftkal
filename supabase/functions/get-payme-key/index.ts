@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         clientKey: event.hf_api_key,
-        testMode: true, // Change to false for production
+        testMode: false,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
