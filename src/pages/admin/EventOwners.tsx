@@ -35,10 +35,25 @@ export default function EventOwners() {
         .select("user_id, full_name, phone, email")
         .in("user_id", ownerIds);
 
+      // Fetch billing charges
+      const eventIds = events?.map(e => e.id) || [];
+      const { data: charges } = await supabase
+        .from("billing_charges" as any)
+        .select("event_id, amount, created_at")
+        .in("event_id", eventIds);
+
+      const chargeMap = new Map<string, any>();
+      (charges || []).forEach((c: any) => {
+        if (!chargeMap.has(c.event_id) || new Date(c.created_at) > new Date(chargeMap.get(c.event_id).created_at)) {
+          chargeMap.set(c.event_id, c);
+        }
+      });
+
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
 
       return events?.map((event) => {
         const profile = profileMap.get(event.owner_id);
+        const charge = chargeMap.get(event.id);
         return {
           ...event,
           ownerName: profile?.full_name || (event.groom_name && event.bride_name ? `${event.groom_name} & ${event.bride_name}` : "—"),
@@ -46,6 +61,7 @@ export default function EventOwners() {
           ownerEmail: profile?.email || "",
           transactionCount: event.transactions?.length || 0,
           totalAmount: event.transactions?.reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0,
+          charge,
         };
       }) || [];
     },
