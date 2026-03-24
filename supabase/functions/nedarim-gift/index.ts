@@ -24,15 +24,11 @@ async function validateApiKey(supabase: any, apiKey: string): Promise<boolean> {
 }
 
 /**
- * Public endpoint for Nedarim Plus form to create a PayMe gift sale.
+ * Public endpoint for Nedarim Plus form.
  * 
- * Flow:
- * 1. Nedarim form sends gift details (event_id, payer info, amount)
- * 2. We validate the API key (from api_keys table, managed in admin panel)
- * 3. We find the event's PayMe seller
- * 4. We create a transaction record (pending)
- * 5. We generate a PayMe sale for the event owner's seller
- * 6. We return the sale_url for redirect
+ * Actions:
+ * - POST with { action: "create" } or no action → Create a new gift sale (returns sale_url + transaction_id)
+ * - POST with { action: "status", transaction_id } → Check payment status of a transaction
  */
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -42,13 +38,8 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const paymeClientKey = Deno.env.get('PAYME_CLIENT_KEY');
-
-    if (!paymeClientKey) {
-      throw new Error('PayMe credentials not configured');
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const body = await req.json();
     console.log('[nedarim-gift] Received:', JSON.stringify(body));
 
@@ -57,22 +48,67 @@ Deno.serve(async (req) => {
     const isValid = await validateApiKey(supabase, apiKey);
     if (!isValid) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - invalid or missing API key' }),
+        JSON.stringify({ success: false, error: 'Unauthorized - invalid or missing API key', error_code: 'UNAUTHORIZED' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { event_id, payer_name, payer_phone, payer_email, payer_id, amount, relationship, blessing_text, event_type, venue_name, venue_location, event_date, event_owner_name } = body;
+    const action = body.action || 'create';
 
+    // ─── ACTION: STATUS ───
+    if (action === 'status') {
+      const { transaction_id } = body;
+      if (!transaction_id) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing required field: transaction_id', error_code: 'MISSING_FIELD' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
-    if (!event_id || !amount || !payer_name) {
+      const { data: tx, error: txErr } = await supabase
+        .from('transactions')
+        .select('id, payment_status, amount, payer_name, created_at, payme_sale_id')
+        .eq('id', transaction_id)
+        .single();
+
+      if (txErr || !tx) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Transaction not found', error_code: 'NOT_FOUND', transaction_id }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: event_id, amount, payer_name' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          success: true,
+          transaction_id: tx.id,
+          status: tx.payment_status, // pending | completed | failed | refunded
+          amount: tx.amount,
+          payer_name: tx.payer_name,
+          created_at: tx.created_at,
+          payme_sale_id: tx.payme_sale_id,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // ─── ACTION: CREATE (default) ───
+    const paymeClientKey = Deno.env.get('PAYME_CLIENT_KEY');
+    if (!paymeClientKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'PayMe credentials not configured on server', error_code: 'SERVER_CONFIG' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { event_id, payer_name, payer_phone, payer_email, payer_id, amount, relationship, blessing_text } = body;
+
+    if (!event_id || !amount || !payer_name) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing required fields: event_id, amount, payer_name', error_code: 'MISSING_FIELD' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Find the event and its PayMe seller
     const { data: event, error: eventError } = await supabase
@@ -83,19 +119,19 @@ Deno.serve(async (req) => {
 
     if (eventError || !event) {
       return new Response(
-        JSON.stringify({ error: 'Event not found', event_id }),
+        JSON.stringify({ success: false, error: 'Event not found', error_code: 'NOT_FOUND', event_id }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!event.seller_payme_id) {
       return new Response(
-        JSON.stringify({ error: 'Event not configured for payments - no PayMe seller' }),
+        JSON.stringify({ success: false, error: 'Event not configured for payments - no PayMe seller', error_code: 'NO_SELLER' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create transaction record (pending)
+    // Create transaction record (pending) - transaction_id is a UUID, guaranteed unique
     const { data: transaction, error: txError } = await supabase
       .from('transactions')
       .insert({
@@ -115,7 +151,7 @@ Deno.serve(async (req) => {
     if (txError) {
       console.error('[nedarim-gift] Transaction creation error:', txError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create transaction record' }),
+        JSON.stringify({ success: false, error: 'Failed to create transaction record', error_code: 'DB_ERROR' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -164,7 +200,9 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({
+          success: false,
           error: 'PayMe error',
+          error_code: 'PAYME_ERROR',
           details: paymeResult.status_error_details || paymeResult.status_error_code,
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -180,6 +218,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        status: 'pending',
         sale_url: paymeResult.sale_url,
         transaction_id: transaction.id,
         payme_sale_id: paymeResult.payme_sale_id,
@@ -191,7 +230,7 @@ Deno.serve(async (req) => {
     console.error('[nedarim-gift] Error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ success: false, error: message, error_code: 'INTERNAL_ERROR' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
