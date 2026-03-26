@@ -130,6 +130,91 @@ const HeroSection = () => {
   );
 };
 
+// ─── What Is GiftKal ───
+const WhatIsGiftkalSection = () => {
+  const { ref, inView } = useInView();
+  const services = [
+    {
+      icon: Monitor,
+      title: "עמדת GiftKal באולם",
+      desc: "עמדה דיגיטלית אלגנטית שמוצבת באולם ומאפשרת לאורחים לשלוח מתנות בצורה נוחה ומודרנית — במקום מעטפות ומזומן.",
+      highlight: true,
+    },
+    {
+      icon: Gift,
+      title: "מתנות דיגיטליות",
+      desc: "האורחים בוחרים סכום, כותבים ברכה אישית ומשלמים באשראי — בתהליך פשוט ומאובטח שלוקח דקה.",
+    },
+    {
+      icon: CreditCard,
+      title: "סליקה מאובטחת",
+      desc: "גבייה בתקן PCI דרך PayMe. הכסף מועבר ישירות לחשבון הבנק של בעל האירוע.",
+    },
+    {
+      icon: QrCode,
+      title: "קישור אישי + QR",
+      desc: "כל אירוע מקבל קישור ו-QR ייחודי — אורחים יכולים לשלוח מתנות גם מהטלפון, לפני, במהלך ואחרי האירוע.",
+    },
+    {
+      icon: Heart,
+      title: "ברכות אישיות",
+      desc: "כל מתנה מלווה בברכה אישית מהאורח — חוויה רגשית ומרגשת לבעלי האירוע.",
+    },
+    {
+      icon: Send,
+      title: "הזמנות דיגיטליות",
+      desc: "מערכת ליצירת הזמנות דיגיטליות מעוצבות עם אישורי הגעה מובנים — חוסכת הוצאות דפוס.",
+    },
+  ];
+
+  return (
+    <section className="py-24 bg-background" ref={ref}>
+      <div className="container mx-auto px-4">
+        <div className={`text-center mb-16 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+          <div className="inline-block bg-primary/10 rounded-full px-5 py-2 mb-4">
+            <span className="text-primary text-sm font-medium">🎁 מה זה GiftKal?</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            מערכת מתנות דיגיטלית <span className="text-gradient-gold">לאירועים</span>
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            GiftKal מחליפה את המעטפות והמזומן בפתרון דיגיטלי מלא — עמדה באולם, סליקה מאובטחת, ברכות אישיות והזמנות מעוצבות
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {services.map((s, i) => (
+            <div
+              key={i}
+              className={`group relative bg-card rounded-2xl p-8 border transition-all duration-500 ${
+                s.highlight
+                  ? "border-primary/40 shadow-gold ring-1 ring-primary/20"
+                  : "border-border hover:border-primary/30 hover:shadow-lg"
+              } hover:-translate-y-1 ${
+                inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+              style={{ transitionDelay: `${i * 80}ms` }}
+            >
+              {s.highlight && (
+                <div className="absolute -top-3 right-6 bg-gradient-gold text-white text-xs font-bold px-4 py-1 rounded-full shadow-gold">
+                  ⭐ השירות המרכזי
+                </div>
+              )}
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-colors ${
+                s.highlight ? "bg-primary/20" : "bg-primary/10 group-hover:bg-primary/20"
+              }`}>
+                <s.icon className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-3">{s.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ─── What You Get ───
 const BenefitsSection = () => {
   const { ref, inView } = useInView();
