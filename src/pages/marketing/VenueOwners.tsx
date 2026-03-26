@@ -320,7 +320,7 @@ const WhyJoinSection = () => {
 
         <div className={`text-center mt-12 transition-all duration-700 delay-500 ${inView ? "opacity-100" : "opacity-0"}`}>
           <p className="text-primary text-xl font-bold">
-            👈 אתם לא רק מקום — אתם חוויה שלמה
+            👈 אתם לא רק אולם — אתם חוויה שלמה
           </p>
         </div>
       </div>
