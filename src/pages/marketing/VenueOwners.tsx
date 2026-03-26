@@ -177,7 +177,7 @@ const WhatIsGiftkalSection = () => {
   ];
 
   return (
-    <section className="py-24 bg-background" ref={ref}>
+    <section id="what-is-giftkal" className="py-24 bg-background" ref={ref}>
       <div className="container mx-auto px-4">
         <div className={`text-center mb-16 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
           <div className="inline-block bg-primary/10 rounded-full px-5 py-2 mb-4">
