@@ -59,7 +59,7 @@ const HomePage = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/access">
+            <Link to="/signup">
               <Button variant="gold" size="lg" className="text-lg px-10 py-6">
                 <Gift className="w-5 h-5 ml-2" />
                 פתחו אירוע עכשיו
@@ -318,7 +318,7 @@ const HomePage = () => {
           <p className="text-xl text-white/60 mb-10 max-w-xl mx-auto">
             פתחו אירוע עכשיו ותתחילו לקבל מתנות בצורה חכמה
           </p>
-          <Link to="/access">
+          <Link to="/signup">
             <Button variant="gold" size="lg" className="text-lg px-12 py-7">
               <Gift className="w-5 h-5 ml-2" />
               התחילו עכשיו

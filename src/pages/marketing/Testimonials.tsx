@@ -184,7 +184,7 @@ const Testimonials = () => {
           <p className="text-xl text-white/60 mb-10 max-w-xl mx-auto">
             פתחו אירוע עכשיו ותתחילו לקבל מתנות בצורה חכמה
           </p>
-          <Link to="/access">
+          <Link to="/signup">
             <Button variant="gold" size="lg" className="text-lg px-12 py-6">
               התחילו עכשיו
             </Button>
