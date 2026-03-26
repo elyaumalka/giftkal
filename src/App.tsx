@@ -17,6 +17,7 @@ import AccessPage from "./pages/auth/AccessPage";
 import HomePage from "./pages/landing/HomePage";
 import MarketingLayout from "./components/layout/MarketingLayout";
 import VenueOwners from "./pages/marketing/VenueOwners";
+import EventOwnersPage from "./pages/marketing/EventOwners";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -80,6 +81,7 @@ function App() {
           {/* Marketing pages with shared nav/footer */}
           <Route element={<MarketingLayout />}>
             <Route path="/venues-page" element={<VenueOwners />} />
+            <Route path="/event-owners" element={<EventOwnersPage />} />
           </Route>
 
           {/* Legacy home page (self-contained nav/footer) */}
