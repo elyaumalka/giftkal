@@ -84,6 +84,7 @@ function App() {
         <Routes>
           {/* Marketing pages with shared nav/footer */}
           <Route element={<MarketingLayout />}>
+            <Route path="/" element={<HomePage />} />
             <Route path="/venues-page" element={<VenueOwners />} />
             <Route path="/event-owners" element={<EventOwnersPage />} />
             <Route path="/benefits" element={<Benefits />} />
@@ -91,9 +92,6 @@ function App() {
             <Route path="/testimonials-page" element={<Testimonials />} />
             <Route path="/contact" element={<Contact />} />
           </Route>
-
-          {/* Legacy home page (self-contained nav/footer) */}
-          <Route path="/" element={<HomePage />} />
           <Route path="/access" element={<AccessPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/event" element={<EventLogin />} />
