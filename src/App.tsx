@@ -21,6 +21,7 @@ import EventOwnersPage from "./pages/marketing/EventOwners";
 import Benefits from "./pages/marketing/Benefits";
 import Pricing from "./pages/marketing/Pricing";
 import Testimonials from "./pages/marketing/Testimonials";
+import Contact from "./pages/marketing/Contact";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -88,6 +89,7 @@ function App() {
             <Route path="/benefits" element={<Benefits />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/testimonials-page" element={<Testimonials />} />
+            <Route path="/contact" element={<Contact />} />
           </Route>
 
           {/* Legacy home page (self-contained nav/footer) */}
