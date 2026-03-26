@@ -56,7 +56,7 @@ const MarketingNavbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link to="/access" className="text-white/70 hover:text-white hover:bg-white/10 hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium">
+          <Link to="/signup" className="text-white/70 hover:text-white hover:bg-white/10 hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium">
             <LogIn className="w-4 h-4 ml-2" />
             כניסה למערכת
           </Link>
@@ -91,7 +91,7 @@ const MarketingNavbar = () => {
                 {item.label}
               </Link>
             ))}
-            <Link to="/access" className="block w-full text-right text-white/80 hover:text-primary py-2 text-sm">
+            <Link to="/signup" className="block w-full text-right text-white/80 hover:text-primary py-2 text-sm">
               כניסה למערכת
             </Link>
           </div>
@@ -124,7 +124,7 @@ const MarketingFooter = () => {
                 </li>
               ))}
               <li>
-                <Link to="/access" className="text-white/60 hover:text-primary transition-colors text-sm">
+                <Link to="/signup" className="text-white/60 hover:text-primary transition-colors text-sm">
                   כניסה למערכת
                 </Link>
               </li>
