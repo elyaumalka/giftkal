@@ -547,10 +547,10 @@ const Signup = () => {
                 <p className="text-white/70 text-sm"><strong className="text-white">אירוע:</strong> {data.eventType} — {data.eventDate}</p>
                 {transactionId && <p className="text-white/40 text-xs">מזהה עסקה: {transactionId}</p>}
               </div>
-              <p className="text-white/50 text-sm">ניצור איתכם קשר בהקדם להשלמת פתיחת החשבון במערכת</p>
-              <Link to="/">
+              <p className="text-white/50 text-sm">החשבון שלכם נפתח בהצלחה! כעת תוכלו להתחבר עם המייל והסיסמה שהזנתם</p>
+              <Link to="/login/event">
                 <Button variant="gold" className="mt-2">
-                  חזרה לדף הבית
+                  התחבר לחשבון שלי
                 </Button>
               </Link>
             </div>
