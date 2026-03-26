@@ -190,10 +190,38 @@ const Signup = () => {
     iframeRef.current?.contentWindow?.postMessage(paymentData, "*");
   };
 
-  /* ─── Save lead after successful payment ─── */
+  /* ─── Create user + event after successful payment ─── */
   const saveLead = async (txId: string) => {
     try {
       const planNames = PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ");
+
+      // 1. Create user + event via edge function
+      const { data: result, error: fnError } = await supabase.functions.invoke("create-customer", {
+        body: {
+          type: "event",
+          user: {
+            email: data.email.trim(),
+            password: data.password,
+            fullName: data.fullName.trim(),
+            phone: data.phone.trim(),
+          },
+          event: {
+            eventType: data.eventType,
+            eventDate: data.eventDate,
+            groomName: data.groomName || null,
+            brideName: data.brideName || null,
+          },
+        },
+      });
+
+      if (fnError || !result?.success) {
+        console.error("Error creating user:", fnError || result?.error);
+        toast({ title: "התשלום בוצע אך הייתה שגיאה ביצירת החשבון. ניצור קשר בהקדם.", variant: "destructive" });
+      }
+
+      const ownerId = result?.user?.id || "00000000-0000-0000-0000-000000000000";
+
+      // 2. Save lead
       await supabase.from("leads").insert({
         full_name: data.fullName.trim(),
         phone: data.phone.trim(),
@@ -204,9 +232,9 @@ const Signup = () => {
         status: "paid",
       });
 
-      // Save billing record
+      // 3. Save billing record
       await supabase.from("billing_charges" as any).insert({
-        owner_id: "00000000-0000-0000-0000-000000000000",
+        owner_id: ownerId,
         owner_name: data.fullName.trim(),
         amount: totalPrice,
         plan_name: planNames,
@@ -519,10 +547,10 @@ const Signup = () => {
                 <p className="text-white/70 text-sm"><strong className="text-white">אירוע:</strong> {data.eventType} — {data.eventDate}</p>
                 {transactionId && <p className="text-white/40 text-xs">מזהה עסקה: {transactionId}</p>}
               </div>
-              <p className="text-white/50 text-sm">ניצור איתכם קשר בהקדם להשלמת פתיחת החשבון במערכת</p>
-              <Link to="/">
+              <p className="text-white/50 text-sm">החשבון שלכם נפתח בהצלחה! כעת תוכלו להתחבר עם המייל והסיסמה שהזנתם</p>
+              <Link to="/login/event">
                 <Button variant="gold" className="mt-2">
-                  חזרה לדף הבית
+                  התחבר לחשבון שלי
                 </Button>
               </Link>
             </div>
