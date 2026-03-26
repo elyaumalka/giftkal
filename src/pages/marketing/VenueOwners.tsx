@@ -101,9 +101,9 @@ const HeroSection = () => {
           </h1>
 
           <p className="text-white/60 text-lg md:text-xl mb-4 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: "0.1s" }}>
-            מערכת מתקדמת לכל סוגי האירועים
+            מערכת גביית מתנות באשראי לכל סוגי האירועים
             <br />
-            שמשדרגת את חוויית הלקוחות ומייצרת לכם לידים חדשים
+            משדרגת את חוויית האורחים ומייצרת לכם לידים חדשים
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10 animate-slide-up" style={{ animationDelay: "0.2s" }}>
