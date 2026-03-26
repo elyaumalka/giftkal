@@ -34,14 +34,14 @@ const contactMethods = [
     icon: MessageCircle,
     title: "WhatsApp",
     value: "שלחו הודעה",
-    href: "https://wa.me/972500000000",
+    href: "https://wa.me/97223131700",
     description: "מענה מהיר תוך דקות",
   },
   {
     icon: Mail,
     title: "אימייל",
-    value: "info@giftkal.com",
-    href: "mailto:info@giftkal.com",
+    value: "g023131700@gmail.com",
+    href: "mailto:g023131700@gmail.com",
     description: "מענה תוך 24 שעות",
   },
 ];
@@ -255,7 +255,7 @@ const Contact = () => {
           <p className="text-white/60 mb-8 max-w-lg mx-auto">
             צרו קשר בוואטסאפ ונחזור אליכם תוך דקות
           </p>
-          <a href="https://wa.me/972500000000" target="_blank" rel="noopener noreferrer">
+          <a href="https://wa.me/97223131700" target="_blank" rel="noopener noreferrer">
             <Button variant="gold" size="lg" className="text-lg px-10 py-6">
               <MessageCircle className="w-5 h-5 ml-2" />
               שלחו הודעה בוואטסאפ
