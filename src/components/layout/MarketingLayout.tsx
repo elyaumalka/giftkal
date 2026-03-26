@@ -140,13 +140,13 @@ const MarketingFooter = () => {
                 </a>
               </li>
               <li>
-                <a href="mailto:info@giftkal.com" className="flex items-center gap-3 text-white/60 hover:text-primary transition-colors text-sm">
+                <a href="mailto:g023131700@gmail.com" className="flex items-center gap-3 text-white/60 hover:text-primary transition-colors text-sm">
                   <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><Mail className="w-4 h-4" /></div>
-                  info@giftkal.com
+                  g023131700@gmail.com
                 </a>
               </li>
               <li>
-                <a href="https://wa.me/972500000000" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white/60 hover:text-primary transition-colors text-sm">
+                <a href="https://wa.me/97223131700" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white/60 hover:text-primary transition-colors text-sm">
                   <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><MessageCircle className="w-4 h-4" /></div>
                   WhatsApp
                 </a>
