@@ -60,7 +60,7 @@ const MarketingNavbar = () => {
             <LogIn className="w-4 h-4 ml-2" />
             כניסה למערכת
           </Link>
-          <Link to="/contact">
+          <Link to="/pricing">
             <Button variant="gold" size="default">
               הצטרפו עכשיו
             </Button>
