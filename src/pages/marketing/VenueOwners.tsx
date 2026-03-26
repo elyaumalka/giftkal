@@ -117,6 +117,15 @@ const HeroSection = () => {
           <p className="text-white/40 text-sm mt-8 animate-fade-in" style={{ animationDelay: "0.4s" }}>
             מתאים לחתונות • בר מצוות • בריתות • אירועי חברה • כנסים
           </p>
+
+          <button
+            onClick={() => document.getElementById("what-is-giftkal")?.scrollIntoView({ behavior: "smooth" })}
+            className="mt-10 flex flex-col items-center gap-2 mx-auto text-white/50 hover:text-primary transition-colors animate-fade-in cursor-pointer"
+            style={{ animationDelay: "0.6s" }}
+          >
+            <span className="text-sm font-medium">לפירוט המלא גללו למטה</span>
+            <ArrowLeft className="w-5 h-5 rotate-[-90deg] animate-bounce" style={{ animationDuration: "2s" }} />
+          </button>
         </div>
       </div>
 
