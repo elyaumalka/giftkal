@@ -175,7 +175,7 @@ const Benefits = () => {
               </Button>
             </Link>
             <Link to="/event-owners">
-              <Button variant="outline" size="lg" className="text-lg px-10 py-6 border-white/30 text-white hover:bg-white/10">
+              <Button size="lg" className="text-lg px-10 py-6 bg-transparent border-2 border-white/30 text-white hover:bg-white/10">
                 <ArrowLeft className="w-5 h-5 ml-2" />
                 חזרה לבעלי אירועים
               </Button>
