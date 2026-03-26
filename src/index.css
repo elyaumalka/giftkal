@@ -275,4 +275,9 @@
     50% { top: 60%; opacity: 1; }
     80% { opacity: 0.4; }
   }
+
+  @keyframes scrollDot {
+    0%, 100% { transform: translateY(0); opacity: 0.3; }
+    50% { transform: translateY(16px); opacity: 1; }
+  }
 }
