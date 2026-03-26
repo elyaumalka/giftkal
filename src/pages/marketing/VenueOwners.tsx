@@ -120,11 +120,25 @@ const HeroSection = () => {
 
           <button
             onClick={() => document.getElementById("what-is-giftkal")?.scrollIntoView({ behavior: "smooth" })}
-            className="mt-10 flex flex-col items-center gap-2 mx-auto text-white/50 hover:text-primary transition-colors animate-fade-in cursor-pointer"
+            className="mt-12 flex flex-col items-center gap-3 mx-auto text-white/50 hover:text-primary transition-colors animate-fade-in cursor-pointer group"
             style={{ animationDelay: "0.6s" }}
           >
             <span className="text-sm font-medium">לפירוט המלא גללו למטה</span>
-            <ArrowLeft className="w-5 h-5 rotate-[-90deg] animate-bounce" style={{ animationDuration: "2s" }} />
+            {/* Phone mockup with scrolling finger */}
+            <div className="relative w-12 h-20 rounded-xl border-2 border-white/30 group-hover:border-primary/50 transition-colors bg-white/5 overflow-hidden">
+              {/* Screen content lines */}
+              <div className="absolute top-2 right-2 left-2 space-y-1.5">
+                <div className="h-1 bg-white/20 rounded-full w-full" />
+                <div className="h-1 bg-white/15 rounded-full w-3/4" />
+                <div className="h-1 bg-white/10 rounded-full w-1/2" />
+              </div>
+              {/* Scrolling finger */}
+              <div className="absolute left-1/2 -translate-x-1/2 animate-[scrollFinger_2s_ease-in-out_infinite]">
+                <svg width="16" height="20" viewBox="0 0 16 20" fill="none" className="text-primary drop-shadow-lg">
+                  <path d="M8 0C8 0 3 2 3 6V11L1.5 9.5C0.5 8.5 -0.5 9.5 0.5 10.5L5 16C5 16 6 18 8 18H11C13 18 14 16 14 14V6C14 2 9 0 8 0Z" fill="currentColor" fillOpacity="0.8"/>
+                </svg>
+              </div>
+            </div>
           </button>
         </div>
       </div>
