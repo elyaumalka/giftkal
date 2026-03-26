@@ -23,6 +23,11 @@ import {
   Star,
   Zap,
   MapPin,
+  Gift,
+  Wallet,
+  Send,
+  QrCode,
+  Heart,
 } from "lucide-react";
 
 // ─── Hooks ───
@@ -668,6 +673,7 @@ const VenueOwners = () => {
   return (
     <>
       <HeroSection />
+      <WhatIsGiftkalSection />
       <BenefitsSection />
       <GoldQuote text="האולם שלכם לא רק מארח אירועים — הוא מייצר את האירוע הבא" />
       <WhyJoinSection />
