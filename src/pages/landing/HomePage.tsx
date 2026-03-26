@@ -66,7 +66,7 @@ const HomePage = () => {
               </Button>
             </Link>
             <Link to="/venues-page">
-              <Button variant="outline" size="lg" className="text-lg px-10 py-6 border-white/30 text-white hover:bg-white/10">
+              <Button size="lg" className="text-lg px-10 py-6 bg-transparent border-2 border-white/30 text-white hover:bg-white/10">
                 <Building2 className="w-5 h-5 ml-2" />
                 אני בעל אולם
               </Button>
