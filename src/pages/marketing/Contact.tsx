@@ -26,8 +26,8 @@ const contactMethods = [
   {
     icon: Phone,
     title: "טלפון",
-    value: "050-000-0000",
-    href: "tel:+972500000000",
+    value: "02-3131700",
+    href: "tel:+97223131700",
     description: "ימים א׳–ה׳, 9:00–18:00",
   },
   {
@@ -151,7 +151,7 @@ const Contact = () => {
                       name="phone"
                       value={form.phone}
                       onChange={handleChange}
-                      placeholder="050-000-0000"
+                      placeholder="02-3131700"
                       className="h-12 text-base"
                       maxLength={15}
                       required

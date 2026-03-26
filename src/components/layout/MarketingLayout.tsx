@@ -134,9 +134,9 @@ const MarketingFooter = () => {
             <h4 className="text-white font-bold mb-6 text-lg">יצירת קשר</h4>
             <ul className="space-y-4">
               <li>
-                <a href="tel:+972500000000" className="flex items-center gap-3 text-white/60 hover:text-primary transition-colors text-sm">
+                <a href="tel:+97223131700" className="flex items-center gap-3 text-white/60 hover:text-primary transition-colors text-sm">
                   <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><Phone className="w-4 h-4" /></div>
-                  050-000-0000
+                  02-3131700
                 </a>
               </li>
               <li>
