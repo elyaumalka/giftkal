@@ -13,8 +13,10 @@ import VenueLogin from "./pages/auth/VenueLogin";
 import Signup from "./pages/auth/Signup";
 import AccessPage from "./pages/auth/AccessPage";
 
-// Landing
+// Landing / Marketing
 import HomePage from "./pages/landing/HomePage";
+import MarketingLayout from "./components/layout/MarketingLayout";
+import VenueOwners from "./pages/marketing/VenueOwners";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
