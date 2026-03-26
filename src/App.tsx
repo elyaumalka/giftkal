@@ -89,6 +89,7 @@ function App() {
             <Route path="/benefits" element={<Benefits />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/testimonials-page" element={<Testimonials />} />
+            <Route path="/contact" element={<Contact />} />
           </Route>
 
           {/* Legacy home page (self-contained nav/footer) */}
