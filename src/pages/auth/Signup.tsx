@@ -485,10 +485,23 @@ const Signup = () => {
                   <ArrowRight className="w-4 h-4 ml-1" />
                   חזרה
                 </Button>
-                <Button onClick={() => { if (validateDetails()) setStep(3); }} variant="gold" className="flex-1 h-12 text-lg">
-                  <CreditCard className="w-5 h-5 ml-2" />
-                  המשך לתשלום ₪{totalPrice}
+                <Button onClick={async () => {
+                  if (!validateDetails()) return;
+                  if (totalPrice === 0) {
+                    // Coupon covers everything - skip payment
+                    await saveLead("COUPON-" + couponCode);
+                    setStep(4);
+                  } else {
+                    setStep(3);
+                  }
+                }} variant="gold" className="flex-1 h-12 text-lg">
+                  {totalPrice === 0 ? (
+                    <><Sparkles className="w-5 h-5 ml-2" />סיום הרשמה</>
+                  ) : (
+                    <><CreditCard className="w-5 h-5 ml-2" />המשך לתשלום ₪{totalPrice}</>
+                  )}
                 </Button>
+              </div>
               </div>
             </div>
           )}
