@@ -98,11 +98,15 @@ export function EventLayout() {
     enabled: authorized,
   });
 
+  const isBudgetOnly = eventData && !eventData.gifts_enabled && !eventData.invitations_enabled && !eventData.rsvp_enabled;
+
   const menuItems = allMenuItems.filter(item => {
     if (item.key === "budget" && !eventData?.budget_enabled) return false;
     if (item.key === "gifts" && !eventData?.gifts_enabled) return false;
     if (item.key === "invitations" && !eventData?.invitations_enabled) return false;
     if (item.key === "rsvp" && !eventData?.rsvp_enabled) return false;
+    // Hide dashboard and settings for budget-only users
+    if (isBudgetOnly && (item.key === "dashboard" || item.key === "settings")) return false;
     return true;
   });
 
@@ -112,6 +116,13 @@ export function EventLayout() {
     ...(!eventData?.invitations_enabled ? [{ key: "invitations", label: "הזמנות דיגיטליות", icon: Send }] : []),
     ...(!eventData?.rsvp_enabled ? [{ key: "rsvp", label: "אישורי הגעה", icon: CreditCard }] : []),
   ];
+
+  // Redirect budget-only users from dashboard to budget page
+  useEffect(() => {
+    if (isBudgetOnly && location.pathname === "/event") {
+      navigate("/event/budget", { replace: true });
+    }
+  }, [isBudgetOnly, location.pathname, navigate]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
