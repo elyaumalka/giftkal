@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload, AlertCircle, CheckCircle, Copy, Gift, ExternalLink } from "lucide-react";
+import { ArrowLeft, Upload, AlertCircle, CheckCircle, Copy, Gift, ExternalLink, Send, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function EventSettings() {
   const { toast } = useToast();
