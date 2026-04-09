@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LogOut, Loader2 } from "lucide-react";
+import { LogOut, Loader2, Gift, Send, CreditCard, Lock } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 // Custom icons for event
