@@ -130,8 +130,8 @@ export default function EventSettings() {
         <p className="text-gray-500 mt-1">ניהול פרטים אישיים ומסמכים</p>
       </div>
 
-      {/* Gift Page Link Card */}
-      {event && (
+      {/* Gift Page Link Card - only for users with gifts enabled */}
+      {event && event.gifts_enabled && (
         <div className="bg-gradient-to-br from-[#C4A35A] to-[#D4B36A] rounded-2xl shadow-lg overflow-hidden">
           <div className="p-6 text-white">
             <div className="flex items-center gap-3 mb-4">
