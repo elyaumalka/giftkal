@@ -743,6 +743,21 @@ export default function Customers() {
               <Button variant="ghost" size="icon" onClick={() => openEditVenue(venue)} className="shrink-0">
                 <Pencil className="w-5 h-5 text-sidebar-accent" />
               </Button>
+              {/* Impersonate Button */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => handleImpersonate(venue.owner_id)} 
+                disabled={impersonating === venue.owner_id}
+                className="shrink-0"
+                title="כניסה כמשתמש"
+              >
+                {impersonating === venue.owner_id ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                ) : (
+                  <LogIn className="w-5 h-5 text-blue-500" />
+                )}
+              </Button>
 
               {/* Customer Name */}
               <div className="flex-1 font-semibold text-secondary text-right">
