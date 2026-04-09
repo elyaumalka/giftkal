@@ -98,11 +98,15 @@ export function EventLayout() {
     enabled: authorized,
   });
 
+  const isBudgetOnly = eventData && !eventData.gifts_enabled && !eventData.invitations_enabled && !eventData.rsvp_enabled;
+
   const menuItems = allMenuItems.filter(item => {
     if (item.key === "budget" && !eventData?.budget_enabled) return false;
     if (item.key === "gifts" && !eventData?.gifts_enabled) return false;
     if (item.key === "invitations" && !eventData?.invitations_enabled) return false;
     if (item.key === "rsvp" && !eventData?.rsvp_enabled) return false;
+    // Hide dashboard and settings for budget-only users
+    if (isBudgetOnly && (item.key === "dashboard" || item.key === "settings")) return false;
     return true;
   });
 
