@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag } from "lucide-react";
 import { z } from "zod";
 
 // Israeli banks
@@ -461,6 +461,63 @@ export default function PaymeSetup() {
                     {errors.streetNumber && <p className="text-red-500 text-sm mt-1">{errors.streetNumber}</p>}
                   </div>
                 </div>
+              </div>
+
+              {/* Coupon Section */}
+              <div className="space-y-3 border-t pt-6">
+                <div className="flex items-center gap-2 text-base font-semibold">
+                  <Tag className="w-4 h-4" />
+                  <h3>יש לך קופון?</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="הזן קוד קופון"
+                    className="flex-1"
+                    disabled={couponApplied}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!couponCode.trim() || couponApplied || applyingCoupon}
+                    onClick={async () => {
+                      setApplyingCoupon(true);
+                      setErrors({});
+                      try {
+                        const { data: session } = await supabase.auth.getSession();
+                        if (!session.session) throw new Error('לא מחובר');
+
+                        const response = await supabase.functions.invoke('payme-create-seller', {
+                          body: { eventId, couponCode: couponCode.trim() },
+                        });
+
+                        if (response.error) throw new Error(response.error.message);
+                        if (!response.data?.success) throw new Error(response.data?.error || 'קופון לא תקין');
+
+                        setCouponApplied(true);
+                        setStep('success');
+                        toast({
+                          title: "קופון הופעל בהצלחה! ✅",
+                          description: "חשבון סליקה לבדיקות נוצר",
+                        });
+                      } catch (err: any) {
+                        toast({
+                          title: "שגיאה",
+                          description: err.message || 'קופון לא תקין',
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setApplyingCoupon(false);
+                      }
+                    }}
+                  >
+                    {applyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'הפעל'}
+                  </Button>
+                </div>
+                {couponApplied && (
+                  <p className="text-sm text-green-600 font-medium">✅ קופון הופעל</p>
+                )}
               </div>
 
               {/* Submit Button */}
