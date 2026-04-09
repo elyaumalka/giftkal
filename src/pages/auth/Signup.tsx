@@ -58,6 +58,10 @@ const Signup = () => {
   const [selected, setSelected] = useState<Record<string, boolean>>({ gifts: true });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
+
+  const VALID_COUPONS: Record<string, number> = { "GIFTKAL-TEST": 100, "GIFTKAL100": 100 };
 
   const [data, setData] = useState({
     fullName: "", email: "", phone: "", password: "", idNumber: "",
@@ -75,7 +79,8 @@ const Signup = () => {
   const [paymentError, setPaymentError] = useState("");
   const [transactionId, setTransactionId] = useState("");
 
-  const totalPrice = PLANS.filter(p => selected[p.id]).reduce((sum, p) => sum + p.price, 0);
+  const discountPercent = couponApplied ? (VALID_COUPONS[couponCode.toUpperCase()] || 0) : 0;
+  const totalPrice = Math.max(0, Math.round(PLANS.filter(p => selected[p.id]).reduce((sum, p) => sum + p.price, 0) * (1 - discountPercent / 100)));
 
   /* ─── Toggle plan ─── */
   const togglePlan = (id: string) => {
@@ -342,11 +347,43 @@ const Signup = () => {
                 </div>
               </div>
 
+              {/* Coupon */}
+              <div className="flex gap-2">
+                <Input
+                  value={couponCode}
+                  onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="קוד קופון (אופציונלי)"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11 flex-1"
+                  disabled={couponApplied}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-white/20 text-white hover:bg-white/10 h-11"
+                  disabled={!couponCode.trim() || couponApplied}
+                  onClick={() => {
+                    if (VALID_COUPONS[couponCode.toUpperCase()]) {
+                      setCouponApplied(true);
+                      toast({ title: "קופון הופעל בהצלחה! ✅" });
+                    } else {
+                      toast({ title: "קופון לא תקין", variant: "destructive" });
+                    }
+                  }}
+                >
+                  {couponApplied ? "✅" : "הפעל"}
+                </Button>
+              </div>
+
               {/* Total */}
               <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                 <div className="flex items-center justify-between">
                   <span className="text-white/60 text-sm">סה"כ לתשלום:</span>
-                  <span className="text-2xl font-black text-primary">₪{totalPrice}</span>
+                  <div className="flex items-center gap-2">
+                    {couponApplied && (
+                      <span className="text-white/40 line-through text-sm">₪{PLANS.filter(p => selected[p.id]).reduce((s, p) => s + p.price, 0)}</span>
+                    )}
+                    <span className="text-2xl font-black text-primary">{totalPrice === 0 ? "חינם! 🎉" : `₪${totalPrice}`}</span>
+                  </div>
                 </div>
                 <p className="text-white/30 text-xs mt-1">תשלום חד פעמי • ללא התחייבות</p>
               </div>
@@ -448,9 +485,21 @@ const Signup = () => {
                   <ArrowRight className="w-4 h-4 ml-1" />
                   חזרה
                 </Button>
-                <Button onClick={() => { if (validateDetails()) setStep(3); }} variant="gold" className="flex-1 h-12 text-lg">
-                  <CreditCard className="w-5 h-5 ml-2" />
-                  המשך לתשלום ₪{totalPrice}
+                <Button onClick={async () => {
+                  if (!validateDetails()) return;
+                  if (totalPrice === 0) {
+                    // Coupon covers everything - skip payment
+                    await saveLead("COUPON-" + couponCode);
+                    setStep(4);
+                  } else {
+                    setStep(3);
+                  }
+                }} variant="gold" className="flex-1 h-12 text-lg">
+                  {totalPrice === 0 ? (
+                    <><Sparkles className="w-5 h-5 ml-2" />סיום הרשמה</>
+                  ) : (
+                    <><CreditCard className="w-5 h-5 ml-2" />המשך לתשלום ₪{totalPrice}</>
+                  )}
                 </Button>
               </div>
             </div>
