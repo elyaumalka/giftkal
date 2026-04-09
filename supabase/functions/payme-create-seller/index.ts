@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
       : cleanPhone;
 
     // PayMe environment
-    const paymeBaseUrl = 'https://ng.payme.io';
+    const paymeBaseUrl = 'https://ng.paymeservice.com';
 
     // Create seller payload
     const sellerPayload = {
