@@ -110,8 +110,62 @@ Deno.serve(async (req) => {
       );
     }
 
-    const body: CreateSellerRequest = await req.json();
+    const body = await req.json();
     console.log('Received request body:', JSON.stringify(body));
+
+    // Handle coupon code - bypass PayMe for testing
+    if (body.couponCode === 'GIFTKAL-TEST') {
+      const { eventId } = body;
+      if (!eventId) {
+        return new Response(
+          JSON.stringify({ error: 'Missing eventId' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Verify user owns the event
+      const { data: evt } = await supabase
+        .from('events')
+        .select('id, owner_id, seller_payme_id')
+        .eq('id', eventId)
+        .single();
+
+      if (!evt || evt.owner_id !== user.id) {
+        return new Response(
+          JSON.stringify({ error: 'Event not found or unauthorized' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (evt.seller_payme_id) {
+        return new Response(
+          JSON.stringify({ error: 'Seller already exists', sellerId: evt.seller_payme_id }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Set test seller ID
+      const testSellerId = `TEST-${crypto.randomUUID().slice(0, 8)}`;
+      const testHfKey = `TEST-HF-${crypto.randomUUID().slice(0, 8)}`;
+      
+      await supabase.from('events').update({
+        seller_payme_id: testSellerId,
+        hf_api_key: testHfKey,
+      }).eq('id', eventId);
+
+      console.log(`Coupon GIFTKAL-TEST applied for event ${eventId}, test seller: ${testSellerId}`);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          sellerPaymeId: testSellerId,
+          hfApiKey: testHfKey,
+          message: 'Test seller created via coupon',
+          testMode: true,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Validate required fields
     const requiredFields = [
