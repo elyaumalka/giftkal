@@ -595,9 +595,14 @@ const Signup = () => {
                 <CheckCircle2 className="w-10 h-10 text-green-400" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white mb-2">התשלום בוצע בהצלחה! 🎉</h1>
+                <h1 className="text-2xl font-bold text-white mb-2">
+                  {totalPrice > 0 ? "התשלום בוצע בהצלחה! 🎉" : "החשבון נפתח בהצלחה! 🎉"}
+                </h1>
                 <p className="text-white/60">
-                  שולם ₪{totalPrice} • {PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ")}
+                  {totalPrice > 0 
+                    ? `שולם ₪${totalPrice} • ${PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ")}`
+                    : "ניהול תקציב — חינם"
+                  }
                 </p>
               </div>
               <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-right space-y-1">
@@ -606,7 +611,24 @@ const Signup = () => {
                 <p className="text-white/70 text-sm"><strong className="text-white">אירוע:</strong> {data.eventType} — {data.eventDate}</p>
                 {transactionId && <p className="text-white/40 text-xs">מזהה עסקה: {transactionId}</p>}
               </div>
-              <p className="text-white/50 text-sm">החשבון שלכם נפתח בהצלחה! כעת תוכלו להתחבר עם המייל והסיסמה שהזנתם</p>
+
+              {/* Upsell for free users */}
+              {totalPrice === 0 && !PLANS.some(p => selected[p.id]) && (
+                <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 text-right space-y-3">
+                  <p className="text-primary font-bold text-sm">💡 שדרגו את האירוע שלכם!</p>
+                  <div className="space-y-2">
+                    {PLANS.map(plan => (
+                      <div key={plan.id} className="flex items-center justify-between text-sm">
+                        <span className="text-white/70">{plan.title}</span>
+                        <span className="text-primary font-bold">₪{plan.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-white/40 text-xs">ניתן לשדרג בכל עת מתוך האיזור האישי</p>
+                </div>
+              )}
+
+              <p className="text-white/50 text-sm">כעת תוכלו להתחבר עם המייל והסיסמה שהזנתם</p>
               <Link to="/login/event">
                 <Button variant="gold" className="mt-2">
                   התחבר לחשבון שלי
