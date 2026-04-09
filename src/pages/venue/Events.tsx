@@ -1,16 +1,47 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Eye, Filter, X } from "lucide-react";
+import { Plus, Eye, Filter, X, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function VenueEvents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Add event form state
+  const [newFullName, setNewFullName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newGroomName, setNewGroomName] = useState("");
+  const [newBrideName, setNewBrideName] = useState("");
+  const [newEventDate, setNewEventDate] = useState("");
+  const [newEventType, setNewEventType] = useState("חתונה");
+
+  const resetForm = () => {
+    setNewFullName("");
+    setNewEmail("");
+    setNewPassword("");
+    setNewPhone("");
+    setNewGroomName("");
+    setNewBrideName("");
+    setNewEventDate("");
+    setNewEventType("חתונה");
+  };
 
   const { data: venue } = useQuery({
     queryKey: ["venue-info"],
@@ -50,7 +81,6 @@ export default function VenueEvents() {
 
       if (!eventsData || eventsData.length === 0) return [];
 
-      // Fetch profiles separately
       const ownerIds = [...new Set(eventsData.map(e => e.owner_id).filter(Boolean))];
       
       const { data: profilesData } = await supabase
@@ -58,7 +88,6 @@ export default function VenueEvents() {
         .select("user_id, full_name, phone")
         .in("user_id", ownerIds);
 
-      // Merge profiles into events
       const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
       
       return eventsData.map(event => ({
@@ -67,6 +96,50 @@ export default function VenueEvents() {
       }));
     },
   });
+
+  const createEvent = useMutation({
+    mutationFn: async () => {
+      if (!venue?.id) throw new Error("לא נמצא אולם");
+
+      const { data, error } = await supabase.functions.invoke('create-customer', {
+        body: {
+          type: 'event',
+          user: {
+            email: newEmail.trim(),
+            password: newPassword,
+            fullName: newFullName.trim(),
+            phone: newPhone.trim(),
+          },
+          event: {
+            groomName: newGroomName || null,
+            brideName: newBrideName || null,
+            eventDate: newEventDate,
+            eventType: newEventType,
+            venueId: venue.id,
+            budgetEnabled: true,
+            giftsEnabled: true,
+            invitationsEnabled: true,
+            rsvpEnabled: true,
+          }
+        }
+      });
+      
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venue-events"] });
+      setIsAddOpen(false);
+      resetForm();
+      toast({ title: "בעל האירוע נוצר בהצלחה!" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה ביצירה", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const isFormValid = newFullName && newEmail && newPassword && newPassword.length >= 6 && newEventDate;
 
   const filteredEvents = events?.filter((e: any) =>
     e.groom_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -82,12 +155,97 @@ export default function VenueEvents() {
           <Filter className="w-5 h-5" />
         </button>
         <button 
-          onClick={() => toast({ title: "בקרוב", description: "הוספת בעל אירוע חדש" })}
+          onClick={() => setIsAddOpen(true)}
           className="px-6 py-3 rounded-full bg-[#051839] text-white font-medium hover:bg-[#051839]/90 transition-colors"
         >
           הוספת בעל אירוע
         </button>
       </div>
+
+      {/* Add Event Dialog */}
+      <Dialog open={isAddOpen} onOpenChange={(open) => { setIsAddOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#051839] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setIsAddOpen(false)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">הוספת בעל אירוע חדש</h2>
+            <Plus className="w-5 h-5" />
+          </div>
+          <div className="bg-white p-6 space-y-6">
+            {/* Row 1: Name, Phone, Email */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם מלא</Label>
+                <Input variant="form" value={newFullName} onChange={(e) => setNewFullName(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                <Input variant="form" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">כתובת מייל</Label>
+                <Input variant="form" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="text-center" />
+              </div>
+            </div>
+
+            {/* Row 2: Event Details */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם החתן</Label>
+                <Input variant="form" value={newGroomName} onChange={(e) => setNewGroomName(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הכלה</Label>
+                <Input variant="form" value={newBrideName} onChange={(e) => setNewBrideName(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">תאריך אירוע</Label>
+                <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} className="text-center" />
+              </div>
+            </div>
+
+            {/* Row 3: Type and Password */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">סוג אירוע</Label>
+                <Select value={newEventType} onValueChange={setNewEventType}>
+                  <SelectTrigger className="h-12 rounded-xl bg-muted border-0 text-center">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="חתונה">חתונה</SelectItem>
+                    <SelectItem value="בר מצווה">בר מצווה</SelectItem>
+                    <SelectItem value="בת מצווה">בת מצווה</SelectItem>
+                    <SelectItem value="ברית">ברית</SelectItem>
+                    <SelectItem value="אירוע אחר">אירוע אחר</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">סיסמה</Label>
+                <Input variant="form" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="text-center" />
+              </div>
+              <div></div>
+            </div>
+
+            <div className="flex justify-start">
+              <Button 
+                onClick={() => createEvent.mutate()} 
+                disabled={!isFormValid || createEvent.isPending} 
+                className="rounded-full bg-[#051839] hover:bg-[#243a56] px-8"
+              >
+                {createEvent.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                    יוצר...
+                  </>
+                ) : "הוספת בעל אירוע חדש ←"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
