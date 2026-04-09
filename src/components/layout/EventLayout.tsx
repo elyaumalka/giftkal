@@ -106,6 +106,13 @@ export function EventLayout() {
     return true;
   });
 
+  // Items locked behind upgrade
+  const lockedItems = [
+    ...(!eventData?.gifts_enabled ? [{ key: "gifts", label: "מתנות באשראי", icon: Gift }] : []),
+    ...(!eventData?.invitations_enabled ? [{ key: "invitations", label: "הזמנות דיגיטליות", icon: Send }] : []),
+    ...(!eventData?.rsvp_enabled ? [{ key: "rsvp", label: "אישורי הגעה", icon CreditCard }] : []),
+  ];
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({ title: "התנתקת בהצלחה" });
