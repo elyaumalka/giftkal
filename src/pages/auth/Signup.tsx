@@ -488,15 +488,24 @@ const Signup = () => {
                 <Button onClick={async () => {
                   if (!validateDetails()) return;
                   if (totalPrice === 0) {
-                    // Coupon covers everything - skip payment
-                    await saveLead("COUPON-" + couponCode);
-                    setStep(4);
+                    // Free signup (budget only or coupon covers everything)
+                    setLoading(true);
+                    try {
+                      await saveLead(couponApplied ? "COUPON-" + couponCode : "FREE-BUDGET");
+                      setStep(4);
+                    } catch (e) {
+                      console.error(e);
+                    } finally {
+                      setLoading(false);
+                    }
                   } else {
                     setStep(3);
                   }
-                }} variant="gold" className="flex-1 h-12 text-lg">
-                  {totalPrice === 0 ? (
-                    <><Sparkles className="w-5 h-5 ml-2" />סיום הרשמה</>
+                }} variant="gold" className="flex-1 h-12 text-lg" disabled={loading}>
+                  {loading ? (
+                    <><Loader2 className="w-5 h-5 animate-spin ml-2" />יוצר חשבון...</>
+                  ) : totalPrice === 0 ? (
+                    <><Sparkles className="w-5 h-5 ml-2" />סיום הרשמה — חינם!</>
                   ) : (
                     <><CreditCard className="w-5 h-5 ml-2" />המשך לתשלום ₪{totalPrice}</>
                   )}
