@@ -354,6 +354,23 @@ export default function Customers() {
     setIsEditEventOpen(true);
   };
 
+  const handleImpersonate = async (userId: string) => {
+    setImpersonating(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('impersonate-user', {
+        body: { userId }
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      window.open(data.url, '_blank');
+      toast({ title: "קישור כניסה נפתח בטאב חדש", description: `נכנס כ-${data.email}` });
+    } catch (error: any) {
+      toast({ title: "שגיאה בהתחזות", description: error.message, variant: "destructive" });
+    } finally {
+      setImpersonating(null);
+    }
+  };
+
   const isVenueFormValid = newOwnerFullName && newOwnerEmail && newOwnerPassword && newOwnerPassword.length >= 6 && newVenueName && newVenueAddress;
   const isEventFormValid = newEventOwnerFullName && newEventOwnerEmail && newEventOwnerPassword && newEventOwnerPassword.length >= 6 && newEventDate;
 
