@@ -20,7 +20,7 @@ const PLANS = [
     title: "מתנות באשראי",
     desc: "קבלת מתנות באשראי, קישור אישי, צפייה בעסקאות וברכות",
     price: 199,
-    required: true,
+    required: false,
   },
   {
     id: "invitations",
