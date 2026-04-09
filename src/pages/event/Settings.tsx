@@ -9,6 +9,7 @@ import { ArrowLeft, Upload, AlertCircle, CheckCircle, Copy, Gift, ExternalLink, 
 import { useNavigate } from "react-router-dom";
 
 export default function EventSettings() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
