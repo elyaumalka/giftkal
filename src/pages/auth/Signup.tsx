@@ -198,7 +198,10 @@ const Signup = () => {
   /* ─── Create user + event after successful payment ─── */
   const saveLead = async (txId: string) => {
     try {
-      const planNames = PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ");
+      const hasPaidPlans = PLANS.some(p => selected[p.id]);
+      const planNames = hasPaidPlans 
+        ? PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ")
+        : "ניהול תקציב (חינם)";
 
       // 1. Create user + event via edge function
       const { data: result, error: fnError } = await supabase.functions.invoke("create-customer", {
@@ -215,13 +218,14 @@ const Signup = () => {
             eventDate: data.eventDate,
             groomName: data.groomName || null,
             brideName: data.brideName || null,
+            budgetEnabled: true, // Always enable budget for free signups
           },
         },
       });
 
       if (fnError || !result?.success) {
         console.error("Error creating user:", fnError || result?.error);
-        toast({ title: "התשלום בוצע אך הייתה שגיאה ביצירת החשבון. ניצור קשר בהקדם.", variant: "destructive" });
+        toast({ title: "הייתה שגיאה ביצירת החשבון. ניצור קשר בהקדם.", variant: "destructive" });
       }
 
       const ownerId = result?.user?.id || "00000000-0000-0000-0000-000000000000";
@@ -234,18 +238,20 @@ const Signup = () => {
         lead_type: "couple",
         venue_name: data.venueName || null,
         venue_address: data.city || null,
-        status: "paid",
+        status: hasPaidPlans ? "paid" : "free",
       });
 
-      // 3. Save billing record
-      await supabase.from("billing_charges" as any).insert({
-        owner_id: ownerId,
-        owner_name: data.fullName.trim(),
-        amount: totalPrice,
-        plan_name: planNames,
-        event_name: `${data.eventType} - ${data.eventDate}`,
-        nedarim_transaction_id: txId,
-      });
+      // 3. Save billing record (only if paid)
+      if (hasPaidPlans && totalPrice > 0) {
+        await supabase.from("billing_charges" as any).insert({
+          owner_id: ownerId,
+          owner_name: data.fullName.trim(),
+          amount: totalPrice,
+          plan_name: planNames,
+          event_name: `${data.eventType} - ${data.eventDate}`,
+          nedarim_transaction_id: txId,
+        });
+      }
     } catch (e) {
       console.error("Error saving lead:", e);
     }
