@@ -42,7 +42,7 @@ export default function EventSettings() {
 
       const { data } = await supabase
         .from("events")
-        .select("id, groom_name, bride_name, event_date")
+        .select("id, groom_name, bride_name, event_date, gifts_enabled")
         .eq("owner_id", user.id)
         .maybeSingle();
 
