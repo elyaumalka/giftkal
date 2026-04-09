@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LogOut, Loader2 } from "lucide-react";
+import { LogOut, Loader2, Gift, Send, CreditCard, Lock } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 // Custom icons for event
@@ -106,6 +106,13 @@ export function EventLayout() {
     return true;
   });
 
+  // Items locked behind upgrade
+  const lockedItems = [
+    ...(!eventData?.gifts_enabled ? [{ key: "gifts", label: "מתנות באשראי", icon: Gift }] : []),
+    ...(!eventData?.invitations_enabled ? [{ key: "invitations", label: "הזמנות דיגיטליות", icon: Send }] : []),
+    ...(!eventData?.rsvp_enabled ? [{ key: "rsvp", label: "אישורי הגעה", icon: CreditCard }] : []),
+  ];
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({ title: "התנתקת בהצלחה" });
@@ -156,7 +163,7 @@ export function EventLayout() {
           )}
         >
           {/* Navigation */}
-          <nav className="flex-1 p-3 space-y-2">
+          <nav className="p-3 space-y-2">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
@@ -182,6 +189,26 @@ export function EventLayout() {
               );
             })}
           </nav>
+
+          {/* Upgrade options below menu */}
+          {!collapsed && lockedItems.length > 0 && (
+            <div className="px-3 pb-3 space-y-1.5">
+              <div className="border-t border-white/10 pt-3 mb-1">
+                <p className="text-[10px] text-white/40 text-center font-medium tracking-wide mb-2">שדרגו את האירוע</p>
+              </div>
+              {lockedItems.map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => navigate("/signup")}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-full w-full transition-all duration-200 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/60 group"
+                >
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  <span className="flex-1 text-xs text-right">{item.label}</span>
+                  <Lock className="w-3 h-3 opacity-50 group-hover:opacity-100" />
+                </button>
+              ))}
+            </div>
+          )}
         </aside>
       </div>
 
