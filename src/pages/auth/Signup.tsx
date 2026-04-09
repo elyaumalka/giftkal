@@ -20,7 +20,7 @@ const PLANS = [
     title: "מתנות באשראי",
     desc: "קבלת מתנות באשראי, קישור אישי, צפייה בעסקאות וברכות",
     price: 199,
-    required: true,
+    required: false,
   },
   {
     id: "invitations",
@@ -55,7 +55,7 @@ const Signup = () => {
 
   /* ─── Step management ─── */
   const [step, setStep] = useState(1); // 1=plans, 2=details, 3=payment, 4=success
-  const [selected, setSelected] = useState<Record<string, boolean>>({ gifts: true });
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState("");
@@ -198,7 +198,10 @@ const Signup = () => {
   /* ─── Create user + event after successful payment ─── */
   const saveLead = async (txId: string) => {
     try {
-      const planNames = PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ");
+      const hasPaidPlans = PLANS.some(p => selected[p.id]);
+      const planNames = hasPaidPlans 
+        ? PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ")
+        : "ניהול תקציב (חינם)";
 
       // 1. Create user + event via edge function
       const { data: result, error: fnError } = await supabase.functions.invoke("create-customer", {
@@ -215,13 +218,14 @@ const Signup = () => {
             eventDate: data.eventDate,
             groomName: data.groomName || null,
             brideName: data.brideName || null,
+            budgetEnabled: true, // Always enable budget for free signups
           },
         },
       });
 
       if (fnError || !result?.success) {
         console.error("Error creating user:", fnError || result?.error);
-        toast({ title: "התשלום בוצע אך הייתה שגיאה ביצירת החשבון. ניצור קשר בהקדם.", variant: "destructive" });
+        toast({ title: "הייתה שגיאה ביצירת החשבון. ניצור קשר בהקדם.", variant: "destructive" });
       }
 
       const ownerId = result?.user?.id || "00000000-0000-0000-0000-000000000000";
@@ -234,25 +238,28 @@ const Signup = () => {
         lead_type: "couple",
         venue_name: data.venueName || null,
         venue_address: data.city || null,
-        status: "paid",
+        status: hasPaidPlans ? "paid" : "free",
       });
 
-      // 3. Save billing record
-      await supabase.from("billing_charges" as any).insert({
-        owner_id: ownerId,
-        owner_name: data.fullName.trim(),
-        amount: totalPrice,
-        plan_name: planNames,
-        event_name: `${data.eventType} - ${data.eventDate}`,
-        nedarim_transaction_id: txId,
-      });
+      // 3. Save billing record (only if paid)
+      if (hasPaidPlans && totalPrice > 0) {
+        await supabase.from("billing_charges" as any).insert({
+          owner_id: ownerId,
+          owner_name: data.fullName.trim(),
+          amount: totalPrice,
+          plan_name: planNames,
+          event_name: `${data.eventType} - ${data.eventDate}`,
+          nedarim_transaction_id: txId,
+        });
+      }
     } catch (e) {
       console.error("Error saving lead:", e);
     }
   };
 
   /* ─── Progress bar ─── */
-  const steps = ["בחירת מסלול", "פרטים אישיים", "תשלום"];
+  const isFreeSignup = totalPrice === 0;
+  const steps = isFreeSignup ? ["בחירת מסלול", "פרטים אישיים"] : ["בחירת מסלול", "פרטים אישיים", "תשלום"];
 
   return (
     <div className="min-h-screen bg-sidebar flex items-center justify-center relative overflow-hidden" dir="rtl">
@@ -488,15 +495,24 @@ const Signup = () => {
                 <Button onClick={async () => {
                   if (!validateDetails()) return;
                   if (totalPrice === 0) {
-                    // Coupon covers everything - skip payment
-                    await saveLead("COUPON-" + couponCode);
-                    setStep(4);
+                    // Free signup (budget only or coupon covers everything)
+                    setLoading(true);
+                    try {
+                      await saveLead(couponApplied ? "COUPON-" + couponCode : "FREE-BUDGET");
+                      setStep(4);
+                    } catch (e) {
+                      console.error(e);
+                    } finally {
+                      setLoading(false);
+                    }
                   } else {
                     setStep(3);
                   }
-                }} variant="gold" className="flex-1 h-12 text-lg">
-                  {totalPrice === 0 ? (
-                    <><Sparkles className="w-5 h-5 ml-2" />סיום הרשמה</>
+                }} variant="gold" className="flex-1 h-12 text-lg" disabled={loading}>
+                  {loading ? (
+                    <><Loader2 className="w-5 h-5 animate-spin ml-2" />יוצר חשבון...</>
+                  ) : totalPrice === 0 ? (
+                    <><Sparkles className="w-5 h-5 ml-2" />סיום הרשמה — חינם!</>
                   ) : (
                     <><CreditCard className="w-5 h-5 ml-2" />המשך לתשלום ₪{totalPrice}</>
                   )}
@@ -585,9 +601,14 @@ const Signup = () => {
                 <CheckCircle2 className="w-10 h-10 text-green-400" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white mb-2">התשלום בוצע בהצלחה! 🎉</h1>
+                <h1 className="text-2xl font-bold text-white mb-2">
+                  {totalPrice > 0 ? "התשלום בוצע בהצלחה! 🎉" : "החשבון נפתח בהצלחה! 🎉"}
+                </h1>
                 <p className="text-white/60">
-                  שולם ₪{totalPrice} • {PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ")}
+                  {totalPrice > 0 
+                    ? `שולם ₪${totalPrice} • ${PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ")}`
+                    : "ניהול תקציב — חינם"
+                  }
                 </p>
               </div>
               <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-right space-y-1">
@@ -596,7 +617,24 @@ const Signup = () => {
                 <p className="text-white/70 text-sm"><strong className="text-white">אירוע:</strong> {data.eventType} — {data.eventDate}</p>
                 {transactionId && <p className="text-white/40 text-xs">מזהה עסקה: {transactionId}</p>}
               </div>
-              <p className="text-white/50 text-sm">החשבון שלכם נפתח בהצלחה! כעת תוכלו להתחבר עם המייל והסיסמה שהזנתם</p>
+
+              {/* Upsell for free users */}
+              {totalPrice === 0 && !PLANS.some(p => selected[p.id]) && (
+                <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 text-right space-y-3">
+                  <p className="text-primary font-bold text-sm">💡 שדרגו את האירוע שלכם!</p>
+                  <div className="space-y-2">
+                    {PLANS.map(plan => (
+                      <div key={plan.id} className="flex items-center justify-between text-sm">
+                        <span className="text-white/70">{plan.title}</span>
+                        <span className="text-primary font-bold">₪{plan.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-white/40 text-xs">ניתן לשדרג בכל עת מתוך האיזור האישי</p>
+                </div>
+              )}
+
+              <p className="text-white/50 text-sm">כעת תוכלו להתחבר עם המייל והסיסמה שהזנתם</p>
               <Link to="/login/event">
                 <Button variant="gold" className="mt-2">
                   התחבר לחשבון שלי
