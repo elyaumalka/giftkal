@@ -11,6 +11,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Plus,
   Search,
   Eye,
@@ -18,6 +29,7 @@ import {
   Filter,
   LogIn,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
@@ -370,6 +382,54 @@ export default function Customers() {
       setImpersonating(null);
     }
   };
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Delete venue owner (user + venue)
+  const deleteVenueOwner = useMutation({
+    mutationFn: async (venue: any) => {
+      // Delete venue first (cascades devices, events etc.)
+      const { error: venueError } = await supabase.from("venues").delete().eq("id", venue.id);
+      if (venueError) throw venueError;
+      
+      // Delete the user via edge function
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete', userId: venue.owner_id }
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venues-with-stats"] });
+      toast({ title: "בעל האולם נמחק בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה במחיקה", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Delete event owner (user + event)
+  const deleteEventOwner = useMutation({
+    mutationFn: async (event: any) => {
+      // Delete event
+      const { error: eventError } = await supabase.from("events").delete().eq("id", event.id);
+      if (eventError) throw eventError;
+      
+      // Delete the user via edge function
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete', userId: event.owner_id }
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      toast({ title: "בעל האירוע נמחק בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה במחיקה", description: error.message, variant: "destructive" });
+    },
+  });
 
   const isVenueFormValid = newOwnerFullName && newOwnerEmail && newOwnerPassword && newOwnerPassword.length >= 6 && newVenueName && newVenueAddress;
   const isEventFormValid = newEventOwnerFullName && newEventOwnerEmail && newEventOwnerPassword && newEventOwnerPassword.length >= 6 && newEventDate;
@@ -739,6 +799,32 @@ export default function Customers() {
               key={venue.id}
               className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow"
             >
+              {/* Delete Button */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0">
+                    <Trash2 className="w-5 h-5 text-red-500" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent dir="rtl">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>מחיקת בעל אולם</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      האם אתה בטוח שברצונך למחוק את {venue.ownerName}? פעולה זו תמחק את האולם, המכשירים והמשתמש לצמיתות.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex-row-reverse gap-2">
+                    <AlertDialogCancel>ביטול</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteVenueOwner.mutate(venue)}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      מחק
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
               {/* Edit Button */}
               <Button variant="ghost" size="icon" onClick={() => openEditVenue(venue)} className="shrink-0">
                 <Pencil className="w-5 h-5 text-sidebar-accent" />
@@ -818,6 +904,32 @@ export default function Customers() {
               key={event.id}
               className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow"
             >
+              {/* Delete Button */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0">
+                    <Trash2 className="w-5 h-5 text-red-500" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent dir="rtl">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>מחיקת בעל אירוע</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      האם אתה בטוח שברצונך למחוק את {event.ownerName}? פעולה זו תמחק את האירוע והמשתמש לצמיתות.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex-row-reverse gap-2">
+                    <AlertDialogCancel>ביטול</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteEventOwner.mutate(event)}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      מחק
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
               {/* Edit Button */}
               <Button variant="ghost" size="icon" onClick={() => openEditEvent(event)} className="shrink-0">
                 <Pencil className="w-5 h-5 text-sidebar-accent" />
