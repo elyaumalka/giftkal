@@ -117,6 +117,13 @@ export function EventLayout() {
     ...(!eventData?.rsvp_enabled ? [{ key: "rsvp", label: "אישורי הגעה", icon: CreditCard }] : []),
   ];
 
+  // Redirect budget-only users from dashboard to budget page
+  useEffect(() => {
+    if (isBudgetOnly && location.pathname === "/event") {
+      navigate("/event/budget", { replace: true });
+    }
+  }, [isBudgetOnly, location.pathname, navigate]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({ title: "התנתקת בהצלחה" });
