@@ -110,7 +110,7 @@ export function EventLayout() {
   const lockedItems = [
     ...(!eventData?.gifts_enabled ? [{ key: "gifts", label: "מתנות באשראי", icon: Gift }] : []),
     ...(!eventData?.invitations_enabled ? [{ key: "invitations", label: "הזמנות דיגיטליות", icon: Send }] : []),
-    ...(!eventData?.rsvp_enabled ? [{ key: "rsvp", label: "אישורי הגעה", icon CreditCard }] : []),
+    ...(!eventData?.rsvp_enabled ? [{ key: "rsvp", label: "אישורי הגעה", icon: CreditCard }] : []),
   ];
 
   const handleLogout = async () => {
