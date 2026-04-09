@@ -252,7 +252,8 @@ const Signup = () => {
   };
 
   /* ─── Progress bar ─── */
-  const steps = ["בחירת מסלול", "פרטים אישיים", "תשלום"];
+  const isFreeSignup = totalPrice === 0;
+  const steps = isFreeSignup ? ["בחירת מסלול", "פרטים אישיים"] : ["בחירת מסלול", "פרטים אישיים", "תשלום"];
 
   return (
     <div className="min-h-screen bg-sidebar flex items-center justify-center relative overflow-hidden" dir="rtl">
