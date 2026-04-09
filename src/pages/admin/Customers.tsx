@@ -38,6 +38,7 @@ export default function Customers() {
   const [selectedVenue, setSelectedVenue] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isAddVenueOpen, setIsAddVenueOpen] = useState(false);
+  const [impersonating, setImpersonating] = useState<string | null>(null);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isEditVenueOpen, setIsEditVenueOpen] = useState(false);
   const [isEditEventOpen, setIsEditEventOpen] = useState(false);
