@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload, AlertCircle, CheckCircle, Copy, Gift, ExternalLink } from "lucide-react";
+import { ArrowLeft, Upload, AlertCircle, CheckCircle, Copy, Gift, ExternalLink, Send, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function EventSettings() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -42,7 +44,7 @@ export default function EventSettings() {
 
       const { data } = await supabase
         .from("events")
-        .select("id, groom_name, bride_name, event_date")
+        .select("id, groom_name, bride_name, event_date, gifts_enabled")
         .eq("owner_id", user.id)
         .maybeSingle();
 
@@ -130,8 +132,8 @@ export default function EventSettings() {
         <p className="text-gray-500 mt-1">ניהול פרטים אישיים ומסמכים</p>
       </div>
 
-      {/* Gift Page Link Card */}
-      {event && (
+      {/* Gift Page Link Card - only for users with gifts enabled */}
+      {event && event.gifts_enabled && (
         <div className="bg-gradient-to-br from-[#C4A35A] to-[#D4B36A] rounded-2xl shadow-lg overflow-hidden">
           <div className="p-6 text-white">
             <div className="flex items-center gap-3 mb-4">
@@ -305,6 +307,52 @@ export default function EventSettings() {
           </div>
         </div>
       </div>
+      {/* Upsell Banner */}
+      {event && !event.gifts_enabled && (
+        <div className="bg-gradient-to-br from-[#051839] to-[#0a2d5e] rounded-2xl shadow-lg overflow-hidden">
+          <div className="p-6 text-white">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-[#C4A35A]" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">שדרגו את האירוע שלכם!</h2>
+                <p className="text-white/70 text-sm">הוסיפו שירותים נוספים והפכו את האירוע לבלתי נשכח</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#C4A35A]/20 rounded-lg flex items-center justify-center shrink-0">
+                  <Gift className="w-5 h-5 text-[#C4A35A]" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">מתנות באשראי</p>
+                  <p className="text-white/60 text-xs">קבלו מתנות מהאורחים בכרטיס אשראי</p>
+                </div>
+                <span className="text-[#C4A35A] font-bold text-sm">₪199</span>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#C4A35A]/20 rounded-lg flex items-center justify-center shrink-0">
+                  <Send className="w-5 h-5 text-[#C4A35A]" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">הזמנות + אישורי הגעה</p>
+                  <p className="text-white/60 text-xs">שליחת הזמנות ומעקב אישורים</p>
+                </div>
+                <span className="text-[#C4A35A] font-bold text-sm">₪199</span>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => navigate("/signup")}
+              className="bg-[#C4A35A] hover:bg-[#b3943f] text-white rounded-xl px-8 py-3 font-bold"
+            >
+              שדרגו עכשיו
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
