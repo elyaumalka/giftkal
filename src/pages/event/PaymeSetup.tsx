@@ -96,6 +96,26 @@ export default function PaymeSetup() {
   const [couponApplied, setCouponApplied] = useState(false);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
+  const extractFunctionErrorMessage = async (error: { message?: string; context?: Response | null }) => {
+    const fallbackMessage = error.message || 'שגיאה ביצירת חשבון';
+
+    if (!error.context) {
+      return fallbackMessage;
+    }
+
+    try {
+      const payload = await error.context.clone().json();
+      return payload?.details || payload?.error || payload?.message || fallbackMessage;
+    } catch {
+      try {
+        const text = await error.context.clone().text();
+        return text || fallbackMessage;
+      } catch {
+        return fallbackMessage;
+      }
+    }
+  };
+
   // Check if event already has seller
   const { data: event, isLoading: eventLoading, error: eventError } = useQuery({
     queryKey: ['event-payme', eventId],
@@ -126,7 +146,7 @@ export default function PaymeSetup() {
       });
 
       if (response.error) {
-        throw new Error(response.error.message || 'שגיאה ביצירת חשבון');
+        throw new Error(await extractFunctionErrorMessage(response.error));
       }
 
       if (!response.data?.success) {
