@@ -58,6 +58,10 @@ const Signup = () => {
   const [selected, setSelected] = useState<Record<string, boolean>>({ gifts: true });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
+
+  const VALID_COUPONS: Record<string, number> = { "GIFTKAL-TEST": 100, "GIFTKAL100": 100 };
 
   const [data, setData] = useState({
     fullName: "", email: "", phone: "", password: "", idNumber: "",
