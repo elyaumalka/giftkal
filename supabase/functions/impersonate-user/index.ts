@@ -83,12 +83,15 @@ serve(async (req) => {
     if (role === "venue_owner") redirectPath = "/venue";
     if (role === "admin") redirectPath = "/admin";
 
+    // The site URL where users should be redirected after verification
+    const siteUrl = "https://giftkal.com";
+
     // Generate magic link
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: targetUser.email,
       options: {
-        redirectTo: `${supabaseUrl.replace('.supabase.co', '.lovable.app')}${redirectPath}`,
+        redirectTo: `${siteUrl}${redirectPath}`,
       },
     });
 
@@ -100,16 +103,25 @@ serve(async (req) => {
       });
     }
 
-    // Extract the token from the generated link and build proper redirect URL
-    const properties = linkData?.properties;
-    const hashed_token = properties?.hashed_token;
+    // The action_link from generateLink contains the full verification URL
+    // but it points to the Supabase domain. We need to extract the token and build our own.
+    const actionLink = linkData?.properties?.action_link;
     
-    // Build the verification URL using the Supabase auth endpoint
-    const verifyUrl = `${supabaseUrl}/auth/v1/verify?token=${hashed_token}&type=magiclink&redirect_to=${encodeURIComponent(redirectPath)}`;
+    if (!actionLink) {
+      return new Response(JSON.stringify({ error: "Failed to generate link" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // The action_link already has the correct format with token, type, and redirect
+    // We just need to ensure redirect_to points to our domain
+    const url = new URL(actionLink);
+    url.searchParams.set("redirect_to", `${siteUrl}${redirectPath}`);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      url: verifyUrl,
+      url: url.toString(),
       role,
       email: targetUser.email,
     }), {
