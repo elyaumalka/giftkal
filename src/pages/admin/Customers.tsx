@@ -383,6 +383,54 @@ export default function Customers() {
     }
   };
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Delete venue owner (user + venue)
+  const deleteVenueOwner = useMutation({
+    mutationFn: async (venue: any) => {
+      // Delete venue first (cascades devices, events etc.)
+      const { error: venueError } = await supabase.from("venues").delete().eq("id", venue.id);
+      if (venueError) throw venueError;
+      
+      // Delete the user via edge function
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete', userId: venue.owner_id }
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venues-with-stats"] });
+      toast({ title: "בעל האולם נמחק בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה במחיקה", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Delete event owner (user + event)
+  const deleteEventOwner = useMutation({
+    mutationFn: async (event: any) => {
+      // Delete event
+      const { error: eventError } = await supabase.from("events").delete().eq("id", event.id);
+      if (eventError) throw eventError;
+      
+      // Delete the user via edge function
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete', userId: event.owner_id }
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      toast({ title: "בעל האירוע נמחק בהצלחה" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה במחיקה", description: error.message, variant: "destructive" });
+    },
+  });
+
   const isVenueFormValid = newOwnerFullName && newOwnerEmail && newOwnerPassword && newOwnerPassword.length >= 6 && newVenueName && newVenueAddress;
   const isEventFormValid = newEventOwnerFullName && newEventOwnerEmail && newEventOwnerPassword && newEventOwnerPassword.length >= 6 && newEventDate;
 
