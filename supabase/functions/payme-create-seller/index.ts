@@ -235,8 +235,8 @@ Deno.serve(async (req) => {
       ? '+972' + cleanPhone.slice(1) 
       : cleanPhone;
 
-    // PayMe environment
-    const paymeBaseUrl = 'https://ng.paymeservice.com';
+    // PayMe production base URL from official docs
+    const paymeBaseUrl = 'https://live.payme.io';
 
     // Create seller payload
     const sellerPayload = {
