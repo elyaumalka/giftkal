@@ -16,6 +16,8 @@ import {
   Eye,
   Pencil,
   Filter,
+  LogIn,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
@@ -36,6 +38,7 @@ export default function Customers() {
   const [selectedVenue, setSelectedVenue] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isAddVenueOpen, setIsAddVenueOpen] = useState(false);
+  const [impersonating, setImpersonating] = useState<string | null>(null);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isEditVenueOpen, setIsEditVenueOpen] = useState(false);
   const [isEditEventOpen, setIsEditEventOpen] = useState(false);
@@ -349,6 +352,23 @@ export default function Customers() {
     setNewEventVenueId(event.venue_id || "");
     setNewEventRentalCost(event.device_rental_cost?.toString() || "");
     setIsEditEventOpen(true);
+  };
+
+  const handleImpersonate = async (userId: string) => {
+    setImpersonating(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('impersonate-user', {
+        body: { userId }
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      window.open(data.url, '_blank');
+      toast({ title: "קישור כניסה נפתח בטאב חדש", description: `נכנס כ-${data.email}` });
+    } catch (error: any) {
+      toast({ title: "שגיאה בהתחזות", description: error.message, variant: "destructive" });
+    } finally {
+      setImpersonating(null);
+    }
   };
 
   const isVenueFormValid = newOwnerFullName && newOwnerEmail && newOwnerPassword && newOwnerPassword.length >= 6 && newVenueName && newVenueAddress;
@@ -723,6 +743,21 @@ export default function Customers() {
               <Button variant="ghost" size="icon" onClick={() => openEditVenue(venue)} className="shrink-0">
                 <Pencil className="w-5 h-5 text-sidebar-accent" />
               </Button>
+              {/* Impersonate Button */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => handleImpersonate(venue.owner_id)} 
+                disabled={impersonating === venue.owner_id}
+                className="shrink-0"
+                title="כניסה כמשתמש"
+              >
+                {impersonating === venue.owner_id ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                ) : (
+                  <LogIn className="w-5 h-5 text-blue-500" />
+                )}
+              </Button>
 
               {/* Customer Name */}
               <div className="flex-1 font-semibold text-secondary text-right">
@@ -786,6 +821,21 @@ export default function Customers() {
               {/* Edit Button */}
               <Button variant="ghost" size="icon" onClick={() => openEditEvent(event)} className="shrink-0">
                 <Pencil className="w-5 h-5 text-sidebar-accent" />
+              </Button>
+              {/* Impersonate Button */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => handleImpersonate(event.owner_id)} 
+                disabled={impersonating === event.owner_id}
+                className="shrink-0"
+                title="כניסה כמשתמש"
+              >
+                {impersonating === event.owner_id ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                ) : (
+                  <LogIn className="w-5 h-5 text-blue-500" />
+                )}
               </Button>
 
               {/* Customer Name */}
