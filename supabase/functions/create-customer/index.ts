@@ -130,7 +130,10 @@ Deno.serve(async (req) => {
           groom_name: event.groomName || null,
           bride_name: event.brideName || null,
           device_rental_cost: event.deviceRentalCost || 0,
-          budget_enabled: event.budgetEnabled ?? false
+          budget_enabled: event.budgetEnabled ?? false,
+          gifts_enabled: event.giftsEnabled ?? false,
+          invitations_enabled: event.invitationsEnabled ?? false,
+          rsvp_enabled: event.rsvpEnabled ?? false,
         })
         .select()
         .single()

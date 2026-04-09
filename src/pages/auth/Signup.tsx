@@ -218,7 +218,10 @@ const Signup = () => {
             eventDate: data.eventDate,
             groomName: data.groomName || null,
             brideName: data.brideName || null,
-            budgetEnabled: true, // Always enable budget for free signups
+            budgetEnabled: true,
+            giftsEnabled: !!selected["gifts"],
+            invitationsEnabled: !!selected["invitations"],
+            rsvpEnabled: !!selected["invitations"], // invitations include RSVP
           },
         },
       });

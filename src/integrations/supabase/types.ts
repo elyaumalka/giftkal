@@ -273,6 +273,7 @@ export type Database = {
           event_date: string
           event_type: string
           family_name: string | null
+          gifts_enabled: boolean | null
           groom_grandparents: string | null
           groom_name: string | null
           groom_parents: string | null
@@ -282,9 +283,11 @@ export type Database = {
           invitation_design_url: string | null
           invitation_notes: string | null
           invitation_text: string | null
+          invitations_enabled: boolean | null
           owner_id: string
           payment_completed: boolean | null
           reception_time: string | null
+          rsvp_enabled: boolean | null
           seller_payme_id: string | null
           share_token_bride: string | null
           share_token_general: string | null
@@ -310,6 +313,7 @@ export type Database = {
           event_date: string
           event_type?: string
           family_name?: string | null
+          gifts_enabled?: boolean | null
           groom_grandparents?: string | null
           groom_name?: string | null
           groom_parents?: string | null
@@ -319,9 +323,11 @@ export type Database = {
           invitation_design_url?: string | null
           invitation_notes?: string | null
           invitation_text?: string | null
+          invitations_enabled?: boolean | null
           owner_id: string
           payment_completed?: boolean | null
           reception_time?: string | null
+          rsvp_enabled?: boolean | null
           seller_payme_id?: string | null
           share_token_bride?: string | null
           share_token_general?: string | null
@@ -347,6 +353,7 @@ export type Database = {
           event_date?: string
           event_type?: string
           family_name?: string | null
+          gifts_enabled?: boolean | null
           groom_grandparents?: string | null
           groom_name?: string | null
           groom_parents?: string | null
@@ -356,9 +363,11 @@ export type Database = {
           invitation_design_url?: string | null
           invitation_notes?: string | null
           invitation_text?: string | null
+          invitations_enabled?: boolean | null
           owner_id?: string
           payment_completed?: boolean | null
           reception_time?: string | null
+          rsvp_enabled?: boolean | null
           seller_payme_id?: string | null
           share_token_bride?: string | null
           share_token_general?: string | null
