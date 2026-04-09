@@ -92,6 +92,9 @@ export default function PaymeSetup() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'form' | 'success'>('form');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   // Check if event already has seller
   const { data: event, isLoading: eventLoading, error: eventError } = useQuery({
