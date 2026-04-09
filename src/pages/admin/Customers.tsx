@@ -904,6 +904,32 @@ export default function Customers() {
               key={event.id}
               className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow"
             >
+              {/* Delete Button */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0">
+                    <Trash2 className="w-5 h-5 text-red-500" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent dir="rtl">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>מחיקת בעל אירוע</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      האם אתה בטוח שברצונך למחוק את {event.ownerName}? פעולה זו תמחק את האירוע והמשתמש לצמיתות.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex-row-reverse gap-2">
+                    <AlertDialogCancel>ביטול</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteEventOwner.mutate(event)}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      מחק
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
               {/* Edit Button */}
               <Button variant="ghost" size="icon" onClick={() => openEditEvent(event)} className="shrink-0">
                 <Pencil className="w-5 h-5 text-sidebar-accent" />
