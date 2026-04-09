@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CreditCard } from "lucide-react";
+import { AlertCircle, CreditCard, Gift, Send, Monitor, Sparkles } from "lucide-react";
 import StatIcon from "@/assets/icons/event/StatIcon.svg";
 
 export default function EventDashboard() {
@@ -53,10 +53,19 @@ export default function EventDashboard() {
     },
   });
 
+  const giftsEnabled = data?.event?.gifts_enabled;
+  const invitationsEnabled = data?.event?.invitations_enabled;
+
+  // Check which upgrades are available
+  const availableUpgrades = [
+    ...(!giftsEnabled ? [{ icon: Gift, title: "מתנות באשראי", desc: "קבלו מתנות מהאורחים בכרטיס אשראי", price: 199 }] : []),
+    ...(!invitationsEnabled ? [{ icon: Send, title: "הזמנות + אישורי הגעה", desc: "שליחת הזמנות ומעקב אישורים", price: 199 }] : []),
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* PayMe Setup Alert */}
-      {data?.event && !data.event.seller_payme_id && (
+      {/* PayMe Setup Alert - only for users with gifts enabled */}
+      {giftsEnabled && data?.event && !data.event.seller_payme_id && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
@@ -156,6 +165,45 @@ export default function EventDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Upsell Banner - show when user doesn't have all services */}
+      {availableUpgrades.length > 0 && (
+        <div className="bg-gradient-to-br from-[#051839] to-[#0a2d5e] rounded-2xl shadow-lg overflow-hidden">
+          <div className="p-6 text-white">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-[#C4A35A]" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">שדרגו את האירוע שלכם!</h2>
+                <p className="text-white/70 text-sm">הוסיפו שירותים נוספים והפכו את האירוע לבלתי נשכח</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              {availableUpgrades.map((upgrade, i) => (
+                <div key={i} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#C4A35A]/20 rounded-lg flex items-center justify-center shrink-0">
+                    <upgrade.icon className="w-5 h-5 text-[#C4A35A]" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">{upgrade.title}</p>
+                    <p className="text-white/60 text-xs">{upgrade.desc}</p>
+                  </div>
+                  <span className="text-[#C4A35A] font-bold text-sm">₪{upgrade.price}</span>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => navigate("/signup")}
+              className="bg-[#C4A35A] hover:bg-[#b3943f] text-white rounded-xl px-8 py-3 font-bold"
+            >
+              שדרגו עכשיו
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
