@@ -84,13 +84,13 @@ export function EventLayout() {
 
   // Check if budget is enabled for this event
   const { data: eventData } = useQuery({
-    queryKey: ["event-budget-enabled"],
+    queryKey: ["event-features"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
       const { data } = await supabase
         .from("events")
-        .select("budget_enabled")
+        .select("budget_enabled, gifts_enabled, invitations_enabled, rsvp_enabled")
         .eq("owner_id", user.id)
         .maybeSingle();
       return data;
@@ -100,6 +100,9 @@ export function EventLayout() {
 
   const menuItems = allMenuItems.filter(item => {
     if (item.key === "budget" && !eventData?.budget_enabled) return false;
+    if (item.key === "gifts" && !eventData?.gifts_enabled) return false;
+    if (item.key === "invitations" && !eventData?.invitations_enabled) return false;
+    if (item.key === "rsvp" && !eventData?.rsvp_enabled) return false;
     return true;
   });
 
