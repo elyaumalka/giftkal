@@ -83,8 +83,9 @@ serve(async (req) => {
     if (role === "venue_owner") redirectPath = "/venue";
     if (role === "admin") redirectPath = "/admin";
 
-    // The site URL where users should be redirected after verification
-    const siteUrl = "https://giftkal.com";
+    // Use a different domain for impersonation to avoid session conflicts
+    // Admin on giftkal.com → impersonate on giftkal.lovable.app (and vice versa)
+    const siteUrl = "https://giftkal.lovable.app";
 
     // Generate magic link
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
