@@ -347,11 +347,43 @@ const Signup = () => {
                 </div>
               </div>
 
+              {/* Coupon */}
+              <div className="flex gap-2">
+                <Input
+                  value={couponCode}
+                  onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="קוד קופון (אופציונלי)"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11 flex-1"
+                  disabled={couponApplied}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-white/20 text-white hover:bg-white/10 h-11"
+                  disabled={!couponCode.trim() || couponApplied}
+                  onClick={() => {
+                    if (VALID_COUPONS[couponCode.toUpperCase()]) {
+                      setCouponApplied(true);
+                      toast({ title: "קופון הופעל בהצלחה! ✅" });
+                    } else {
+                      toast({ title: "קופון לא תקין", variant: "destructive" });
+                    }
+                  }}
+                >
+                  {couponApplied ? "✅" : "הפעל"}
+                </Button>
+              </div>
+
               {/* Total */}
               <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                 <div className="flex items-center justify-between">
                   <span className="text-white/60 text-sm">סה"כ לתשלום:</span>
-                  <span className="text-2xl font-black text-primary">₪{totalPrice}</span>
+                  <div className="flex items-center gap-2">
+                    {couponApplied && (
+                      <span className="text-white/40 line-through text-sm">₪{PLANS.filter(p => selected[p.id]).reduce((s, p) => s + p.price, 0)}</span>
+                    )}
+                    <span className="text-2xl font-black text-primary">{totalPrice === 0 ? "חינם! 🎉" : `₪${totalPrice}`}</span>
+                  </div>
                 </div>
                 <p className="text-white/30 text-xs mt-1">תשלום חד פעמי • ללא התחייבות</p>
               </div>
