@@ -55,7 +55,7 @@ const Signup = () => {
 
   /* ─── Step management ─── */
   const [step, setStep] = useState(1); // 1=plans, 2=details, 3=payment, 4=success
-  const [selected, setSelected] = useState<Record<string, boolean>>({ gifts: true });
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState("");
