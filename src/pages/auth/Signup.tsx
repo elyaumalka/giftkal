@@ -502,7 +502,6 @@ const Signup = () => {
                   )}
                 </Button>
               </div>
-              </div>
             </div>
           )}
 
