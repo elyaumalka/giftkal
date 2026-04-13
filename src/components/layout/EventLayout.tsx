@@ -210,7 +210,7 @@ export function EventLayout() {
               {lockedItems.map((item) => (
                 <button
                   key={item.key}
-                  onClick={() => navigate("/signup")}
+                  onClick={() => navigate("/event/upgrade")}
                   className="flex items-center gap-3 px-4 py-2.5 rounded-full w-full transition-all duration-200 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/60 group"
                 >
                   <item.icon className="w-5 h-5 shrink-0" />
