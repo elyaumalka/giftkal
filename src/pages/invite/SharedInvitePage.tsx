@@ -29,6 +29,7 @@ export default function SharedInvitePage() {
   const excelInputRef = useRef<HTMLInputElement>(null);
   const [manualName, setManualName] = useState("");
   const [manualPhone, setManualPhone] = useState("");
+  const [manualEmail, setManualEmail] = useState("");
   const [manualRelationship, setManualRelationship] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
