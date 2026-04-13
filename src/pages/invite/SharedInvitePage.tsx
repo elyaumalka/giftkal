@@ -29,6 +29,7 @@ export default function SharedInvitePage() {
   const excelInputRef = useRef<HTMLInputElement>(null);
   const [manualName, setManualName] = useState("");
   const [manualPhone, setManualPhone] = useState("");
+  const [manualEmail, setManualEmail] = useState("");
   const [manualRelationship, setManualRelationship] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
@@ -127,6 +128,7 @@ export default function SharedInvitePage() {
       event_id: event.id,
       full_name: manualName.trim(),
       phone: manualPhone.trim() || null,
+      email: manualEmail.trim() || null,
       relationship: manualRelationship.trim() || null,
       side,
       invitation_sent: false,
@@ -137,6 +139,7 @@ export default function SharedInvitePage() {
     }
     setManualName("");
     setManualPhone("");
+    setManualEmail("");
     setManualRelationship("");
     refetchGuests();
     toast({ title: "מוזמן נוסף בהצלחה!" });
@@ -239,7 +242,7 @@ export default function SharedInvitePage() {
             <Users className="w-5 h-5 text-[#C4A35A]" />
             הוספת מוזמן
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               placeholder="שם מלא *"
               value={manualName}
@@ -251,6 +254,13 @@ export default function SharedInvitePage() {
               value={manualPhone}
               onChange={(e) => setManualPhone(e.target.value)}
               className="bg-gray-50 border-gray-200 text-right"
+            />
+            <Input
+              placeholder="אימייל"
+              value={manualEmail}
+              onChange={(e) => setManualEmail(e.target.value)}
+              className="bg-gray-50 border-gray-200 text-right"
+              type="email"
             />
             <Input
               placeholder="קרבה (משפחה, חברים...)"
@@ -308,6 +318,7 @@ export default function SharedInvitePage() {
                   <tr>
                     <th className="text-right p-3 font-medium text-gray-500">שם</th>
                     <th className="text-right p-3 font-medium text-gray-500">טלפון</th>
+                    <th className="text-right p-3 font-medium text-gray-500">אימייל</th>
                     <th className="text-right p-3 font-medium text-gray-500">קרבה</th>
                     <th className="p-3 w-10"></th>
                   </tr>
@@ -317,6 +328,7 @@ export default function SharedInvitePage() {
                     <tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                       <td className="p-3 font-medium">{g.full_name}</td>
                       <td className="p-3 text-gray-500">{g.phone || "—"}</td>
+                      <td className="p-3 text-gray-500">{g.email || "—"}</td>
                       <td className="p-3 text-gray-500">{g.relationship || "—"}</td>
                       <td className="p-3">
                         <button
