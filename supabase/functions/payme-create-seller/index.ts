@@ -261,6 +261,7 @@ Deno.serve(async (req) => {
       seller_merchant_name_en: body.merchantNameEn || transliterateHebrew(body.merchantName.trim()),
       seller_dba: body.merchantName.trim(),
       seller_dba_en: body.merchantNameEn || transliterateHebrew(body.merchantName.trim()),
+      seller_site_url: 'https://giftkal.com',
       seller_description: body.description || `אירוע - ${body.merchantName}`,
       seller_address_city: body.city.trim(),
       seller_address_street: body.street.trim(),
