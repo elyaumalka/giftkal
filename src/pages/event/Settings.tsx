@@ -345,7 +345,7 @@ export default function EventSettings() {
             </div>
 
             <Button
-              onClick={() => navigate("/signup")}
+              onClick={() => navigate("/event/upgrade")}
               className="bg-[#C4A35A] hover:bg-[#b3943f] text-white rounded-xl px-8 py-3 font-bold"
             >
               שדרגו עכשיו
