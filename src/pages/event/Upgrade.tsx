@@ -95,7 +95,8 @@ const Upgrade = () => {
     return true;
   });
 
-  const totalPrice = availablePlans.filter(p => selected[p.id]).reduce((sum, p) => sum + p.price, 0);
+  const discountPercent = couponApplied ? (VALID_COUPONS[couponCode.toUpperCase()] || 0) : 0;
+  const totalPrice = Math.max(0, Math.round(availablePlans.filter(p => selected[p.id]).reduce((sum, p) => sum + p.price, 0) * (1 - discountPercent / 100)));
 
   const togglePlan = (id: string) => {
     setSelected(prev => ({ ...prev, [id]: !prev[id] }));
