@@ -318,6 +318,7 @@ export default function SharedInvitePage() {
                   <tr>
                     <th className="text-right p-3 font-medium text-gray-500">שם</th>
                     <th className="text-right p-3 font-medium text-gray-500">טלפון</th>
+                    <th className="text-right p-3 font-medium text-gray-500">אימייל</th>
                     <th className="text-right p-3 font-medium text-gray-500">קרבה</th>
                     <th className="p-3 w-10"></th>
                   </tr>
@@ -327,6 +328,7 @@ export default function SharedInvitePage() {
                     <tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                       <td className="p-3 font-medium">{g.full_name}</td>
                       <td className="p-3 text-gray-500">{g.phone || "—"}</td>
+                      <td className="p-3 text-gray-500">{g.email || "—"}</td>
                       <td className="p-3 text-gray-500">{g.relationship || "—"}</td>
                       <td className="p-3">
                         <button
