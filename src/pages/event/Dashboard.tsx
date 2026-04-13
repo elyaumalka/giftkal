@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CreditCard, Gift, Send, Monitor, Sparkles } from "lucide-react";
+import { AlertCircle, CreditCard, Gift, Send, Monitor, Sparkles, CheckCircle, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import StatIcon from "@/assets/icons/event/StatIcon.svg";
+import { Badge } from "@/components/ui/badge";
 
 export default function EventDashboard() {
   const navigate = useNavigate();
@@ -53,6 +54,21 @@ export default function EventDashboard() {
     },
   });
 
+  // Seller status query - only when seller exists
+  const { data: sellerStatus, refetch: refetchStatus } = useQuery({
+    queryKey: ["seller-status-dashboard", data?.event?.id],
+    queryFn: async () => {
+      const response = await supabase.functions.invoke('payme-seller-status', {
+        body: { eventId: data!.event!.id },
+      });
+      if (response.error) return null;
+      if (response.data?.error) return null;
+      return response.data;
+    },
+    enabled: !!data?.event?.id && !!data?.event?.seller_payme_id && data?.event?.gifts_enabled === true,
+    refetchInterval: 120000,
+  });
+
   const giftsEnabled = data?.event?.gifts_enabled;
   const invitationsEnabled = data?.event?.invitations_enabled;
 
@@ -64,7 +80,7 @@ export default function EventDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* PayMe Setup Alert - only for users with gifts enabled */}
+      {/* PayMe Setup Alert - no seller at all */}
       {giftsEnabled && data?.event && !data.event.seller_payme_id && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
           <div className="flex items-start gap-4">
@@ -91,6 +107,84 @@ export default function EventDashboard() {
         </div>
       )}
 
+      {/* Seller Status Banner - seller exists */}
+      {giftsEnabled && data?.event?.seller_payme_id && sellerStatus && (
+        <>
+          {/* Approved */}
+          {sellerStatus.status === 'approved' && (
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-green-800">חשבון סליקה מאושר ✅</h3>
+                    <Badge className="bg-green-500 text-white text-xs">פעיל</Badge>
+                  </div>
+                  <p className="text-green-700 text-sm">החשבון שלך מוכן לקבל תשלומים מהאורחים</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/event/${data.event.id}/payme-setup`)}>
+                  פרטים
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Pending */}
+          {sellerStatus.status === 'pending' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-amber-800">חשבון סליקה בבדיקה ⏳</h3>
+                    <Badge className="bg-amber-500 text-white text-xs">ממתין לאישור</Badge>
+                  </div>
+                  <p className="text-amber-700 text-sm">החשבון נמצא בתהליך אישור (עד 24 שעות)</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => refetchStatus()}>
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Missing Info */}
+          {sellerStatus.status === 'missing_info' && (
+            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-base font-bold text-orange-800">נדרשת השלמת פרטים ⚠️</h3>
+                    <Badge variant="destructive" className="text-xs">פעולה נדרשת</Badge>
+                  </div>
+                  <p className="text-orange-700 text-sm mb-2">
+                    חסרים פרטים כדי שחשבון הסליקה יאושר:
+                  </p>
+                  <ul className="text-orange-700 text-sm list-disc list-inside mb-3">
+                    {sellerStatus.missingFields?.filter((f: any) => f.required).map((f: any) => (
+                      <li key={f.field}>{f.label}</li>
+                    ))}
+                  </ul>
+                  <Button 
+                    onClick={() => navigate(`/event/${data.event.id}/payme-setup`)}
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                    size="sm"
+                  >
+                    השלם פרטים
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Average Gift */}
