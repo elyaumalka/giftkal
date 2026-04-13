@@ -194,7 +194,11 @@ const Upgrade = () => {
 
   // After successful payment, update event features
   const handleUpgradeSuccess = async (txId: string) => {
-    if (!eventData?.id) return;
+    if (!eventData?.id) {
+      console.error("No event data found for upgrade");
+      toast({ title: "שגיאה: לא נמצא אירוע לשדרוג", variant: "destructive" });
+      return;
+    }
 
     try {
       const updates: Record<string, boolean> = {};
@@ -206,17 +210,28 @@ const Upgrade = () => {
         updates.rsvp_enabled = true;
       }
 
+      console.log("Upgrading event", eventData.id, "with:", updates);
+
       if (Object.keys(updates).length > 0) {
-        const { error } = await supabase
+        const { error, data: updatedData } = await supabase
           .from("events")
           .update(updates)
-          .eq("id", eventData.id);
+          .eq("id", eventData.id)
+          .select();
 
         if (error) {
           console.error("Error upgrading event:", error);
-          toast({ title: "שגיאה בעדכון השירותים", variant: "destructive" });
+          toast({ title: "שגיאה בעדכון השירותים: " + error.message, variant: "destructive" });
           return;
         }
+
+        if (!updatedData || updatedData.length === 0) {
+          console.error("No rows updated - possible RLS issue");
+          toast({ title: "שגיאה בעדכון השירותים - אין הרשאה", variant: "destructive" });
+          return;
+        }
+
+        console.log("Event updated successfully:", updatedData);
       }
 
       // Save billing record
