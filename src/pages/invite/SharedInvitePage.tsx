@@ -128,6 +128,7 @@ export default function SharedInvitePage() {
       event_id: event.id,
       full_name: manualName.trim(),
       phone: manualPhone.trim() || null,
+      email: manualEmail.trim() || null,
       relationship: manualRelationship.trim() || null,
       side,
       invitation_sent: false,
@@ -138,6 +139,7 @@ export default function SharedInvitePage() {
     }
     setManualName("");
     setManualPhone("");
+    setManualEmail("");
     setManualRelationship("");
     refetchGuests();
     toast({ title: "מוזמן נוסף בהצלחה!" });
@@ -240,7 +242,7 @@ export default function SharedInvitePage() {
             <Users className="w-5 h-5 text-[#C4A35A]" />
             הוספת מוזמן
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               placeholder="שם מלא *"
               value={manualName}
@@ -252,6 +254,13 @@ export default function SharedInvitePage() {
               value={manualPhone}
               onChange={(e) => setManualPhone(e.target.value)}
               className="bg-gray-50 border-gray-200 text-right"
+            />
+            <Input
+              placeholder="אימייל"
+              value={manualEmail}
+              onChange={(e) => setManualEmail(e.target.value)}
+              className="bg-gray-50 border-gray-200 text-right"
+              type="email"
             />
             <Input
               placeholder="קרבה (משפחה, חברים...)"
