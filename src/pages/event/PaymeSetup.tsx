@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag, Clock, XCircle, AlertTriangle, RefreshCw } from "lucide-react";
 import { z } from "zod";
+import { Badge } from "@/components/ui/badge";
 
 // Israeli banks
 const BANKS = [
@@ -67,6 +68,267 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+interface SellerStatus {
+  status: 'approved' | 'pending' | 'missing_info';
+  sellerPaymeId: string;
+  approved: boolean;
+  active: boolean;
+  accountType: string;
+  approvedDate?: string;
+  createdDate?: string;
+  merchantName?: string;
+  testMode?: boolean;
+  missingFields: { field: string; label: string; required: boolean }[];
+  wallets?: Record<string, { wallet_currency: string; wallet_total: number; wallet_releasable: number }>;
+}
+
+// ─── Seller Status Display Component ───
+function SellerStatusView({ eventId, onBack }: { eventId: string; onBack: () => void }) {
+  const { toast } = useToast();
+
+  const { data: sellerStatus, isLoading, error, refetch } = useQuery<SellerStatus>({
+    queryKey: ['seller-status', eventId],
+    queryFn: async () => {
+      const response = await supabase.functions.invoke('payme-seller-status', {
+        body: { eventId },
+      });
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+      return response.data;
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+
+  const [updateFields, setUpdateFields] = useState<Record<string, string>>({});
+  const [updating, setUpdating] = useState(false);
+
+  const handleUpdateSeller = async () => {
+    if (Object.keys(updateFields).length === 0) return;
+    setUpdating(true);
+    try {
+      const response = await supabase.functions.invoke('payme-update-seller', {
+        body: { eventId, ...updateFields },
+      });
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error || response.data.details);
+      toast({ title: "עודכן בהצלחה!", description: "הפרטים נשלחו לבדיקה" });
+      setUpdateFields({});
+      refetch();
+    } catch (err: any) {
+      toast({ title: "שגיאה", description: err.message, variant: "destructive" });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <XCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+            <CardTitle>שגיאה בטעינת הסטטוס</CardTitle>
+            <CardDescription>{(error as Error).message}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button className="w-full" variant="outline" onClick={() => refetch()}>
+              <RefreshCw className="w-4 h-4 ml-2" /> נסה שוב
+            </Button>
+            <Button className="w-full" variant="ghost" onClick={onBack}>חזרה</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!sellerStatus) return null;
+
+  const statusConfig = {
+    approved: {
+      icon: CheckCircle,
+      color: 'text-green-500',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+      badgeVariant: 'default' as const,
+      badgeClass: 'bg-green-500',
+      title: 'חשבון סליקה מאושר ✅',
+      subtitle: 'החשבון שלך פעיל ומוכן לקבל תשלומים',
+    },
+    pending: {
+      icon: Clock,
+      color: 'text-amber-500',
+      bgColor: 'bg-amber-50',
+      borderColor: 'border-amber-200',
+      badgeVariant: 'secondary' as const,
+      badgeClass: 'bg-amber-500 text-white',
+      title: 'חשבון בבדיקה ⏳',
+      subtitle: 'החשבון שלך בתהליך אישור. זה יכול לקחת עד 24 שעות',
+    },
+    missing_info: {
+      icon: AlertTriangle,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-200',
+      badgeVariant: 'destructive' as const,
+      badgeClass: '',
+      title: 'נדרשים פרטים נוספים ⚠️',
+      subtitle: 'כדי שהחשבון יאושר, יש להשלים את הפרטים הבאים',
+    },
+  };
+
+  const config = statusConfig[sellerStatus.status];
+  const StatusIcon = config.icon;
+  const requiredMissing = sellerStatus.missingFields.filter(f => f.required);
+  const optionalMissing = sellerStatus.missingFields.filter(f => !f.required);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 py-8 px-4" dir="rtl">
+      <div className="max-w-lg mx-auto space-y-4">
+        {/* Status Card */}
+        <Card>
+          <CardHeader className="text-center pb-4">
+            <StatusIcon className={`w-16 h-16 ${config.color} mx-auto mb-4`} />
+            <CardTitle className="text-xl">{config.title}</CardTitle>
+            <CardDescription>{config.subtitle}</CardDescription>
+            <Badge className={`mx-auto mt-2 ${config.badgeClass}`}>
+              {sellerStatus.approved ? 'מאושר' : sellerStatus.status === 'missing_info' ? 'ממתין להשלמה' : 'בבדיקה'}
+            </Badge>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Info */}
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {sellerStatus.merchantName && (
+                <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
+                  <span className="text-muted-foreground block">שם העסק</span>
+                  <span className="font-medium">{sellerStatus.merchantName}</span>
+                </div>
+              )}
+              <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
+                <span className="text-muted-foreground block">סוג חשבון</span>
+                <span className="font-medium">{sellerStatus.accountType}</span>
+              </div>
+              {sellerStatus.createdDate && (
+                <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
+                  <span className="text-muted-foreground block">תאריך יצירה</span>
+                  <span className="font-medium">{new Date(sellerStatus.createdDate).toLocaleDateString('he-IL')}</span>
+                </div>
+              )}
+              {sellerStatus.approvedDate && (
+                <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
+                  <span className="text-muted-foreground block">תאריך אישור</span>
+                  <span className="font-medium">{new Date(sellerStatus.approvedDate).toLocaleDateString('he-IL')}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Wallet */}
+            {sellerStatus.wallets && Object.values(sellerStatus.wallets).length > 0 && (
+              <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
+                <span className="text-muted-foreground block text-sm mb-1">יתרה</span>
+                {Object.values(sellerStatus.wallets).map((w) => (
+                  <div key={w.wallet_currency} className="flex justify-between">
+                    <span className="font-medium">₪{w.wallet_total.toLocaleString()}</span>
+                    <span className="text-sm text-muted-foreground">זמין למשיכה: ₪{w.wallet_releasable.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Refresh */}
+            <Button variant="outline" className="w-full" onClick={() => refetch()}>
+              <RefreshCw className="w-4 h-4 ml-2" /> רענן סטטוס
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Missing Required Fields */}
+        {requiredMissing.length > 0 && (
+          <Card className="border-orange-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-orange-500" />
+                פרטים חסרים (חובה)
+              </CardTitle>
+              <CardDescription>יש להשלים פרטים אלו כדי שהחשבון יאושר</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {requiredMissing.map((field) => (
+                <div key={field.field}>
+                  <Label>{field.label} *</Label>
+                  {field.field === 'seller_social_id_issued' ? (
+                    <Input
+                      type="date"
+                      value={updateFields[field.field] || ''}
+                      onChange={(e) => setUpdateFields(prev => ({ ...prev, [field.field]: e.target.value }))}
+                      placeholder="YYYY-MM-DD"
+                    />
+                  ) : field.field === 'seller_site_url' ? (
+                    <Input
+                      value={updateFields[field.field] || ''}
+                      onChange={(e) => setUpdateFields(prev => ({ ...prev, [field.field]: e.target.value }))}
+                      placeholder="https://example.com"
+                      dir="ltr"
+                    />
+                  ) : field.field === 'bank_rejected' ? (
+                    <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+                      {field.label}
+                    </div>
+                  ) : (
+                    <Input
+                      value={updateFields[field.field] || ''}
+                      onChange={(e) => setUpdateFields(prev => ({ ...prev, [field.field]: e.target.value }))}
+                    />
+                  )}
+                </div>
+              ))}
+
+              {optionalMissing.length > 0 && (
+                <>
+                  <div className="border-t pt-3">
+                    <p className="text-sm text-muted-foreground mb-3">פרטים נוספים (מומלץ)</p>
+                  </div>
+                  {optionalMissing.map((field) => (
+                    <div key={field.field}>
+                      <Label>{field.label}</Label>
+                      <Input
+                        value={updateFields[field.field] || ''}
+                        onChange={(e) => setUpdateFields(prev => ({ ...prev, [field.field]: e.target.value }))}
+                        dir="ltr"
+                      />
+                    </div>
+                  ))}
+                </>
+              )}
+
+              <Button
+                className="w-full"
+                disabled={updating || Object.keys(updateFields).length === 0}
+                onClick={handleUpdateSeller}
+              >
+                {updating ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : null}
+                שלח פרטים לעדכון
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        <Button variant="ghost" className="w-full" onClick={onBack}>
+          חזרה לדאשבורד
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───
 export default function PaymeSetup() {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -98,11 +360,7 @@ export default function PaymeSetup() {
 
   const extractFunctionErrorMessage = async (error: { message?: string; context?: Response | null }) => {
     const fallbackMessage = error.message || 'שגיאה ביצירת חשבון';
-
-    if (!error.context) {
-      return fallbackMessage;
-    }
-
+    if (!error.context) return fallbackMessage;
     try {
       const payload = await error.context.clone().json();
       return payload?.details || payload?.error || payload?.message || fallbackMessage;
@@ -117,7 +375,7 @@ export default function PaymeSetup() {
   };
 
   // Check if event already has seller
-  const { data: event, isLoading: eventLoading, error: eventError } = useQuery({
+  const { data: event, isLoading: eventLoading } = useQuery({
     queryKey: ['event-payme', eventId],
     queryFn: async () => {
       if (!eventId) return null;
@@ -129,7 +387,7 @@ export default function PaymeSetup() {
       if (error) throw error;
       return data;
     },
-    enabled: !!eventId && eventId.length === 36, // Basic UUID validation
+    enabled: !!eventId && eventId.length === 36,
   });
 
   const createSeller = useMutation({
@@ -138,43 +396,29 @@ export default function PaymeSetup() {
       if (!session.session) throw new Error('לא מחובר');
 
       const response = await supabase.functions.invoke('payme-create-seller', {
-        body: {
-          eventId,
-          ...data,
-          gender: 0, // Default
-        },
+        body: { eventId, ...data, gender: 0 },
       });
 
       if (response.error) {
         throw new Error(await extractFunctionErrorMessage(response.error));
       }
-
       if (!response.data?.success) {
         throw new Error(response.data?.details || response.data?.error || 'שגיאה ביצירת חשבון');
       }
-
       return response.data;
     },
     onSuccess: () => {
       setStep('success');
-      toast({
-        title: "הצלחה!",
-        description: "חשבון הסליקה נוצר בהצלחה",
-      });
+      toast({ title: "הצלחה!", description: "חשבון הסליקה נוצר בהצלחה" });
     },
     onError: (error: Error) => {
-      toast({
-        title: "שגיאה",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "שגיאה", description: error.message, variant: "destructive" });
     },
   });
 
   const handleChange = (field: keyof FormData, value: string | number) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
-      // Auto-fill merchantName and merchantNameEn when first/last name changes
       if (field === 'firstName' || field === 'lastName') {
         const first = field === 'firstName' ? (value as string) : prev.firstName;
         const last = field === 'lastName' ? (value as string) : prev.lastName;
@@ -184,32 +428,22 @@ export default function PaymeSetup() {
       }
       return updated;
     });
-    // Clear error when field changes
     if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
+      setErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate form
     const result = formSchema.safeParse(formData);
     if (!result.success) {
       const newErrors: Record<string, string> = {};
       result.error.errors.forEach(err => {
-        if (err.path[0]) {
-          newErrors[err.path[0] as string] = err.message;
-        }
+        if (err.path[0]) newErrors[err.path[0] as string] = err.message;
       });
       setErrors(newErrors);
       return;
     }
-
     createSeller.mutate(result.data);
   };
 
@@ -221,28 +455,9 @@ export default function PaymeSetup() {
     );
   }
 
-  if (event?.seller_payme_id) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <CardTitle>חשבון סליקה פעיל</CardTitle>
-            <CardDescription>
-              האירוע שלך כבר מחובר לחשבון סליקה ומוכן לקבל תשלומים
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              className="w-full" 
-              onClick={() => navigate('/event')}
-            >
-              חזרה לדאשבורד
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // Show seller status if seller already exists
+  if (event?.seller_payme_id && eventId) {
+    return <SellerStatusView eventId={eventId} onBack={() => navigate('/event')} />;
   }
 
   if (step === 'success') {
@@ -266,12 +481,7 @@ export default function PaymeSetup() {
                 </div>
               </div>
             </div>
-            <Button 
-              className="w-full" 
-              onClick={() => navigate('/event')}
-            >
-              חזרה לדאשבורד
-            </Button>
+            <Button className="w-full" onClick={() => navigate('/event')}>חזרה לדאשבורד</Button>
           </CardContent>
         </Card>
       </div>
@@ -307,22 +517,12 @@ export default function PaymeSetup() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="firstName">שם פרטי *</Label>
-                    <Input
-                      id="firstName"
-                      value={formData.firstName || ''}
-                      onChange={(e) => handleChange('firstName', e.target.value)}
-                      className={errors.firstName ? 'border-red-500' : ''}
-                    />
+                    <Input id="firstName" value={formData.firstName || ''} onChange={(e) => handleChange('firstName', e.target.value)} className={errors.firstName ? 'border-red-500' : ''} />
                     {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                   </div>
                   <div>
                     <Label htmlFor="lastName">שם משפחה *</Label>
-                    <Input
-                      id="lastName"
-                      value={formData.lastName || ''}
-                      onChange={(e) => handleChange('lastName', e.target.value)}
-                      className={errors.lastName ? 'border-red-500' : ''}
-                    />
+                    <Input id="lastName" value={formData.lastName || ''} onChange={(e) => handleChange('lastName', e.target.value)} className={errors.lastName ? 'border-red-500' : ''} />
                     {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
                   </div>
                 </div>
@@ -330,30 +530,17 @@ export default function PaymeSetup() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="socialId">תעודת זהות *</Label>
-                    <Input
-                      id="socialId"
-                      value={formData.socialId || ''}
-                      onChange={(e) => handleChange('socialId', e.target.value.replace(/\D/g, '').slice(0, 9))}
-                      placeholder="123456789"
-                      className={errors.socialId ? 'border-red-500' : ''}
-                    />
+                    <Input id="socialId" value={formData.socialId || ''} onChange={(e) => handleChange('socialId', e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="123456789" className={errors.socialId ? 'border-red-500' : ''} />
                     {errors.socialId && <p className="text-red-500 text-sm mt-1">{errors.socialId}</p>}
                   </div>
                   <div>
                     <Label htmlFor="birthdate">תאריך לידה *</Label>
-                    <Input
-                      id="birthdate"
-                      value={formData.birthdate || ''}
-                      onChange={(e) => {
-                        let val = e.target.value.replace(/\D/g, '');
-                        if (val.length >= 2) val = val.slice(0, 2) + '/' + val.slice(2);
-                        if (val.length >= 5) val = val.slice(0, 5) + '/' + val.slice(5, 9);
-                        handleChange('birthdate', val);
-                      }}
-                      placeholder="DD/MM/YYYY"
-                      maxLength={10}
-                      className={errors.birthdate ? 'border-red-500' : ''}
-                    />
+                    <Input id="birthdate" value={formData.birthdate || ''} onChange={(e) => {
+                      let val = e.target.value.replace(/\D/g, '');
+                      if (val.length >= 2) val = val.slice(0, 2) + '/' + val.slice(2);
+                      if (val.length >= 5) val = val.slice(0, 5) + '/' + val.slice(5, 9);
+                      handleChange('birthdate', val);
+                    }} placeholder="DD/MM/YYYY" maxLength={10} className={errors.birthdate ? 'border-red-500' : ''} />
                     {errors.birthdate && <p className="text-red-500 text-sm mt-1">{errors.birthdate}</p>}
                   </div>
                 </div>
@@ -361,25 +548,12 @@ export default function PaymeSetup() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="email">מייל *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email || ''}
-                      onChange={(e) => handleChange('email', e.target.value)}
-                      placeholder="email@example.com"
-                      className={errors.email ? 'border-red-500' : ''}
-                    />
+                    <Input id="email" type="email" value={formData.email || ''} onChange={(e) => handleChange('email', e.target.value)} placeholder="email@example.com" className={errors.email ? 'border-red-500' : ''} />
                     {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                   </div>
                   <div>
                     <Label htmlFor="phone">טלפון נייד *</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone || ''}
-                      onChange={(e) => handleChange('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="0501234567"
-                      className={errors.phone ? 'border-red-500' : ''}
-                    />
+                    <Input id="phone" value={formData.phone || ''} onChange={(e) => handleChange('phone', e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="0501234567" className={errors.phone ? 'border-red-500' : ''} />
                     {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
                   </div>
                 </div>
@@ -395,10 +569,7 @@ export default function PaymeSetup() {
                 
                 <div>
                   <Label htmlFor="bankCode">בנק *</Label>
-                  <Select 
-                    value={formData.bankCode > 0 ? formData.bankCode.toString() : ''} 
-                    onValueChange={(v) => handleChange('bankCode', parseInt(v))}
-                  >
+                  <Select value={formData.bankCode > 0 ? formData.bankCode.toString() : ''} onValueChange={(v) => handleChange('bankCode', parseInt(v))}>
                     <SelectTrigger className={errors.bankCode ? 'border-red-500' : ''}>
                       <SelectValue placeholder="בחרו בנק" />
                     </SelectTrigger>
@@ -416,30 +587,16 @@ export default function PaymeSetup() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="bankBranch">מספר סניף *</Label>
-                    <Input
-                      id="bankBranch"
-                      value={formData.bankBranch || ''}
-                      onChange={(e) => handleChange('bankBranch', e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      placeholder="123"
-                      className={errors.bankBranch ? 'border-red-500' : ''}
-                    />
+                    <Input id="bankBranch" value={formData.bankBranch || ''} onChange={(e) => handleChange('bankBranch', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="123" className={errors.bankBranch ? 'border-red-500' : ''} />
                     {errors.bankBranch && <p className="text-red-500 text-sm mt-1">{errors.bankBranch}</p>}
                   </div>
                   <div>
                     <Label htmlFor="bankAccountNumber">מספר חשבון *</Label>
-                    <Input
-                      id="bankAccountNumber"
-                      value={formData.bankAccountNumber || ''}
-                      onChange={(e) => handleChange('bankAccountNumber', e.target.value.replace(/\D/g, '').slice(0, 12))}
-                      placeholder="1234567"
-                      className={errors.bankAccountNumber ? 'border-red-500' : ''}
-                    />
+                    <Input id="bankAccountNumber" value={formData.bankAccountNumber || ''} onChange={(e) => handleChange('bankAccountNumber', e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="1234567" className={errors.bankAccountNumber ? 'border-red-500' : ''} />
                     {errors.bankAccountNumber && <p className="text-red-500 text-sm mt-1">{errors.bankAccountNumber}</p>}
                   </div>
                 </div>
               </div>
-
-              {/* merchantName and merchantNameEn are auto-filled and sent hidden */}
 
               {/* Address Section */}
               <div className="space-y-4">
@@ -450,34 +607,19 @@ export default function PaymeSetup() {
                 
                 <div>
                   <Label htmlFor="city">עיר *</Label>
-                  <Input
-                    id="city"
-                    value={formData.city || ''}
-                    onChange={(e) => handleChange('city', e.target.value)}
-                    className={errors.city ? 'border-red-500' : ''}
-                  />
+                  <Input id="city" value={formData.city || ''} onChange={(e) => handleChange('city', e.target.value)} className={errors.city ? 'border-red-500' : ''} />
                   {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2">
                     <Label htmlFor="street">רחוב *</Label>
-                    <Input
-                      id="street"
-                      value={formData.street || ''}
-                      onChange={(e) => handleChange('street', e.target.value)}
-                      className={errors.street ? 'border-red-500' : ''}
-                    />
+                    <Input id="street" value={formData.street || ''} onChange={(e) => handleChange('street', e.target.value)} className={errors.street ? 'border-red-500' : ''} />
                     {errors.street && <p className="text-red-500 text-sm mt-1">{errors.street}</p>}
                   </div>
                   <div>
                     <Label htmlFor="streetNumber">מספר *</Label>
-                    <Input
-                      id="streetNumber"
-                      value={formData.streetNumber || ''}
-                      onChange={(e) => handleChange('streetNumber', e.target.value)}
-                      className={errors.streetNumber ? 'border-red-500' : ''}
-                    />
+                    <Input id="streetNumber" value={formData.streetNumber || ''} onChange={(e) => handleChange('streetNumber', e.target.value)} className={errors.streetNumber ? 'border-red-500' : ''} />
                     {errors.streetNumber && <p className="text-red-500 text-sm mt-1">{errors.streetNumber}</p>}
                   </div>
                 </div>
@@ -490,71 +632,39 @@ export default function PaymeSetup() {
                   <h3>יש לך קופון?</h3>
                 </div>
                 <div className="flex gap-2">
-                  <Input
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    placeholder="הזן קוד קופון"
-                    className="flex-1"
-                    disabled={couponApplied}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={!couponCode.trim() || couponApplied || applyingCoupon}
-                    onClick={async () => {
-                      setApplyingCoupon(true);
-                      setErrors({});
-                      try {
-                        const { data: session } = await supabase.auth.getSession();
-                        if (!session.session) throw new Error('לא מחובר');
-
-                        const response = await supabase.functions.invoke('payme-create-seller', {
-                          body: { eventId, couponCode: couponCode.trim() },
-                        });
-
-                        if (response.error) throw new Error(response.error.message);
-                        if (!response.data?.success) throw new Error(response.data?.error || 'קופון לא תקין');
-
-                        setCouponApplied(true);
-                        setStep('success');
-                        toast({
-                          title: "קופון הופעל בהצלחה! ✅",
-                          description: "חשבון סליקה לבדיקות נוצר",
-                        });
-                      } catch (err: any) {
-                        toast({
-                          title: "שגיאה",
-                          description: err.message || 'קופון לא תקין',
-                          variant: "destructive",
-                        });
-                      } finally {
-                        setApplyingCoupon(false);
-                      }
-                    }}
-                  >
+                  <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="הזן קוד קופון" className="flex-1" disabled={couponApplied} />
+                  <Button type="button" variant="outline" disabled={!couponCode.trim() || couponApplied || applyingCoupon} onClick={async () => {
+                    setApplyingCoupon(true);
+                    setErrors({});
+                    try {
+                      const { data: session } = await supabase.auth.getSession();
+                      if (!session.session) throw new Error('לא מחובר');
+                      const response = await supabase.functions.invoke('payme-create-seller', {
+                        body: { eventId, couponCode: couponCode.trim() },
+                      });
+                      if (response.error) throw new Error(response.error.message);
+                      if (!response.data?.success) throw new Error(response.data?.error || 'קופון לא תקין');
+                      setCouponApplied(true);
+                      setStep('success');
+                      toast({ title: "קופון הופעל בהצלחה! ✅", description: "חשבון סליקה לבדיקות נוצר" });
+                    } catch (err: any) {
+                      toast({ title: "שגיאה", description: err.message || 'קופון לא תקין', variant: "destructive" });
+                    } finally {
+                      setApplyingCoupon(false);
+                    }
+                  }}>
                     {applyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'הפעל'}
                   </Button>
                 </div>
-                {couponApplied && (
-                  <p className="text-sm text-green-600 font-medium">✅ קופון הופעל</p>
-                )}
+                {couponApplied && <p className="text-sm text-green-600 font-medium">✅ קופון הופעל</p>}
               </div>
 
               {/* Submit Button */}
               <div className="pt-4 border-t">
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 text-lg"
-                  disabled={createSeller.isPending}
-                >
+                <Button type="submit" className="w-full h-12 text-lg" disabled={createSeller.isPending}>
                   {createSeller.isPending ? (
-                    <>
-                      <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                      יוצר חשבון...
-                    </>
-                  ) : (
-                    'צור חשבון סליקה'
-                  )}
+                    <><Loader2 className="w-5 h-5 ml-2 animate-spin" />יוצר חשבון...</>
+                  ) : 'צור חשבון סליקה'}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground mt-4">
                   בלחיצה על הכפתור אתם מאשרים את תנאי השימוש של PayMe
