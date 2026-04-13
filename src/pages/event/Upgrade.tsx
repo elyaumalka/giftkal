@@ -304,7 +304,38 @@ const Upgrade = () => {
             })}
           </div>
 
-          {totalPrice > 0 && (
+          {/* Coupon */}
+          <div className="flex gap-2">
+            <Input
+              value={couponCode}
+              onChange={e => setCouponCode(e.target.value)}
+              placeholder="קוד קופון"
+              className="flex-1"
+              disabled={couponApplied}
+            />
+            <Button
+              variant="outline"
+              disabled={couponApplied || !couponCode.trim()}
+              onClick={() => {
+                if (VALID_COUPONS[couponCode.toUpperCase()]) {
+                  setCouponApplied(true);
+                  toast({ title: "✅ קופון הופעל בהצלחה!" });
+                } else {
+                  toast({ title: "קופון לא תקין", variant: "destructive" });
+                }
+              }}
+            >
+              {couponApplied ? "✓ הופעל" : "הפעל"}
+            </Button>
+          </div>
+
+          {couponApplied && (
+            <div className="bg-green-50 text-green-700 rounded-xl p-3 border border-green-200 text-center text-sm font-medium">
+              🎉 קופון {couponCode.toUpperCase()} — הנחה {discountPercent}%
+            </div>
+          )}
+
+          {availablePlans.some(p => selected[p.id]) && (
             <div className="bg-gray-50 rounded-xl p-4 border text-center">
               <span className="text-muted-foreground text-sm">סה"כ לתשלום: </span>
               <span className="text-2xl font-black text-[#C4A35A]">₪{totalPrice}</span>
@@ -312,18 +343,36 @@ const Upgrade = () => {
           )}
 
           <Button
-            onClick={() => {
-              if (totalPrice <= 0) {
+            onClick={async () => {
+              if (!availablePlans.some(p => selected[p.id])) {
                 toast({ title: "נא לבחור לפחות שירות אחד", variant: "destructive" });
                 return;
               }
-              setStep("payment");
+              if (totalPrice === 0) {
+                // Free upgrade (coupon covers everything)
+                setLoading(true);
+                try {
+                  await handleUpgradeSuccess("COUPON-" + couponCode.toUpperCase());
+                  setStep("success");
+                } catch (e) {
+                  console.error(e);
+                } finally {
+                  setLoading(false);
+                }
+              } else {
+                setStep("payment");
+              }
             }}
             className="w-full h-12 text-lg bg-[#C4A35A] hover:bg-[#B3923F] text-white"
-            disabled={totalPrice <= 0}
+            disabled={!availablePlans.some(p => selected[p.id]) || loading}
           >
-            <CreditCard className="w-5 h-5 ml-2" />
-            המשך לתשלום ₪{totalPrice}
+            {loading ? (
+              <><Loader2 className="w-5 h-5 animate-spin ml-2" />משדרג...</>
+            ) : totalPrice === 0 && availablePlans.some(p => selected[p.id]) ? (
+              <><Sparkles className="w-5 h-5 ml-2" />שדרג חינם!</>
+            ) : (
+              <><CreditCard className="w-5 h-5 ml-2" />המשך לתשלום ₪{totalPrice}</>
+            )}
           </Button>
 
           <Button
