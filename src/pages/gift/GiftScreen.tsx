@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Heart, CreditCard, Check, ArrowLeft, ArrowRight, Sparkles, Loader2, X, Home } from "lucide-react";
+import { Gift, Heart, CreditCard, Check, ArrowLeft, ArrowRight, Sparkles, Loader2, X, Home, Video, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
@@ -78,10 +78,14 @@ export default function GiftScreen() {
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [blessingImageUrl, setBlessingImageUrl] = useState<string | null>(null);
+  const [blessingVideoFile, setBlessingVideoFile] = useState<File | null>(null);
+  const [blessingVideoUrl, setBlessingVideoUrl] = useState<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [paymeApiKey, setPaymeApiKey] = useState<string | null>(null);
   const [paymeTestMode, setPaymeTestMode] = useState(true);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // Check if returning from PayMe payment
   useEffect(() => {
@@ -137,11 +141,37 @@ export default function GiftScreen() {
     } catch (error) { console.error("Error saving blessing card:", error); return null; }
   };
 
+  // Upload video blessing
+  const handleVideoUpload = async (file: File) => {
+    if (file.size > 50 * 1024 * 1024) {
+      toast({ title: "⚠️ קובץ גדול מדי", description: "גודל מקסימלי 50MB", variant: "destructive" });
+      return;
+    }
+    const validTypes = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo'];
+    if (!validTypes.includes(file.type)) {
+      toast({ title: "⚠️ פורמט לא נתמך", description: "נא להעלות קובץ וידאו (MP4, MOV, WebM)", variant: "destructive" });
+      return;
+    }
+    setUploadingVideo(true);
+    setBlessingVideoFile(file);
+    try {
+      const ext = file.name.split('.').pop() || 'mp4';
+      const safePayerName = payerName.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_').substring(0, 50) || 'guest';
+      const fileName = `blessing-videos/${eventId}/${Date.now()}-${safePayerName}.${ext}`;
+      const { error } = await supabase.storage.from("documents").upload(fileName, file, { contentType: file.type, upsert: false });
+      if (error) { console.error("Error uploading video:", error); toast({ title: "שגיאה בהעלאה", variant: "destructive" }); setUploadingVideo(false); return; }
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(fileName);
+      setBlessingVideoUrl(urlData.publicUrl);
+      toast({ title: "✅ הסרטון הועלה בהצלחה" });
+    } catch (err) { console.error("Video upload error:", err); toast({ title: "שגיאה בהעלאת הסרטון", variant: "destructive" }); }
+    setUploadingVideo(false);
+  };
+
   const chargeToken = useMutation({
     mutationFn: async (token: string) => {
       const amount = selectedAmount || Number(customAmount);
       const response = await supabase.functions.invoke('payme-charge-token', {
-        body: { token, eventId, amount, payerName, payerEmail: payerEmail || undefined, payerPhone: payerPhone || undefined, relationship: relationship || undefined, blessing: blessing || undefined, blessingImageUrl: blessingImageUrl || undefined, installments: selectedInstallments },
+        body: { token, eventId, amount, payerName, payerEmail: payerEmail || undefined, payerPhone: payerPhone || undefined, relationship: relationship || undefined, blessing: blessing || undefined, blessingImageUrl: blessingImageUrl || undefined, blessingVideoUrl: blessingVideoUrl || undefined, installments: selectedInstallments },
       });
       if (response.error) throw new Error(response.error.message || 'שגיאה בביצוע התשלום');
       if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה בביצוע התשלום');
@@ -494,8 +524,8 @@ export default function GiftScreen() {
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#E8B4BC] to-[#D4A5AD] flex items-center justify-center mx-auto mb-3 shadow-lg">
                   <Heart className="w-7 h-7 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">כתבו ברכה לזוג</h2>
-                <p className="text-white/40 mt-1 text-sm">הברכה תישמר כתמונה יפה</p>
+                <h2 className="text-2xl font-bold text-white">כתבו ברכה</h2>
+                <p className="text-white/40 mt-1 text-sm">כתבו ברכה או העלו סרטון ברכה</p>
               </div>
 
               {/* Design Selection */}
@@ -533,6 +563,44 @@ export default function GiftScreen() {
                 <div className={cn("absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 rounded-tl-lg", selectedDesign.border)} />
                 <div className={cn("absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 rounded-br-lg", selectedDesign.border)} />
                 <div className={cn("absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 rounded-bl-lg", selectedDesign.border)} />
+              </div>
+
+              {/* Video Blessing Upload */}
+              <div className="bg-white/5 rounded-2xl border border-white/10 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Video className="w-5 h-5 text-[#C4A35A]" />
+                  <span className="text-white font-medium text-sm">ברכה בוידאו (אופציונלי)</span>
+                </div>
+                
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files?.[0]) handleVideoUpload(e.target.files[0]); }}
+                />
+
+                {blessingVideoUrl ? (
+                  <div className="space-y-2">
+                    <video src={blessingVideoUrl} controls className="w-full rounded-xl max-h-40" />
+                    <button onClick={() => { setBlessingVideoUrl(null); setBlessingVideoFile(null); }}
+                      className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
+                      <X className="w-3 h-3" /> הסר סרטון
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => videoInputRef.current?.click()}
+                    disabled={uploadingVideo}
+                    className="w-full py-3 rounded-xl border border-dashed border-white/20 text-white/50 hover:border-[#C4A35A]/50 hover:text-white/70 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                  >
+                    {uploadingVideo ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> מעלה סרטון...</>
+                    ) : (
+                      <><Upload className="w-4 h-4" /> העלו סרטון ברכה (עד 50MB)</>
+                    )}
+                  </button>
+                )}
               </div>
 
               <div className="flex gap-3">
@@ -641,6 +709,14 @@ export default function GiftScreen() {
                       <p className={cn("font-bold text-sm", selectedDesign.text)}>{payerName}</p>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Show video blessing */}
+              {blessingVideoUrl && (
+                <div className="w-full">
+                  <p className="text-white/40 text-sm mb-2">ברכת הוידאו שלכם:</p>
+                  <video src={blessingVideoUrl} controls className="w-full rounded-xl max-h-48" />
                 </div>
               )}
 

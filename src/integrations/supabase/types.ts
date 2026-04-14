@@ -848,6 +848,7 @@ export type Database = {
         Row: {
           amount: number
           blessing_text: string | null
+          blessing_video_url: string | null
           created_at: string
           event_id: string
           id: string
@@ -866,6 +867,7 @@ export type Database = {
         Insert: {
           amount: number
           blessing_text?: string | null
+          blessing_video_url?: string | null
           created_at?: string
           event_id: string
           id?: string
@@ -884,6 +886,7 @@ export type Database = {
         Update: {
           amount?: number
           blessing_text?: string | null
+          blessing_video_url?: string | null
           created_at?: string
           event_id?: string
           id?: string
