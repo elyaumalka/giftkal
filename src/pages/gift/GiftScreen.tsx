@@ -151,16 +151,8 @@ export default function GiftScreen() {
     onError: (error: Error) => { setPaymentError(error.message); setStep("failed"); toast({ title: "שגיאה", description: error.message, variant: "destructive" }); },
   });
 
-  const createTransaction = useMutation({
-    mutationFn: async () => {
-      const imageUrl = await saveBlessingAsImage();
-      const amount = selectedAmount || Number(customAmount);
-      const { error } = await supabase.from("transactions").insert({ event_id: eventId, venue_id: event?.venue_id, payer_name: payerName, payer_email: payerEmail, payer_phone: payerPhone, amount, relationship, blessing_text: blessing, receipt_url: imageUrl, payment_status: 'completed' });
-      if (error) throw error;
-    },
-    onSuccess: () => setStep("success"),
-    onError: (error: Error) => { toast({ title: "שגיאה", description: error.message, variant: "destructive" }); },
-  });
+  // Remove createTransaction without PayMe - all gifts MUST go through PayMe
+  // No more fake/test transactions without real payment
 
   const finalAmount = selectedAmount || Number(customAmount);
 
@@ -187,8 +179,7 @@ export default function GiftScreen() {
     const imageUrl = await saveBlessingAsImage();
     setBlessingImageUrl(imageUrl);
     if (event?.seller_payme_id && paymeApiKey) { setStep("card-payment"); }
-    else if (event?.seller_payme_id) { toast({ title: "שגיאה", description: "מערכת התשלום לא זמינה כרגע", variant: "destructive" }); setStep("blessing"); }
-    else { createTransaction.mutate(); }
+    else { toast({ title: "שגיאה", description: "מערכת התשלום לא זמינה כרגע", variant: "destructive" }); setStep("blessing"); }
   };
 
   const handleTokenize = (token: string) => { setStep("processing"); chargeToken.mutate(token); };
@@ -240,8 +231,8 @@ export default function GiftScreen() {
     );
   }
 
-  const eventDate = new Date(event.event_date);
-  const formattedDate = eventDate.toLocaleDateString("he-IL", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const eventDate = new Date(event.event_date + 'T00:00:00');
+  const formattedDate = eventDate.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   const stepTitles: Record<string, string> = {
     amount: "בחרו סכום מתנה",
@@ -549,10 +540,10 @@ export default function GiftScreen() {
                   className="flex-1 h-12 rounded-xl border border-white/15 text-white/60 font-medium hover:bg-white/5 transition-colors">
                   חזרה
                 </button>
-                <button onClick={handleProceedToPayment} disabled={createTransaction.isPending}
+                <button onClick={handleProceedToPayment}
                   className="flex-1 h-12 rounded-xl font-bold text-white disabled:opacity-50"
                   style={{ background: "linear-gradient(135deg, #C41E3A 0%, #E8344E 50%, #C41E3A 100%)" }}>
-                  {event?.seller_payme_id ? `שלם ₪${finalAmount}` : "שלח ברכה"}
+                  {`שלם ₪${finalAmount}`}
                 </button>
               </div>
             </div>
@@ -614,27 +605,44 @@ export default function GiftScreen() {
             </div>
           )}
 
-          {/* Step: Success */}
+          {/* Step: Success - show blessing card */}
           {step === "success" && (
-            <div className="p-8 space-y-6 animate-fade-in text-center flex-1 flex flex-col items-center justify-center">
+            <div className="p-6 space-y-5 animate-fade-in text-center flex-1 flex flex-col items-center justify-center overflow-y-auto">
               <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-xl shadow-green-500/20">
-                  <Check className="w-10 h-10 text-white" />
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-xl shadow-green-500/20">
+                  <Check className="w-8 h-8 text-white" />
                 </div>
                 <Sparkles className="absolute top-0 right-0 w-5 h-5 text-[#C4A35A] animate-pulse" />
-                <Sparkles className="absolute bottom-0 left-0 w-4 h-4 text-[#E8B4BC] animate-pulse delay-150" />
               </div>
 
               <div>
-                <h2 className="text-3xl font-bold text-white">תודה רבה!</h2>
-                <p className="text-white/60 mt-2 text-lg">המתנה והברכה נשלחו בהצלחה</p>
-                <p className="text-white/30 text-sm mt-1">ל{event?.groom_name} ו{event?.bride_name}</p>
+                <h2 className="text-2xl font-bold text-white">תודה רבה!</h2>
+                <p className="text-white/60 mt-1">המתנה והברכה נשלחו בהצלחה</p>
               </div>
 
-              <div className="bg-white/5 backdrop-blur-sm p-5 rounded-2xl border border-[#C4A35A]/20 w-full">
+              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-[#C4A35A]/20 w-full">
                 <p className="text-sm text-white/40">סכום המתנה</p>
-                <p className="text-4xl font-bold text-[#C4A35A] mt-1">₪{finalAmount || searchParams.get('amount') || ''}</p>
+                <p className="text-3xl font-bold text-[#C4A35A] mt-1">₪{finalAmount || searchParams.get('amount') || ''}</p>
+                <p className="text-white/30 text-xs mt-1">כולל עמלת סליקה ₪2.30</p>
               </div>
+
+              {/* Show the blessing card */}
+              {blessing && (
+                <div className="w-full">
+                  <p className="text-white/40 text-sm mb-2">הברכה שלכם:</p>
+                  <div className={cn("relative p-5 rounded-2xl border-2 bg-gradient-to-br", selectedDesign.bg, selectedDesign.border)}>
+                    <div className="text-center mb-2">
+                      <h3 className={cn("text-lg font-bold", selectedDesign.text)}>
+                        {event.groom_name} {event.bride_name ? `& ${event.bride_name}` : event.child_name || event.family_name || ""}
+                      </h3>
+                    </div>
+                    <p className={cn("text-center text-base", selectedDesign.text)}>{blessing}</p>
+                    <div className={cn("text-center mt-3 pt-2 border-t", selectedDesign.border)}>
+                      <p className={cn("font-bold text-sm", selectedDesign.text)}>{payerName}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <p className="text-white/30 text-sm">מזל טוב! 🎉</p>
             </div>
