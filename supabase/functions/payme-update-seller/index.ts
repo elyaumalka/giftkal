@@ -65,28 +65,92 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Build PayMe update payload
+    // Step 1: Get existing seller data from PayMe (update-seller requires ALL fields)
+    console.log('Fetching existing seller data for:', event.seller_payme_id)
+    const getSellersResponse = await fetch('https://live.payme.io/api/get-sellers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        payme_client_key: paymeClientKey,
+        seller_payme_id: event.seller_payme_id,
+      }),
+    })
+
+    const getSellersResult = await getSellersResponse.json()
+    console.log('get-sellers response status:', getSellersResult.status_code)
+
+    if (getSellersResult.status_code !== 0) {
+      return new Response(JSON.stringify({
+        error: 'Failed to fetch seller data',
+        details: getSellersResult.status_error_details || 'Unknown error',
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const seller = getSellersResult.items?.find(
+      (s: any) => s.seller_payme_id === event.seller_payme_id
+    )
+
+    if (!seller) {
+      return new Response(JSON.stringify({ error: 'Seller not found in PayMe' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const personal = seller.seller_personal_details || {}
+    const business = seller.seller_business_details || {}
+
+    // Step 2: Build FULL update payload with existing data + overrides
     const updatePayload: Record<string, any> = {
       payme_client_key: paymeClientKey,
       seller_payme_id: event.seller_payme_id,
+      // Required personal fields - use existing data
+      seller_first_name: personal.seller_first_name || '',
+      seller_last_name: personal.seller_last_name || '',
+      seller_social_id: personal.seller_social_id || '',
+      seller_birthdate: personal.seller_birthdate || '',
+      seller_social_id_issued: personal.seller_social_id_issued || '',
+      seller_gender: personal.seller_gender ?? 0,
+      seller_email: personal.seller_email || '',
+      seller_phone: personal.seller_phone || '',
+      // Required business fields - use existing data
+      seller_bank_code: business.seller_bank_code || 0,
+      seller_bank_branch: business.seller_bank_branch || 0,
+      seller_bank_account_number: business.seller_bank_account_number || '',
+      seller_description: business.seller_description || 'שירותי מתנות לאירועים',
+      seller_site_url: business.seller_site_url || 'https://giftkal.com',
+      seller_person_business_type: business.seller_person_business_type || 780,
+      seller_inc: business.seller_inc ?? 0,
+      seller_merchant_name: business.seller_merchant_name || '',
+      seller_address_city: business.seller_address_city || '',
+      seller_address_street: business.seller_address_street || '',
+      seller_address_street_number: business.seller_address_street_number || '',
+      seller_address_country: business.seller_address_country || 'IL',
     }
 
-    // Map our field names to PayMe field names
-    if (updateData.seller_social_id_issued) {
-      updatePayload.seller_social_id_issued = updateData.seller_social_id_issued
+    // Optional fields if they exist
+    if (business.seller_inc_code) {
+      updatePayload.seller_inc_code = business.seller_inc_code
     }
-    if (updateData.seller_site_url) {
-      updatePayload.seller_site_url = updateData.seller_site_url
+    if (personal.seller_first_name_en) {
+      updatePayload.seller_first_name_en = personal.seller_first_name_en
     }
-    if (updateData.seller_first_name_en) {
-      updatePayload.seller_first_name_en = updateData.seller_first_name_en
+    if (personal.seller_last_name_en) {
+      updatePayload.seller_last_name_en = personal.seller_last_name_en
     }
-    if (updateData.seller_last_name_en) {
-      updatePayload.seller_last_name_en = updateData.seller_last_name_en
+    if (business.seller_merchant_name_en) {
+      updatePayload.seller_merchant_name_en = business.seller_merchant_name_en
     }
 
-    console.log('Updating seller:', JSON.stringify(updatePayload))
+    // Step 3: Apply the user's updates on top
+    for (const [key, value] of Object.entries(updateData)) {
+      if (value !== undefined && value !== null && value !== '') {
+        updatePayload[key] = value
+      }
+    }
 
+    console.log('Updating seller with full payload:', JSON.stringify(updatePayload))
+
+    // Step 4: Send to PayMe update-seller
     const paymeResponse = await fetch('https://live.payme.io/api/update-seller', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
