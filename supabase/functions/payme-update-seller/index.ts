@@ -130,6 +130,8 @@ Deno.serve(async (req) => {
 
     const personal = seller.seller_personal_details || {}
     const business = seller.seller_business_details || {}
+    const address = seller.seller_address || {}
+    const fees = seller.seller_fees || {}
 
     const updateData = {
       ...rawUpdateData,
@@ -150,20 +152,20 @@ Deno.serve(async (req) => {
       seller_gender: personal.seller_gender ?? 0,
       seller_email: personal.seller_email || '',
       seller_phone: normalizeIsraeliPhone(personal.seller_phone),
-      seller_contact_email: personal.seller_contact_email || personal.seller_email || '',
-      seller_contact_phone: normalizeIsraeliPhone(personal.seller_contact_phone || personal.seller_phone),
-      seller_bank_code: business.seller_bank_code || 0,
-      seller_bank_branch: business.seller_bank_branch || 0,
+      seller_contact_email: business.seller_contact_email || personal.seller_email || '',
+      seller_contact_phone: normalizeIsraeliPhone(business.seller_contact_phone || personal.seller_phone),
+      seller_bank_code: Number(business.seller_bank_code || business.seller_bank_account_code || 0),
+      seller_bank_branch: business.seller_bank_branch || business.seller_bank_account_branch || '',
       seller_bank_account_number: business.seller_bank_account_number || '',
       seller_description: business.seller_description || 'אירוע - GiftKal',
       seller_site_url: business.seller_site_url || 'https://giftkal.com',
-      seller_person_business_type: business.seller_person_business_type || 10010,
+      seller_person_business_type: business.seller_person_business_type || business.seller_business_type || 10010,
       seller_inc: business.seller_inc ?? 0,
       seller_merchant_name: business.seller_merchant_name || '',
-      seller_address_city: business.seller_address_city || '',
-      seller_address_street: business.seller_address_street || '',
-      seller_address_street_number: business.seller_address_street_number || '',
-      seller_address_country: business.seller_address_country || 'IL',
+      seller_address_city: address.seller_address_city || '',
+      seller_address_street: address.seller_address_street || '',
+      seller_address_street_number: address.seller_address_street_number || '',
+      seller_address_country: address.seller_address_country || 'IL',
       seller_retail_type: business.seller_retail_type || 1,
       language: 'he',
     }
@@ -174,7 +176,7 @@ Deno.serve(async (req) => {
     if (business.seller_dba_en) updatePayload.seller_dba_en = business.seller_dba_en
     if (personal.seller_first_name_en) updatePayload.seller_first_name_en = personal.seller_first_name_en
     if (personal.seller_last_name_en) updatePayload.seller_last_name_en = personal.seller_last_name_en
-    if (business.market_fee) updatePayload.market_fee = business.market_fee
+    if (business.market_fee || fees.fee_market_fee) updatePayload.market_fee = business.market_fee || fees.fee_market_fee
     if (business.seller_plan) updatePayload.seller_plan = business.seller_plan
 
     for (const [key, value] of Object.entries(updateData)) {
