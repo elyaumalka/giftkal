@@ -2,8 +2,8 @@ import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  CreditCard, Send, BarChart3, Monitor, Gift, Zap, Star,
-  MessageCircle, Sparkles, CheckCircle2, UserPlus, Wallet
+  CreditCard, Send, Monitor, Gift, Star,
+  MessageCircle, Sparkles, CheckCircle2, UserPlus, Wallet, Package, MapPin
 } from "lucide-react";
 
 const useInView = (threshold = 0.15) => {
@@ -18,21 +18,6 @@ const useInView = (threshold = 0.15) => {
     return () => observer.disconnect();
   }, [threshold]);
   return { ref, inView };
-};
-
-const ServiceCard = ({ icon: Icon, title, desc, price, badge, delay }: {
-  icon: any; title: string; desc: string; price: string; badge?: string; delay: number;
-}) => {
-  const { ref, inView } = useInView();
-  return (
-    <div ref={ref} className={`relative bg-card rounded-2xl p-6 text-center shadow-lg border border-border/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: `${delay}ms` }}>
-      {badge && <span className="absolute -top-2.5 right-3 bg-primary text-primary-foreground text-xs font-bold px-3 py-0.5 rounded-full">{badge}</span>}
-      <Icon className="w-8 h-8 text-primary mx-auto mb-3" />
-      <h3 className="font-bold text-secondary mb-1">{title}</h3>
-      <p className="text-muted-foreground text-sm mb-2">{desc}</p>
-      <p className="text-2xl font-black text-primary">{price}</p>
-    </div>
-  );
 };
 
 const TestimonialCard = ({ text, name, event }: { text: string; name: string; event: string }) => {
@@ -60,20 +45,20 @@ const EventOwnersPage = () => {
         <div className="container mx-auto px-4 text-center relative z-10">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-5 py-2 mb-8">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-primary text-sm font-medium">מערכת ניהול אירועים חכמה</span>
+            <span className="text-primary text-sm font-medium">חבילת הכל כלול לאירוע שלכם</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
             נהלו את האירוע שלכם<br />
             <span className="text-primary">וקבלו יותר מתנות</span>
           </h1>
           <p className="text-xl text-white/60 max-w-2xl mx-auto mb-10">
-            מתנות באשראי, הזמנות חכמות וניהול תקציב — הכל במקום אחד
+            אישורי הגעה + מתנות באשראי + עמדת מתנות — הכל בחבילה אחת
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup">
               <Button variant="gold" size="lg" className="text-lg px-10 py-6">
                 <Gift className="w-5 h-5 ml-2" />
-                פתחו אירוע עכשיו
+                הרשמה לחבילה המלאה
               </Button>
             </Link>
             <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע פרטים על GiftKal לאירוע שלי" target="_blank" rel="noopener noreferrer">
@@ -86,24 +71,120 @@ const EventOwnersPage = () => {
         </div>
       </section>
 
-      {/* שירותים */}
+      {/* חבילה הכל כלול */}
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <span className="text-4xl mb-4 block">💡</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary">מה מקבלים?</h2>
+            <span className="text-4xl mb-4 block">🎁</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-secondary mb-2">חבילת הכל כלול</h2>
+            <p className="text-muted-foreground">כל מה שצריך לאירוע מוצלח — במקום אחד</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            <ServiceCard icon={CreditCard} title="מתנות באשראי" desc="גביייה מאובטחת מכל מקום" price="₪199" delay={0} />
-            <ServiceCard icon={Monitor} title="עמדת מתנות באולם" desc="עמדת טאץ' פיזית באירוע" price="₪99" badge="מומלץ" delay={80} />
-            <ServiceCard icon={Send} title="הזמנות דיגיטליות" desc="שליחה + אישורי הגעה" price="₪199" delay={160} />
-            <ServiceCard icon={BarChart3} title="ניהול תקציב" desc="שליטה בכל שקל" price="חינם" delay={240} />
+
+          {/* Bundle card */}
+          <div className="max-w-3xl mx-auto bg-card rounded-3xl shadow-xl border-2 border-primary/30 p-8 md:p-10 relative">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-sm font-bold px-6 py-1 rounded-full">מומלץ</span>
+            
+            <div className="space-y-5 mb-8">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-6 h-6 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <h3 className="font-bold text-secondary text-lg">אישורי הגעה דיגיטליים</h3>
+                  <p className="text-muted-foreground text-sm">שליחת הזמנות למוזמנים וקבלת אישורי הגעה בזמן אמת</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-6 h-6 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <h3 className="font-bold text-secondary text-lg">מתנות באשראי — קישור אישי</h3>
+                  <p className="text-muted-foreground text-sm">שליחת קישור אישי למוזמנים שלכם לשליחת מתנה באשראי מכל מקום</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-6 h-6 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <h3 className="font-bold text-secondary text-lg">ניהול תקציב</h3>
+                  <p className="text-muted-foreground text-sm">מעקב אחר הוצאות והכנסות — שליטה מלאה בתקציב האירוע</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center border-t border-border pt-6">
+              <p className="text-3xl font-black text-primary mb-1">₪399</p>
+              <p className="text-muted-foreground text-sm mb-6">חד פעמי לכל האירוע</p>
+              <Link to="/signup">
+                <Button variant="gold" size="lg" className="text-lg px-10 py-6">
+                  <Package className="w-5 h-5 ml-2" />
+                  הרשמה עכשיו
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* עמדת מתנות באולם */}
+      <section className="py-20 bg-secondary/5">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <span className="text-4xl mb-4 block">🖥️</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-secondary mb-2">עמדת מתנות באולם</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              עמדת טאץ' פיזית שמאפשרת לאורחים לשלוח מתנות באשראי ישירות באירוע — גם מי שלא הביא מזומן
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* אופציה 1 - יש עמדה באולם */}
+            <div className="bg-card rounded-2xl p-6 shadow-lg border border-border/50">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Monitor className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-bold text-secondary text-lg">יש עמדה באולם שלכם?</h3>
+              </div>
+              <p className="text-muted-foreground text-sm mb-4">
+                אם באולם שלכם כבר קיימת עמדת GiftKal — אנחנו מפעילים אותה עבורכם ללא עלות נוספת!
+              </p>
+              <p className="text-sm text-foreground/70 mb-4">
+                👈 השאירו את פרטי בעל האולם ואנחנו נדאג לכל השאר
+              </p>
+              <a href="https://wa.me/97223131700?text=היי, יש עמדת GiftKal באולם שלנו ואשמח להפעיל אותה לאירוע" target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" className="w-full">
+                  <MessageCircle className="w-4 h-4 ml-2" />
+                  שלחו פרטי בעל האולם
+                </Button>
+              </a>
+            </div>
+
+            {/* אופציה 2 - השכרת עמדה */}
+            <div className="bg-card rounded-2xl p-6 shadow-lg border-2 border-primary/40 relative">
+              <span className="absolute -top-2.5 right-3 bg-primary text-primary-foreground text-xs font-bold px-3 py-0.5 rounded-full">פופולרי</span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <MapPin className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="font-bold text-secondary text-lg">אין עמדה באולם?</h3>
+              </div>
+              <p className="text-muted-foreground text-sm mb-4">
+                ניתן להשכיר עמדת מתנות ממוקדי GiftKal הפרוסים ברחבי הארץ
+              </p>
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
+                <p className="text-2xl font-black text-primary text-center">₪100</p>
+                <p className="text-xs text-muted-foreground text-center">בנוסף לתשלום על החבילה</p>
+              </div>
+              <a href="https://wa.me/97223131700?text=היי, אשמח להשכיר עמדת מתנות לאירוע שלי" target="_blank" rel="noopener noreferrer">
+                <Button variant="gold" className="w-full">
+                  <Monitor className="w-4 h-4 ml-2" />
+                  הזמינו עמדה לאירוע
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
       {/* איך זה עובד */}
-      <section className="py-20 bg-secondary/5">
+      <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <span className="text-4xl mb-4 block">⚡</span>
@@ -112,8 +193,8 @@ const EventOwnersPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
             {[
               { step: "1", icon: UserPlus, text: "נרשמים ופותחים אירוע" },
-              { step: "2", icon: Send, text: "מקבלים קישור מתנות אישי" },
-              { step: "3", icon: Gift, text: "האורחים שולחים מתנות" },
+              { step: "2", icon: Send, text: "שולחים הזמנות ומקבלים אישורי הגעה" },
+              { step: "3", icon: Gift, text: "האורחים שולחים מתנות בקישור או בעמדה" },
               { step: "4", icon: Wallet, text: "הכסף מגיע ישירות אליכם" },
             ].map((s, i) => (
               <div key={i} className="text-center">
@@ -125,18 +206,14 @@ const EventOwnersPage = () => {
               </div>
             ))}
           </div>
-          <div className="text-center mt-10">
-            <p className="text-lg font-bold text-primary">👈 כשקל לתת — נותנים יותר</p>
-          </div>
         </div>
       </section>
 
       {/* המלצות */}
-      <section className="py-20 bg-background">
+      <section className="py-16 bg-secondary/5">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <span className="text-4xl mb-4 block">💬</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary">מה הלקוחות אומרים</h2>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold text-secondary">💬 מה הלקוחות אומרים</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             <TestimonialCard text="קיבלנו יותר מתנות ממה שציפינו — הכל היה מסודר" name="יעל ודני" event="חתונה" />
@@ -149,18 +226,17 @@ const EventOwnersPage = () => {
       {/* CTA */}
       <section className="py-20 bg-gradient-to-b from-secondary to-secondary/95">
         <div className="container mx-auto px-4 text-center">
-          <span className="text-5xl mb-6 block">🚀</span>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            מוכנים לשדרג את האירוע?
+            🚀 מוכנים לשדרג את האירוע?
           </h2>
           <p className="text-xl text-white/60 mb-10 max-w-xl mx-auto">
-            פתחו אירוע עכשיו או דברו עם נציג
+            הרשמו עכשיו לחבילה הכל כלול או דברו עם נציג
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup">
               <Button variant="gold" size="lg" className="text-lg px-12 py-7">
                 <Gift className="w-5 h-5 ml-2" />
-                פתחו אירוע עכשיו
+                הרשמה לחבילה המלאה
               </Button>
             </Link>
             <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע פרטים על GiftKal לאירוע שלי" target="_blank" rel="noopener noreferrer">
