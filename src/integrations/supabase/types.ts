@@ -322,6 +322,8 @@ export type Database = {
           invitations_enabled: boolean | null
           owner_id: string
           payment_completed: boolean | null
+          payment_setup_data: Json | null
+          payment_setup_status: string | null
           reception_time: string | null
           rsvp_enabled: boolean | null
           seller_payme_id: string | null
@@ -362,6 +364,8 @@ export type Database = {
           invitations_enabled?: boolean | null
           owner_id: string
           payment_completed?: boolean | null
+          payment_setup_data?: Json | null
+          payment_setup_status?: string | null
           reception_time?: string | null
           rsvp_enabled?: boolean | null
           seller_payme_id?: string | null
@@ -402,6 +406,8 @@ export type Database = {
           invitations_enabled?: boolean | null
           owner_id?: string
           payment_completed?: boolean | null
+          payment_setup_data?: Json | null
+          payment_setup_status?: string | null
           reception_time?: string | null
           rsvp_enabled?: boolean | null
           seller_payme_id?: string | null
