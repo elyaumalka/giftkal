@@ -171,7 +171,7 @@ export default function GiftScreen() {
     mutationFn: async (token: string) => {
       const amount = selectedAmount || Number(customAmount);
       const response = await supabase.functions.invoke('payme-charge-token', {
-        body: { token, eventId, amount, payerName, payerEmail: payerEmail || undefined, payerPhone: payerPhone || undefined, relationship: relationship || undefined, blessing: blessing || undefined, blessingImageUrl: blessingImageUrl || undefined, installments: selectedInstallments },
+        body: { token, eventId, amount, payerName, payerEmail: payerEmail || undefined, payerPhone: payerPhone || undefined, relationship: relationship || undefined, blessing: blessing || undefined, blessingImageUrl: blessingImageUrl || undefined, blessingVideoUrl: blessingVideoUrl || undefined, installments: selectedInstallments },
       });
       if (response.error) throw new Error(response.error.message || 'שגיאה בביצוע התשלום');
       if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה בביצוע התשלום');
