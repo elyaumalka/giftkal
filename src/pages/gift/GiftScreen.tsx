@@ -213,6 +213,32 @@ export default function GiftScreen() {
     );
   }
 
+  // Block gifts if no active payment account
+  if (!event.seller_payme_id) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839]" dir="rtl">
+        <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">🔒</span></div>
+        <h1 className="text-2xl font-bold text-white">שירות המתנות אינו פעיל</h1>
+        <p className="text-white/50 text-center max-w-sm">שירות המתנות באשראי לא הופעל עדיין לאירוע זה</p>
+      </div>
+    );
+  }
+
+  // Block gifts more than 3 days after event
+  const eventDateCheck = new Date(event.event_date);
+  const nowCheck = new Date();
+  const threeDaysAfterCheck = new Date(eventDateCheck);
+  threeDaysAfterCheck.setDate(threeDaysAfterCheck.getDate() + 3);
+  if (nowCheck > threeDaysAfterCheck) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839]" dir="rtl">
+        <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">⏰</span></div>
+        <h1 className="text-2xl font-bold text-white">הזמן להענקת מתנות הסתיים</h1>
+        <p className="text-white/50 text-center max-w-sm">ניתן להעניק מתנות עד 3 ימים לאחר האירוע</p>
+      </div>
+    );
+  }
+
   const eventDate = new Date(event.event_date);
   const formattedDate = eventDate.toLocaleDateString("he-IL", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 

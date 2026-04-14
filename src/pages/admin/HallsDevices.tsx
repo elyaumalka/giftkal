@@ -5,13 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogBody } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Monitor, Plus, Pencil, Trash2, Loader2, Link2, Search } from "lucide-react";
+import { Building2, Monitor, Plus, Trash2, Loader2, Link2, Search } from "lucide-react";
 
 export default function AdminHallsDevices() {
   const { toast } = useToast();
@@ -85,18 +84,21 @@ export default function AdminHallsDevices() {
       setHallForm({ name: "", venue_id: "", default_message: "ברוכים הבאים" });
       toast({ title: "האולם נוסף בהצלחה" });
     },
-    onError: () => toast({ title: "שגיאה בהוספת אולם", variant: "destructive" }),
+    onError: (e: any) => toast({ title: "שגיאה בהוספת אולם", description: e.message, variant: "destructive" }),
   });
 
   // Create device
   const createDevice = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("devices").insert({
+      const insertData: any = {
         name: deviceForm.name,
         serial_number: deviceForm.serial_number,
         venue_id: deviceForm.venue_id,
-        hall_id: deviceForm.hall_id || null,
-      });
+      };
+      if (deviceForm.hall_id) {
+        insertData.hall_id = deviceForm.hall_id;
+      }
+      const { error } = await supabase.from("devices").insert(insertData);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -105,20 +107,7 @@ export default function AdminHallsDevices() {
       setDeviceForm({ name: "", serial_number: "", venue_id: "", hall_id: "" });
       toast({ title: "המכשיר נוסף בהצלחה" });
     },
-    onError: () => toast({ title: "שגיאה בהוספת מכשיר", variant: "destructive" }),
-  });
-
-  // Link device to hall
-  const linkDevice = useMutation({
-    mutationFn: async ({ deviceId, hallId }: { deviceId: string; hallId: string | null }) => {
-      const { error } = await supabase.from("devices").update({ hall_id: hallId }).eq("id", deviceId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-devices"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-halls"] });
-      toast({ title: "המכשיר עודכן" });
-    },
+    onError: (e: any) => toast({ title: "שגיאה בהוספת מכשיר", description: e.message, variant: "destructive" }),
   });
 
   // Delete device
@@ -188,9 +177,9 @@ export default function AdminHallsDevices() {
                   <Plus className="w-4 h-4" /> אולם חדש
                 </Button>
               </DialogTrigger>
-               <DialogContent dir="rtl">
+              <DialogContent dir="rtl">
                 <DialogHeader><DialogTitle>הוסף אולם חדש</DialogTitle></DialogHeader>
-                <DialogBody>
+                <div className="space-y-4 pt-4">
                   <div>
                     <Label>בעל אולם</Label>
                     <Select value={hallForm.venue_id} onValueChange={(v) => setHallForm(p => ({ ...p, venue_id: v }))}>
@@ -213,7 +202,7 @@ export default function AdminHallsDevices() {
                   <Button onClick={() => createHall.mutate()} disabled={!hallForm.name || !hallForm.venue_id || createHall.isPending} className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl">
                     {createHall.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "הוסף אולם"}
                   </Button>
-                </DialogBody>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
@@ -265,9 +254,9 @@ export default function AdminHallsDevices() {
                   <Plus className="w-4 h-4" /> מכשיר חדש
                 </Button>
               </DialogTrigger>
-               <DialogContent dir="rtl">
+              <DialogContent dir="rtl">
                 <DialogHeader><DialogTitle>הוסף מכשיר חדש</DialogTitle></DialogHeader>
-                <DialogBody>
+                <div className="space-y-4 pt-4">
                   <div>
                     <Label>בעל אולם</Label>
                     <Select value={deviceForm.venue_id} onValueChange={(v) => setDeviceForm(p => ({ ...p, venue_id: v, hall_id: "" }))}>
@@ -279,13 +268,12 @@ export default function AdminHallsDevices() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {deviceForm.venue_id && (
+                  {deviceForm.venue_id && venueHalls && venueHalls.length > 0 && (
                     <div>
                       <Label>אולם (אופציונלי)</Label>
                       <Select value={deviceForm.hall_id} onValueChange={(v) => setDeviceForm(p => ({ ...p, hall_id: v }))}>
                         <SelectTrigger className="mt-1"><SelectValue placeholder="בחר אולם" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">ללא אולם</SelectItem>
                           {venueHalls?.map((h: any) => (
                             <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>
                           ))}
@@ -304,7 +292,7 @@ export default function AdminHallsDevices() {
                   <Button onClick={() => createDevice.mutate()} disabled={!deviceForm.name || !deviceForm.serial_number || !deviceForm.venue_id || createDevice.isPending} className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl">
                     {createDevice.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "הוסף מכשיר"}
                   </Button>
-                </DialogBody>
+                </div>
               </DialogContent>
             </Dialog>
           </div>

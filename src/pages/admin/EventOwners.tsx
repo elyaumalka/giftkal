@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,14 +8,15 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Eye, FileText, Copy, Filter, MessageCircle, CheckCircle2 } from "lucide-react";
+import { Search, Eye, FileText, Copy, Filter, MessageCircle, CheckCircle2, CreditCard, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
+import { Badge } from "@/components/ui/badge";
 export default function EventOwners() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const { toast } = useToast();
-
+  const queryClient = useQueryClient();
   const { data: eventOwners } = useQuery({
     queryKey: ["event-owners"],
     queryFn: async () => {
@@ -115,7 +116,7 @@ export default function EventOwners() {
       </div>
 
       {/* Table Header - Right to Left */}
-      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_0.8fr_auto_auto_auto] gap-3 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
         <span>תאריך אירוע</span>
         <span>בעל האירוע</span>
         <span>טלפון</span>
@@ -123,6 +124,7 @@ export default function EventOwners() {
         <span>כמות עסקאות</span>
         <span>סך כל העסקאות</span>
         <span>סטטוס חיוב</span>
+        <span>סליקה</span>
         <span className="w-28"></span>
         <span className="w-10"></span>
         <span className="w-10"></span>
@@ -133,7 +135,7 @@ export default function EventOwners() {
         {filteredEvents?.map((event) => (
           <div
             key={event.id}
-            className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+            className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_0.8fr_auto_auto_auto] gap-3 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
           >
             {/* תאריך אירוע */}
             <span className="text-center font-bold">
@@ -174,6 +176,60 @@ export default function EventOwners() {
                 </span>
               ) : (
                 <span className="text-muted-foreground text-xs">לא שולם</span>
+              )}
+            </span>
+
+            {/* סטטוס סליקה */}
+            <span className="text-center">
+              {event.seller_payme_id ? (
+                <Badge className="bg-green-500 text-white text-xs">פעיל</Badge>
+              ) : event.payment_setup_status === 'pending_approval' ? (
+                <div className="flex flex-col items-center gap-1">
+                  <Badge className="bg-amber-500 text-white text-xs">ממתין</Badge>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-green-600 hover:bg-green-50"
+                      disabled={approvingId === event.id}
+                      onClick={async () => {
+                        setApprovingId(event.id);
+                        try {
+                          const setupData = event.payment_setup_data as any;
+                          if (!setupData) throw new Error('אין נתוני הקמה');
+                          const response = await supabase.functions.invoke('payme-create-seller', {
+                            body: { eventId: event.id, ...setupData, gender: 0 },
+                          });
+                          if (response.error) throw new Error(response.error.message);
+                          if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה');
+                          await supabase.from('events').update({ payment_setup_status: 'approved' } as any).eq('id', event.id);
+                          queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+                          toast({ title: "חשבון סליקה הוקם בהצלחה ✅" });
+                        } catch (err: any) {
+                          toast({ title: "שגיאה", description: err.message, variant: "destructive" });
+                        } finally {
+                          setApprovingId(null);
+                        }
+                      }}
+                    >
+                      {approvingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+                      onClick={async () => {
+                        await supabase.from('events').update({ payment_setup_status: 'rejected' } as any).eq('id', event.id);
+                        queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+                        toast({ title: "הבקשה נדחתה" });
+                      }}
+                    >
+                      <XCircle className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-xs">—</span>
               )}
             </span>
 

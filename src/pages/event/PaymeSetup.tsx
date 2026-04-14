@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag, Clock, XCircle, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag, Clock, XCircle, AlertTriangle, RefreshCw, Send } from "lucide-react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 
@@ -68,271 +68,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-interface SellerStatus {
-  status: 'approved' | 'pending' | 'missing_info';
-  sellerPaymeId: string;
-  approved: boolean;
-  active: boolean;
-  accountType: string;
-  approvedDate?: string;
-  createdDate?: string;
-  merchantName?: string;
-  testMode?: boolean;
-  missingFields: { field: string; label: string; required: boolean }[];
-  wallets?: Record<string, { wallet_currency: string; wallet_total: number; wallet_releasable: number }>;
-}
-
-// ─── Seller Status Display Component ───
-function SellerStatusView({ eventId, onBack }: { eventId: string; onBack: () => void }) {
-  const { toast } = useToast();
-
-  const { data: sellerStatus, isLoading, error, refetch } = useQuery<SellerStatus>({
-    queryKey: ['seller-status', eventId],
-    queryFn: async () => {
-      const response = await supabase.functions.invoke('payme-seller-status', {
-        body: { eventId },
-      });
-      if (response.error) throw new Error(response.error.message);
-      if (response.data?.error) throw new Error(response.data.error);
-      return response.data;
-    },
-    refetchInterval: 60000, // Refresh every minute
-  });
-
-  const [updateFields, setUpdateFields] = useState<Record<string, string>>({});
-  const [updating, setUpdating] = useState(false);
-
-  const handleUpdateSeller = async () => {
-    if (Object.keys(updateFields).length === 0) return;
-    setUpdating(true);
-    try {
-      const response = await supabase.functions.invoke('payme-update-seller', {
-        body: { eventId, ...updateFields },
-      });
-      if (response.error) throw new Error(response.error.message);
-      if (response.data?.error) throw new Error(response.data.details || response.data.error);
-      toast({ title: "עודכן בהצלחה!", description: "הפרטים נשלחו ל-PayMe" });
-      setUpdateFields({});
-      refetch();
-    } catch (err: any) {
-      toast({ title: "שגיאה בעדכון", description: err.message, variant: "destructive" });
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <XCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
-            <CardTitle>שגיאה בטעינת הסטטוס</CardTitle>
-            <CardDescription>{(error as Error).message}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full" variant="outline" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 ml-2" /> נסה שוב
-            </Button>
-            <Button className="w-full" variant="ghost" onClick={onBack}>חזרה</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!sellerStatus) return null;
-
-  const statusConfig = {
-    approved: {
-      icon: CheckCircle,
-      color: 'text-green-500',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200',
-      badgeVariant: 'default' as const,
-      badgeClass: 'bg-green-500',
-      title: 'חשבון סליקה מאושר ✅',
-      subtitle: 'החשבון שלך פעיל ומוכן לקבל תשלומים',
-    },
-    pending: {
-      icon: Clock,
-      color: 'text-amber-500',
-      bgColor: 'bg-amber-50',
-      borderColor: 'border-amber-200',
-      badgeVariant: 'secondary' as const,
-      badgeClass: 'bg-amber-500 text-white',
-      title: 'חשבון בבדיקה ⏳',
-      subtitle: 'החשבון שלך בתהליך אישור. זה יכול לקחת עד 24 שעות',
-    },
-    missing_info: {
-      icon: AlertTriangle,
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200',
-      badgeVariant: 'destructive' as const,
-      badgeClass: '',
-      title: 'נדרשים פרטים נוספים ⚠️',
-      subtitle: 'כדי שהחשבון יאושר, יש להשלים את הפרטים הבאים',
-    },
-  };
-
-  const config = statusConfig[sellerStatus.status];
-  const StatusIcon = config.icon;
-  const requiredMissing = sellerStatus.missingFields.filter(f => f.required);
-  const optionalMissing = sellerStatus.missingFields.filter(f => !f.required);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 py-8 px-4" dir="rtl">
-      <div className="max-w-lg mx-auto space-y-4">
-        {/* Status Card */}
-        <Card>
-          <CardHeader className="text-center pb-4">
-            <StatusIcon className={`w-16 h-16 ${config.color} mx-auto mb-4`} />
-            <CardTitle className="text-xl">{config.title}</CardTitle>
-            <CardDescription>{config.subtitle}</CardDescription>
-            <Badge className={`mx-auto mt-2 ${config.badgeClass}`}>
-              {sellerStatus.approved ? 'מאושר' : sellerStatus.status === 'missing_info' ? 'ממתין להשלמה' : 'בבדיקה'}
-            </Badge>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Info */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {sellerStatus.merchantName && (
-                <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
-                  <span className="text-muted-foreground block">שם העסק</span>
-                  <span className="font-medium">{sellerStatus.merchantName}</span>
-                </div>
-              )}
-              <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
-                <span className="text-muted-foreground block">סוג חשבון</span>
-                <span className="font-medium">{sellerStatus.accountType}</span>
-              </div>
-              {sellerStatus.createdDate && (
-                <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
-                  <span className="text-muted-foreground block">תאריך יצירה</span>
-                  <span className="font-medium">{new Date(sellerStatus.createdDate).toLocaleDateString('he-IL')}</span>
-                </div>
-              )}
-              {sellerStatus.approvedDate && (
-                <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
-                  <span className="text-muted-foreground block">תאריך אישור</span>
-                  <span className="font-medium">{new Date(sellerStatus.approvedDate).toLocaleDateString('he-IL')}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Wallet */}
-            {sellerStatus.wallets && Object.values(sellerStatus.wallets).length > 0 && (
-              <div className={`${config.bgColor} ${config.borderColor} border rounded-lg p-3`}>
-                <span className="text-muted-foreground block text-sm mb-1">יתרה</span>
-                {Object.values(sellerStatus.wallets).map((w) => (
-                  <div key={w.wallet_currency} className="flex justify-between">
-                    <span className="font-medium">₪{w.wallet_total.toLocaleString()}</span>
-                    <span className="text-sm text-muted-foreground">זמין למשיכה: ₪{w.wallet_releasable.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Refresh */}
-            <Button variant="outline" className="w-full" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 ml-2" /> רענן סטטוס
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Missing Required Fields */}
-        {requiredMissing.length > 0 && (
-          <Card className="border-orange-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-orange-500" />
-                פרטים חסרים (חובה)
-              </CardTitle>
-              <CardDescription>יש להשלים פרטים אלו כדי שהחשבון יאושר</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {requiredMissing.map((field) => (
-                <div key={field.field}>
-                  <Label>{field.label} *</Label>
-                  {field.field === 'seller_social_id_issued' ? (
-                    <Input
-                      type="date"
-                      value={updateFields[field.field] || ''}
-                      onChange={(e) => setUpdateFields(prev => ({ ...prev, [field.field]: e.target.value }))}
-                      placeholder="YYYY-MM-DD"
-                    />
-                  ) : field.field === 'seller_site_url' ? (
-                    <Input
-                      value={updateFields[field.field] || 'https://giftkal.com'}
-                      onChange={(e) => setUpdateFields(prev => ({ ...prev, [field.field]: e.target.value }))}
-                      placeholder="https://giftkal.com"
-                      dir="ltr"
-                    />
-                  ) : field.field === 'bank_rejected' ? (
-                    <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-                      {field.label}
-                    </div>
-                  ) : (
-                    <Input
-                      value={updateFields[field.field] || ''}
-                      onChange={(e) => setUpdateFields(prev => ({ ...prev, [field.field]: e.target.value }))}
-                    />
-                  )}
-                </div>
-              ))}
-
-              {optionalMissing.length > 0 && (
-                <>
-                  <div className="border-t pt-3">
-                    <p className="text-sm text-muted-foreground mb-3">פרטים נוספים (מומלץ)</p>
-                  </div>
-                  {optionalMissing.map((field) => (
-                    <div key={field.field}>
-                      <Label>{field.label}</Label>
-                      <Input
-                        value={updateFields[field.field] || ''}
-                        onChange={(e) => setUpdateFields(prev => ({ ...prev, [field.field]: e.target.value }))}
-                        dir="ltr"
-                      />
-                    </div>
-                  ))}
-                </>
-              )}
-
-              <Button
-                className="w-full"
-                disabled={updating || Object.keys(updateFields).length === 0}
-                onClick={handleUpdateSeller}
-              >
-                {updating ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : null}
-                שלח פרטים לעדכון
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <Button variant="ghost" className="w-full" onClick={onBack}>
-          חזרה לדאשבורד
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Component ───
 export default function PaymeSetup() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -353,35 +94,16 @@ export default function PaymeSetup() {
     streetNumber: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [step, setStep] = useState<'form' | 'success'>('form');
-  const [couponCode, setCouponCode] = useState('');
-  const [couponApplied, setCouponApplied] = useState(false);
-  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [step, setStep] = useState<'form' | 'submitted'>('form');
 
-  const extractFunctionErrorMessage = async (error: { message?: string; context?: Response | null }) => {
-    const fallbackMessage = error.message || 'שגיאה ביצירת חשבון';
-    if (!error.context) return fallbackMessage;
-    try {
-      const payload = await error.context.clone().json();
-      return payload?.details || payload?.error || payload?.message || fallbackMessage;
-    } catch {
-      try {
-        const text = await error.context.clone().text();
-        return text || fallbackMessage;
-      } catch {
-        return fallbackMessage;
-      }
-    }
-  };
-
-  // Check if event already has seller
+  // Check if event already has seller or pending setup
   const { data: event, isLoading: eventLoading } = useQuery({
     queryKey: ['event-payme', eventId],
     queryFn: async () => {
       if (!eventId) return null;
       const { data, error } = await supabase
         .from('events')
-        .select('id, groom_name, bride_name, seller_payme_id, owner_id')
+        .select('id, groom_name, bride_name, seller_payme_id, owner_id, payment_setup_status, payment_setup_data')
         .eq('id', eventId)
         .maybeSingle();
       if (error) throw error;
@@ -390,26 +112,25 @@ export default function PaymeSetup() {
     enabled: !!eventId && eventId.length === 36,
   });
 
-  const createSeller = useMutation({
+  const submitForApproval = useMutation({
     mutationFn: async (data: FormData) => {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) throw new Error('לא מחובר');
 
-      const response = await supabase.functions.invoke('payme-create-seller', {
-        body: { eventId, ...data, gender: 0 },
-      });
+      const { error } = await supabase
+        .from('events')
+        .update({
+          payment_setup_status: 'pending_approval',
+          payment_setup_data: data as any,
+        })
+        .eq('id', eventId);
 
-      if (response.error) {
-        throw new Error(await extractFunctionErrorMessage(response.error));
-      }
-      if (!response.data?.success) {
-        throw new Error(response.data?.details || response.data?.error || 'שגיאה ביצירת חשבון');
-      }
-      return response.data;
+      if (error) throw error;
     },
     onSuccess: () => {
-      setStep('success');
-      toast({ title: "הצלחה!", description: "חשבון הסליקה נוצר בהצלחה" });
+      setStep('submitted');
+      queryClient.invalidateQueries({ queryKey: ['event-payme', eventId] });
+      toast({ title: "הפרטים נשלחו בהצלחה!", description: "הבקשה תיבדק על ידי צוות GiftKal" });
     },
     onError: (error: Error) => {
       toast({ title: "שגיאה", description: error.message, variant: "destructive" });
@@ -444,7 +165,7 @@ export default function PaymeSetup() {
       setErrors(newErrors);
       return;
     }
-    createSeller.mutate(result.data);
+    submitForApproval.mutate(result.data);
   };
 
   if (eventLoading) {
@@ -455,20 +176,36 @@ export default function PaymeSetup() {
     );
   }
 
-  // Show seller status if seller already exists
-  if (event?.seller_payme_id && eventId) {
-    return <SellerStatusView eventId={eventId} onBack={() => navigate('/event')} />;
-  }
-
-  if (step === 'success') {
+  // Show approved status
+  if (event?.seller_payme_id) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <CardTitle>חשבון הסליקה נוצר בהצלחה!</CardTitle>
+            <CardTitle>חשבון הסליקה פעיל ✅</CardTitle>
             <CardDescription>
-              עכשיו האורחים שלך יכולים לשלוח מתנות ולשלם באשראי
+              החשבון שלך מאושר ופעיל. האורחים יכולים לשלוח מתנות באשראי.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => navigate('/event')}>חזרה לדאשבורד</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show pending approval status
+  if (event?.payment_setup_status === 'pending_approval' || step === 'submitted') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <Clock className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+            <CardTitle>הבקשה נשלחה לאישור ⏳</CardTitle>
+            <CardDescription>
+              הפרטים שלך נבדקים על ידי צוות GiftKal. לאחר אישור ובדיקה, חשבון הסליקה יופעל ותקבלו הודעה.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -476,12 +213,42 @@ export default function PaymeSetup() {
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
                 <div className="text-sm text-amber-800">
-                  <p className="font-medium mb-1">שימו לב:</p>
-                  <p>החשבון נמצא בבדיקה. התשלומים יופעלו לאחר אישור PayMe (עד 24 שעות).</p>
+                  <p className="font-medium mb-1">מה קורה עכשיו?</p>
+                  <p>הצוות שלנו בודק את הפרטים ומקים עבורך חשבון סליקה. התהליך אורך עד 24 שעות.</p>
                 </div>
               </div>
             </div>
             <Button className="w-full" onClick={() => navigate('/event')}>חזרה לדאשבורד</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show rejected status
+  if (event?.payment_setup_status === 'rejected') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <XCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+            <CardTitle>הבקשה נדחתה</CardTitle>
+            <CardDescription>
+              יש לתקן את הפרטים ולשלוח שוב. צרו קשר עם התמיכה לפרטים נוספים.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button className="w-full" onClick={() => {
+              // Reset to form with existing data
+              const savedData = event?.payment_setup_data as any;
+              if (savedData) {
+                setFormData(savedData);
+              }
+              // We need to reset the status to allow re-submission
+            }}>
+              תקן פרטים ושלח שוב
+            </Button>
+            <Button className="w-full" variant="ghost" onClick={() => navigate('/event')}>חזרה לדאשבורד</Button>
           </CardContent>
         </Card>
       </div>
@@ -503,6 +270,9 @@ export default function PaymeSetup() {
                 : 'מלאו את הפרטים כדי לקבל תשלומים מהאורחים'
               }
             </CardDescription>
+            <p className="text-xs text-muted-foreground mt-2">
+              הפרטים יישלחו לבדיקה ואישור. לאחר אישור, חשבון הסליקה יופעל.
+            </p>
           </CardHeader>
           
           <CardContent className="pt-6">
@@ -625,49 +395,17 @@ export default function PaymeSetup() {
                 </div>
               </div>
 
-              {/* Coupon Section */}
-              <div className="space-y-3 border-t pt-6">
-                <div className="flex items-center gap-2 text-base font-semibold">
-                  <Tag className="w-4 h-4" />
-                  <h3>יש לך קופון?</h3>
-                </div>
-                <div className="flex gap-2">
-                  <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="הזן קוד קופון" className="flex-1" disabled={couponApplied} />
-                  <Button type="button" variant="outline" disabled={!couponCode.trim() || couponApplied || applyingCoupon} onClick={async () => {
-                    setApplyingCoupon(true);
-                    setErrors({});
-                    try {
-                      const { data: session } = await supabase.auth.getSession();
-                      if (!session.session) throw new Error('לא מחובר');
-                      const response = await supabase.functions.invoke('payme-create-seller', {
-                        body: { eventId, couponCode: couponCode.trim() },
-                      });
-                      if (response.error) throw new Error(response.error.message);
-                      if (!response.data?.success) throw new Error(response.data?.error || 'קופון לא תקין');
-                      setCouponApplied(true);
-                      setStep('success');
-                      toast({ title: "קופון הופעל בהצלחה! ✅", description: "חשבון סליקה לבדיקות נוצר" });
-                    } catch (err: any) {
-                      toast({ title: "שגיאה", description: err.message || 'קופון לא תקין', variant: "destructive" });
-                    } finally {
-                      setApplyingCoupon(false);
-                    }
-                  }}>
-                    {applyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'הפעל'}
-                  </Button>
-                </div>
-                {couponApplied && <p className="text-sm text-green-600 font-medium">✅ קופון הופעל</p>}
-              </div>
-
               {/* Submit Button */}
               <div className="pt-4 border-t">
-                <Button type="submit" className="w-full h-12 text-lg" disabled={createSeller.isPending}>
-                  {createSeller.isPending ? (
-                    <><Loader2 className="w-5 h-5 ml-2 animate-spin" />יוצר חשבון...</>
-                  ) : 'צור חשבון סליקה'}
+                <Button type="submit" className="w-full h-12 text-lg gap-2" disabled={submitForApproval.isPending}>
+                  {submitForApproval.isPending ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" />שולח פרטים...</>
+                  ) : (
+                    <><Send className="w-5 h-5" />שלח פרטים לאישור</>
+                  )}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground mt-4">
-                  בלחיצה על הכפתור אתם מאשרים את תנאי השימוש של PayMe
+                  הפרטים יישלחו לצוות GiftKal לבדיקה ואישור
                 </p>
               </div>
             </form>
