@@ -712,6 +712,14 @@ export default function GiftScreen() {
                 </div>
               )}
 
+              {/* Show video blessing */}
+              {blessingVideoUrl && (
+                <div className="w-full">
+                  <p className="text-white/40 text-sm mb-2">ברכת הוידאו שלכם:</p>
+                  <video src={blessingVideoUrl} controls className="w-full rounded-xl max-h-48" />
+                </div>
+              )}
+
               <p className="text-white/30 text-sm">מזל טוב! 🎉</p>
             </div>
           )}
