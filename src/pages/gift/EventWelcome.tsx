@@ -285,7 +285,7 @@ export default function EventWelcome() {
   }
 
   // Block gifts more than 3 days after event
-  const eventDate = new Date(event.event_date);
+  const eventDate = new Date(event.event_date + 'T00:00:00');
   const now = new Date();
   const threeDaysAfter = new Date(eventDate);
   threeDaysAfter.setDate(threeDaysAfter.getDate() + 3);

@@ -217,7 +217,7 @@ export default function GiftScreen() {
   }
 
   // Block gifts more than 3 days after event
-  const eventDateCheck = new Date(event.event_date);
+  const eventDateCheck = new Date(event.event_date + 'T00:00:00');
   const nowCheck = new Date();
   const threeDaysAfterCheck = new Date(eventDateCheck);
   threeDaysAfterCheck.setDate(threeDaysAfterCheck.getDate() + 3);
