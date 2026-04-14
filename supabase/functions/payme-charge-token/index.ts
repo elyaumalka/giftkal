@@ -15,6 +15,7 @@ interface ChargeTokenRequest {
   relationship?: string;
   blessing?: string;
   blessingImageUrl?: string;
+  blessingVideoUrl?: string;
   installments?: number;
 }
 
@@ -40,7 +41,8 @@ Deno.serve(async (req) => {
       payerPhone, 
       relationship, 
       blessing, 
-      blessingImageUrl, 
+      blessingImageUrl,
+      blessingVideoUrl,
       installments = 1,
     } = body;
 
@@ -86,6 +88,7 @@ Deno.serve(async (req) => {
         relationship: relationship || null,
         blessing_text: blessing || null,
         receipt_url: blessingImageUrl || null,
+        blessing_video_url: blessingVideoUrl || null,
         payment_status: 'pending',
       })
       .select()
