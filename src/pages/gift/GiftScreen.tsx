@@ -524,8 +524,8 @@ export default function GiftScreen() {
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#E8B4BC] to-[#D4A5AD] flex items-center justify-center mx-auto mb-3 shadow-lg">
                   <Heart className="w-7 h-7 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">כתבו ברכה לזוג</h2>
-                <p className="text-white/40 mt-1 text-sm">הברכה תישמר כתמונה יפה</p>
+                <h2 className="text-2xl font-bold text-white">כתבו ברכה</h2>
+                <p className="text-white/40 mt-1 text-sm">כתבו ברכה או העלו סרטון ברכה</p>
               </div>
 
               {/* Design Selection */}
@@ -563,6 +563,44 @@ export default function GiftScreen() {
                 <div className={cn("absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 rounded-tl-lg", selectedDesign.border)} />
                 <div className={cn("absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 rounded-br-lg", selectedDesign.border)} />
                 <div className={cn("absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 rounded-bl-lg", selectedDesign.border)} />
+              </div>
+
+              {/* Video Blessing Upload */}
+              <div className="bg-white/5 rounded-2xl border border-white/10 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Video className="w-5 h-5 text-[#C4A35A]" />
+                  <span className="text-white font-medium text-sm">ברכה בוידאו (אופציונלי)</span>
+                </div>
+                
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files?.[0]) handleVideoUpload(e.target.files[0]); }}
+                />
+
+                {blessingVideoUrl ? (
+                  <div className="space-y-2">
+                    <video src={blessingVideoUrl} controls className="w-full rounded-xl max-h-40" />
+                    <button onClick={() => { setBlessingVideoUrl(null); setBlessingVideoFile(null); }}
+                      className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
+                      <X className="w-3 h-3" /> הסר סרטון
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => videoInputRef.current?.click()}
+                    disabled={uploadingVideo}
+                    className="w-full py-3 rounded-xl border border-dashed border-white/20 text-white/50 hover:border-[#C4A35A]/50 hover:text-white/70 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                  >
+                    {uploadingVideo ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> מעלה סרטון...</>
+                    ) : (
+                      <><Upload className="w-4 h-4" /> העלו סרטון ברכה (עד 50MB)</>
+                    )}
+                  </button>
+                )}
               </div>
 
               <div className="flex gap-3">
