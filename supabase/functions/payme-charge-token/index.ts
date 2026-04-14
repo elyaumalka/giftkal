@@ -99,9 +99,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // PayMe environment
-    const paymeEnv = 'sandbox'; // Change to 'ng' for production
-    const paymeBaseUrl = `https://${paymeEnv}.payme.io`;
+    // PayMe production environment
+    const paymeBaseUrl = 'https://live.payme.io';
 
     // Generate sale using buyer_key (token from Hosted Fields)
     // Per PayMe Postman collection: POST /api/generate-sale with buyer_key
