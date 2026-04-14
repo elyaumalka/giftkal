@@ -146,42 +146,56 @@ const HomePage = () => {
       {/* ═══════════ בעלי אירועים ═══════════ */}
       <section id="event-owners" className="py-20 bg-background">
         <div className="container mx-auto px-4">
-          <SectionTitle emoji="💍" title="בעלי אירועים" subtitle="כל מה שצריך לאירוע מושלם — במקום אחד" />
+          <SectionTitle emoji="💍" title="בעלי אירועים" subtitle="חבילת הכל כלול — אישורי הגעה, מתנות באשראי וניהול תקציב" />
           
-          <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-              <ServiceCard icon={CreditCard} title="מתנות באשראי" desc="גבייה מאובטחת מכל מקום" price="₪199" delay={0} />
-              <ServiceCard icon={Monitor} title="עמדת מתנות" desc="עמדה פיזית באולם" price="₪99" badge="מומלץ" delay={80} />
-              <ServiceCard icon={Send} title="הזמנות דיגיטליות" desc="הזמנות + אישורי הגעה" price="₪199" delay={160} />
-              <ServiceCard icon={BarChart3} title="ניהול תקציב" desc="שליטה בכל שקל" price="חינם" delay={240} />
+          <div className="max-w-3xl mx-auto">
+            {/* חבילה הכל כלול */}
+            <div className="bg-card rounded-3xl shadow-xl border-2 border-primary/30 p-8 relative mb-10">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-sm font-bold px-6 py-1 rounded-full">מומלץ</span>
+              
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-bold text-secondary">אישורי הגעה דיגיטליים</p>
+                    <p className="text-muted-foreground text-sm">שליחת הזמנות וקבלת אישורים בזמן אמת</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-bold text-secondary">מתנות באשראי — קישור אישי</p>
+                    <p className="text-muted-foreground text-sm">שליחת קישור למוזמנים לשליחת מתנה מכל מקום</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-bold text-secondary">ניהול תקציב</p>
+                    <p className="text-muted-foreground text-sm">מעקב הוצאות והכנסות — שליטה מלאה</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center border-t border-border pt-5">
+                <p className="text-3xl font-black text-primary mb-1">₪399</p>
+                <p className="text-muted-foreground text-sm mb-2">חד פעמי לכל האירוע</p>
+              </div>
             </div>
 
-            {/* איך זה עובד */}
-            <div className="bg-secondary/5 rounded-3xl p-8 mb-10">
-              <h3 className="text-xl font-bold text-secondary text-center mb-8">⚡ איך זה עובד?</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {[
-                  { step: "1", icon: UserPlus, text: "נרשמים ופותחים אירוע" },
-                  { step: "2", icon: Send, text: "מקבלים קישור מתנות אישי" },
-                  { step: "3", icon: Gift, text: "האורחים שולחים מתנות" },
-                  { step: "4", icon: Wallet, text: "הכסף מגיע ישירות אליכם" },
-                ].map((s, i) => (
-                  <div key={i} className="text-center">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3 relative">
-                      <s.icon className="w-6 h-6 text-primary" />
-                      <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">{s.step}</span>
-                    </div>
-                    <p className="text-sm text-foreground/80 font-medium">{s.text}</p>
-                  </div>
-                ))}
-              </div>
+            {/* עמדת מתנות */}
+            <div className="bg-secondary/5 rounded-2xl p-6 mb-10 text-center">
+              <Monitor className="w-8 h-8 text-primary mx-auto mb-3" />
+              <p className="font-bold text-secondary mb-1">רוצים עמדת מתנות באירוע?</p>
+              <p className="text-muted-foreground text-sm mb-1">אם באולם שלכם יש עמדה — אנחנו מפעילים אותה עבורכם</p>
+              <p className="text-muted-foreground text-sm">אין עמדה? ניתן להשכיר ממוקדי GiftKal ב-<span className="font-bold text-primary">₪100</span> בנוסף</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/signup">
                 <Button variant="gold" size="lg" className="text-lg px-10 py-6">
                   <Gift className="w-5 h-5 ml-2" />
-                  פתחו אירוע עכשיו
+                  הרשמה לחבילה המלאה
                 </Button>
               </Link>
               <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע פרטים על GiftKal לאירוע שלי" target="_blank" rel="noopener noreferrer">
