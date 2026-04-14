@@ -8,9 +8,7 @@ const navLinks = [
   { label: "דף ראשי", href: "/" },
   { label: "בעלי אירועים", href: "/event-owners" },
   { label: "בעלי אולמות", href: "/venues-page" },
-  { label: "יתרונות", href: "/benefits" },
   { label: "מחירים", href: "/pricing" },
-  { label: "המלצות", href: "/testimonials-page" },
   { label: "צור קשר", href: "/contact" },
 ];
 
