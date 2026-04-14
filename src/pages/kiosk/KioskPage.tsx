@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Gift, Monitor, Download } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
 
@@ -234,9 +235,21 @@ export default function KioskPage() {
           </div>
         )}
 
-        {/* Subtle gift icon */}
-        <div className="pt-8">
-          <Gift className="w-12 h-12 mx-auto text-[#C4A35A]/30" />
+        {/* QR Code */}
+        <div className="pt-4">
+          {activeEvent ? (
+            <div className="bg-white p-4 rounded-2xl inline-block shadow-xl">
+              <QRCodeSVG
+                value={`${window.location.origin}/gift/${activeEvent.id}`}
+                size={160}
+                level="H"
+                fgColor="#051839"
+              />
+              <p className="text-[#051839] text-xs mt-2 font-medium text-center">סרקו לשליחת מתנה</p>
+            </div>
+          ) : (
+            <Gift className="w-12 h-12 mx-auto text-[#C4A35A]/30" />
+          )}
         </div>
 
         {/* Powered by */}
