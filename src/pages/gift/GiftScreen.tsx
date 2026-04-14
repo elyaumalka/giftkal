@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Heart, CreditCard, Check, ArrowLeft, ArrowRight, Sparkles, Loader2, X, Home } from "lucide-react";
+import { Gift, Heart, CreditCard, Check, ArrowLeft, ArrowRight, Sparkles, Loader2, X, Home, Video, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
@@ -78,10 +78,14 @@ export default function GiftScreen() {
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [blessingImageUrl, setBlessingImageUrl] = useState<string | null>(null);
+  const [blessingVideoFile, setBlessingVideoFile] = useState<File | null>(null);
+  const [blessingVideoUrl, setBlessingVideoUrl] = useState<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [paymeApiKey, setPaymeApiKey] = useState<string | null>(null);
   const [paymeTestMode, setPaymeTestMode] = useState(true);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // Check if returning from PayMe payment
   useEffect(() => {
