@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   UserPlus, Eye, EyeOff, ArrowRight, ArrowLeft, CreditCard, Send,
-  Monitor, BarChart3, CheckCircle2, Loader2, Gift, Sparkles
+  Monitor, BarChart3, CheckCircle2, Loader2, Gift, Sparkles, Tag
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
@@ -49,24 +49,34 @@ const FREE_PLAN = {
   price: 0,
 };
 
+const EVENT_TYPE_LABELS: Record<string, { names: string[]; placeholders: string[] }> = {
+  "חתונה": { names: ["שם חתן", "שם כלה"], placeholders: ["שם החתן", "שם הכלה"] },
+  "אירוסין": { names: ["שם חתן", "שם כלה"], placeholders: ["שם החתן", "שם הכלה"] },
+  "בר מצווה": { names: ["שם הילד"], placeholders: ["שם הילד"] },
+  "בת מצווה": { names: ["שם הילדה"], placeholders: ["שם הילדה"] },
+  "ברית": { names: ["שם משפחה"], placeholders: ["שם המשפחה"] },
+  "אחר": { names: ["שם בעל/ת האירוע"], placeholders: ["שם בעל/ת האירוע"] },
+};
+
 const Signup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
   /* ─── Step management ─── */
-  const [step, setStep] = useState(1); // 1=plans, 2=details, 3=payment, 4=success
+  const [step, setStep] = useState(1);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
-
-  const VALID_COUPONS: Record<string, number> = { "GIFTKAL-TEST": 100, "GIFTKAL100": 100 };
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const [data, setData] = useState({
     fullName: "", email: "", phone: "", password: "", idNumber: "",
     eventDate: "", eventType: "חתונה", city: "", venueName: "",
-    groomName: "", brideName: "", agreeTerms: false,
+    groomName: "", brideName: "", familyName: "", childName: "",
+    agreeTerms: false,
   });
 
   /* ─── Nedarim state ─── */
@@ -79,14 +89,49 @@ const Signup = () => {
   const [paymentError, setPaymentError] = useState("");
   const [transactionId, setTransactionId] = useState("");
 
-  const discountPercent = couponApplied ? (VALID_COUPONS[couponCode.toUpperCase()] || 0) : 0;
-  const totalPrice = Math.max(0, Math.round(PLANS.filter(p => selected[p.id]).reduce((sum, p) => sum + p.price, 0) * (1 - discountPercent / 100)));
+  const rawTotal = PLANS.filter(p => selected[p.id]).reduce((sum, p) => sum + p.price, 0);
+  const totalPrice = Math.max(0, rawTotal - couponDiscount);
 
   /* ─── Toggle plan ─── */
   const togglePlan = (id: string) => {
     const plan = PLANS.find(p => p.id === id);
-    if (plan?.required) return; // can't deselect required
+    if (plan?.required) return;
     setSelected(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  /* ─── Validate coupon from DB ─── */
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const { data: coupon, error } = await supabase
+        .from("coupons" as any)
+        .select("*")
+        .eq("code", couponCode.toUpperCase().trim())
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error || !coupon) {
+        toast({ title: "קופון לא תקין", variant: "destructive" });
+        return;
+      }
+
+      const c = coupon as any;
+      if (c.max_uses && c.current_uses >= c.max_uses) {
+        toast({ title: "הקופון מוצה", variant: "destructive" });
+        return;
+      }
+      if (c.expires_at && new Date(c.expires_at) < new Date()) {
+        toast({ title: "הקופון פג תוקף", variant: "destructive" });
+        return;
+      }
+
+      setCouponApplied(true);
+      setCouponDiscount(Number(c.discount_amount) || 0);
+      toast({ title: `קופון הופעל! הנחה של ₪${c.discount_amount} ✅` });
+    } finally {
+      setCouponLoading(false);
+    }
   };
 
   /* ─── Step 2 validation ─── */
@@ -137,7 +182,6 @@ const Signup = () => {
       } else {
         const txId = payload.Value?.TransactionId || "";
         setTransactionId(txId);
-        // Save lead + billing
         await saveLead(txId);
         setStep(4);
       }
@@ -151,6 +195,41 @@ const Signup = () => {
 
   const handleIframeLoad = () => {
     setTimeout(() => setIframeLoaded(true), 3000);
+  };
+
+  /* ─── Derive event names from form data ─── */
+  const getEventNames = () => {
+    const type = data.eventType;
+    if (type === "חתונה" || type === "אירוסין") {
+      return {
+        groomName: data.groomName || data.fullName.split(" ")[0] || null,
+        brideName: data.brideName || null,
+        familyName: null,
+        childName: null,
+      };
+    }
+    if (type === "בר מצווה" || type === "בת מצווה") {
+      return {
+        groomName: null,
+        brideName: null,
+        familyName: null,
+        childName: data.childName || null,
+      };
+    }
+    if (type === "ברית") {
+      return {
+        groomName: null,
+        brideName: null,
+        familyName: data.familyName || data.fullName || null,
+        childName: null,
+      };
+    }
+    return {
+      groomName: data.groomName || null,
+      brideName: data.brideName || null,
+      familyName: data.familyName || null,
+      childName: data.childName || null,
+    };
   };
 
   /* ─── Submit payment ─── */
@@ -199,11 +278,12 @@ const Signup = () => {
   const saveLead = async (txId: string) => {
     try {
       const hasPaidPlans = PLANS.some(p => selected[p.id]);
-      const planNames = hasPaidPlans 
+      const planNames = hasPaidPlans
         ? PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ")
         : "ניהול תקציב (חינם)";
 
-      // 1. Create user + event via edge function
+      const eventNames = getEventNames();
+
       const { data: result, error: fnError } = await supabase.functions.invoke("create-customer", {
         body: {
           type: "event",
@@ -216,12 +296,14 @@ const Signup = () => {
           event: {
             eventType: data.eventType,
             eventDate: data.eventDate,
-            groomName: data.groomName || null,
-            brideName: data.brideName || null,
+            groomName: eventNames.groomName,
+            brideName: eventNames.brideName,
+            familyName: eventNames.familyName,
+            childName: eventNames.childName,
             budgetEnabled: true,
             giftsEnabled: !!selected["gifts"],
             invitationsEnabled: !!selected["invitations"],
-            rsvpEnabled: !!selected["invitations"], // invitations include RSVP
+            rsvpEnabled: !!selected["invitations"],
           },
         },
       });
@@ -233,7 +315,6 @@ const Signup = () => {
 
       const ownerId = result?.user?.id || "00000000-0000-0000-0000-000000000000";
 
-      // 2. Save lead
       await supabase.from("leads").insert({
         full_name: data.fullName.trim(),
         phone: data.phone.trim(),
@@ -244,7 +325,6 @@ const Signup = () => {
         status: hasPaidPlans ? "paid" : "free",
       });
 
-      // 3. Save billing record (only if paid)
       if (hasPaidPlans && totalPrice > 0) {
         await supabase.from("billing_charges" as any).insert({
           owner_id: ownerId,
@@ -255,6 +335,11 @@ const Signup = () => {
           nedarim_transaction_id: txId,
         });
       }
+
+      // Increment coupon usage
+      if (couponApplied && couponCode) {
+        await supabase.rpc("increment_coupon_usage" as any, { coupon_code: couponCode.toUpperCase().trim() }).catch(() => {});
+      }
     } catch (e) {
       console.error("Error saving lead:", e);
     }
@@ -263,6 +348,8 @@ const Signup = () => {
   /* ─── Progress bar ─── */
   const isFreeSignup = totalPrice === 0;
   const steps = isFreeSignup ? ["בחירת מסלול", "פרטים אישיים"] : ["בחירת מסלול", "פרטים אישיים", "תשלום"];
+
+  const eventTypeConfig = EVENT_TYPE_LABELS[data.eventType] || EVENT_TYPE_LABELS["אחר"];
 
   return (
     <div className="min-h-screen bg-sidebar flex items-center justify-center relative overflow-hidden" dir="rtl">
@@ -329,7 +416,6 @@ const Signup = () => {
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold text-white text-sm">{plan.title}</h3>
                           {plan.badge && <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">{plan.badge}</span>}
-                          {plan.required && <span className="text-xs text-primary/70">(חובה)</span>}
                         </div>
                         <p className="text-white/40 text-xs mt-0.5">{plan.desc}</p>
                       </div>
@@ -370,27 +456,25 @@ const Signup = () => {
                   type="button"
                   variant="outline"
                   className="border-white/20 text-white hover:bg-white/10 h-11"
-                  disabled={!couponCode.trim() || couponApplied}
-                  onClick={() => {
-                    if (VALID_COUPONS[couponCode.toUpperCase()]) {
-                      setCouponApplied(true);
-                      toast({ title: "קופון הופעל בהצלחה! ✅" });
-                    } else {
-                      toast({ title: "קופון לא תקין", variant: "destructive" });
-                    }
-                  }}
+                  disabled={!couponCode.trim() || couponApplied || couponLoading}
+                  onClick={validateCoupon}
                 >
-                  {couponApplied ? "✅" : "הפעל"}
+                  {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : couponApplied ? "✅" : "הפעל"}
                 </Button>
               </div>
+              {couponApplied && (
+                <p className="text-green-400 text-xs flex items-center gap-1">
+                  <Tag className="w-3 h-3" /> הנחה של ₪{couponDiscount} הופעלה
+                </p>
+              )}
 
               {/* Total */}
               <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                 <div className="flex items-center justify-between">
                   <span className="text-white/60 text-sm">סה"כ לתשלום:</span>
                   <div className="flex items-center gap-2">
-                    {couponApplied && (
-                      <span className="text-white/40 line-through text-sm">₪{PLANS.filter(p => selected[p.id]).reduce((s, p) => s + p.price, 0)}</span>
+                    {couponApplied && rawTotal !== totalPrice && (
+                      <span className="text-white/40 line-through text-sm">₪{rawTotal}</span>
                     )}
                     <span className="text-2xl font-black text-primary">{totalPrice === 0 ? "חינם! 🎉" : `₪${totalPrice}`}</span>
                   </div>
@@ -409,74 +493,103 @@ const Signup = () => {
           {step === 2 && (
             <div className="space-y-5">
               <div className="text-center mb-4">
-                <h1 className="text-xl font-bold text-white">פרטים אישיים</h1>
-                <p className="text-white/50 text-sm mt-1">מלאו את הפרטים לפתיחת האירוע</p>
+                <h1 className="text-xl font-bold text-white">פרטים אישיים ופרטי אירוע</h1>
+                <p className="text-white/50 text-sm mt-1">מלאו את הפרטים — הם יועברו אוטומטית לאירוע שלכם</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-white/70 text-sm mb-1.5 block">שם מלא *</Label>
-                  <Input value={data.fullName} onChange={e => setData({...data, fullName: e.target.value})} placeholder="השם שלכם" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" maxLength={100} />
-                </div>
-                <div>
-                  <Label className="text-white/70 text-sm mb-1.5 block">טלפון *</Label>
-                  <Input value={data.phone} onChange={e => setData({...data, phone: e.target.value})} placeholder="050-0000000" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" maxLength={15} />
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-white/70 text-sm mb-1.5 block">כתובת מייל *</Label>
-                <Input value={data.email} onChange={e => setData({...data, email: e.target.value})} placeholder="your@email.com" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" maxLength={255} />
-              </div>
-
-              <div className="relative">
-                <Label className="text-white/70 text-sm mb-1.5 block">בחרו סיסמה *</Label>
-                <Input type={showPassword ? "text" : "password"} value={data.password} onChange={e => setData({...data, password: e.target.value})} placeholder="לפחות 6 תווים" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11 pl-12" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-[34px] text-white/40 hover:text-white/70">
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-white/70 text-sm mb-1.5 block">סוג אירוע</Label>
-                  <select value={data.eventType} onChange={e => setData({...data, eventType: e.target.value})} className="w-full h-11 rounded-xl bg-white/10 border border-white/20 text-white px-4 text-sm">
-                    <option value="חתונה" className="text-black">חתונה</option>
-                    <option value="בר מצווה" className="text-black">בר מצווה</option>
-                    <option value="בת מצווה" className="text-black">בת מצווה</option>
-                    <option value="ברית" className="text-black">ברית</option>
-                    <option value="אחר" className="text-black">אחר</option>
-                  </select>
-                </div>
-                <div>
-                  <Label className="text-white/70 text-sm mb-1.5 block">תאריך אירוע *</Label>
-                  <Input type="date" value={data.eventDate} onChange={e => setData({...data, eventDate: e.target.value})} className="bg-white/10 border-white/20 text-white h-11" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-white/70 text-sm mb-1.5 block">עיר</Label>
-                  <Input value={data.city} onChange={e => setData({...data, city: e.target.value})} placeholder="עיר האירוע" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
-                </div>
-                <div>
-                  <Label className="text-white/70 text-sm mb-1.5 block">שם אולם</Label>
-                  <Input value={data.venueName} onChange={e => setData({...data, venueName: e.target.value})} placeholder="שם האולם" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
-                </div>
-              </div>
-
-              {data.eventType === "חתונה" && (
+              {/* Personal + Contact info */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3">
+                <p className="text-white/80 text-sm font-bold">פרטים ליצירת קשר</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-white/70 text-sm mb-1.5 block">שם חתן</Label>
-                    <Input value={data.groomName} onChange={e => setData({...data, groomName: e.target.value})} placeholder="שם החתן" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
+                    <Label className="text-white/70 text-sm mb-1.5 block">שם מלא *</Label>
+                    <Input value={data.fullName} onChange={e => setData({...data, fullName: e.target.value})} placeholder="השם שלכם" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" maxLength={100} />
                   </div>
                   <div>
-                    <Label className="text-white/70 text-sm mb-1.5 block">שם כלה</Label>
-                    <Input value={data.brideName} onChange={e => setData({...data, brideName: e.target.value})} placeholder="שם הכלה" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
+                    <Label className="text-white/70 text-sm mb-1.5 block">טלפון *</Label>
+                    <Input value={data.phone} onChange={e => setData({...data, phone: e.target.value})} placeholder="050-0000000" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" maxLength={15} />
                   </div>
                 </div>
-              )}
+                <div>
+                  <Label className="text-white/70 text-sm mb-1.5 block">כתובת מייל *</Label>
+                  <Input value={data.email} onChange={e => setData({...data, email: e.target.value})} placeholder="your@email.com" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" maxLength={255} />
+                </div>
+                <div className="relative">
+                  <Label className="text-white/70 text-sm mb-1.5 block">בחרו סיסמה *</Label>
+                  <Input type={showPassword ? "text" : "password"} value={data.password} onChange={e => setData({...data, password: e.target.value})} placeholder="לפחות 6 תווים" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11 pl-12" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-[34px] text-white/40 hover:text-white/70">
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Event info */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3">
+                <p className="text-white/80 text-sm font-bold">פרטי האירוע</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-white/70 text-sm mb-1.5 block">סוג אירוע</Label>
+                    <select value={data.eventType} onChange={e => setData({...data, eventType: e.target.value})} className="w-full h-11 rounded-xl bg-white/10 border border-white/20 text-white px-4 text-sm">
+                      <option value="חתונה" className="text-black">חתונה</option>
+                      <option value="אירוסין" className="text-black">אירוסין</option>
+                      <option value="בר מצווה" className="text-black">בר מצווה</option>
+                      <option value="בת מצווה" className="text-black">בת מצווה</option>
+                      <option value="ברית" className="text-black">ברית</option>
+                      <option value="אחר" className="text-black">אחר</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-white/70 text-sm mb-1.5 block">תאריך אירוע *</Label>
+                    <Input type="date" value={data.eventDate} onChange={e => setData({...data, eventDate: e.target.value})} className="bg-white/10 border-white/20 text-white h-11" />
+                  </div>
+                </div>
+
+                {/* Dynamic name fields per event type */}
+                {(data.eventType === "חתונה" || data.eventType === "אירוסין") && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-white/70 text-sm mb-1.5 block">{eventTypeConfig.names[0]}</Label>
+                      <Input value={data.groomName} onChange={e => setData({...data, groomName: e.target.value})} placeholder={eventTypeConfig.placeholders[0]} className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
+                    </div>
+                    <div>
+                      <Label className="text-white/70 text-sm mb-1.5 block">{eventTypeConfig.names[1]}</Label>
+                      <Input value={data.brideName} onChange={e => setData({...data, brideName: e.target.value})} placeholder={eventTypeConfig.placeholders[1]} className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
+                    </div>
+                  </div>
+                )}
+
+                {(data.eventType === "בר מצווה" || data.eventType === "בת מצווה") && (
+                  <div>
+                    <Label className="text-white/70 text-sm mb-1.5 block">{eventTypeConfig.names[0]}</Label>
+                    <Input value={data.childName} onChange={e => setData({...data, childName: e.target.value})} placeholder={eventTypeConfig.placeholders[0]} className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
+                  </div>
+                )}
+
+                {data.eventType === "ברית" && (
+                  <div>
+                    <Label className="text-white/70 text-sm mb-1.5 block">{eventTypeConfig.names[0]}</Label>
+                    <Input value={data.familyName} onChange={e => setData({...data, familyName: e.target.value})} placeholder={eventTypeConfig.placeholders[0]} className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
+                  </div>
+                )}
+
+                {data.eventType === "אחר" && (
+                  <div>
+                    <Label className="text-white/70 text-sm mb-1.5 block">{eventTypeConfig.names[0]}</Label>
+                    <Input value={data.groomName} onChange={e => setData({...data, groomName: e.target.value})} placeholder={eventTypeConfig.placeholders[0]} className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-white/70 text-sm mb-1.5 block">עיר</Label>
+                    <Input value={data.city} onChange={e => setData({...data, city: e.target.value})} placeholder="עיר האירוע" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
+                  </div>
+                  <div>
+                    <Label className="text-white/70 text-sm mb-1.5 block">שם אולם</Label>
+                    <Input value={data.venueName} onChange={e => setData({...data, venueName: e.target.value})} placeholder="שם האולם" className="bg-white/10 border-white/20 text-white placeholder:text-white/30 h-11" />
+                  </div>
+                </div>
+              </div>
 
               <div>
                 <Label className="text-white/70 text-sm mb-1.5 block">תעודת זהות (לצורך חשבונית)</Label>
@@ -498,7 +611,6 @@ const Signup = () => {
                 <Button onClick={async () => {
                   if (!validateDetails()) return;
                   if (totalPrice === 0) {
-                    // Free signup (budget only or coupon covers everything)
                     setLoading(true);
                     try {
                       await saveLead(couponApplied ? "COUPON-" + couponCode : "FREE-BUDGET");
@@ -540,6 +652,12 @@ const Signup = () => {
                     <span className="text-white font-medium">₪{p.price}</span>
                   </div>
                 ))}
+                {couponApplied && couponDiscount > 0 && (
+                  <div className="flex items-center justify-between text-sm text-green-400">
+                    <span>הנחת קופון</span>
+                    <span>-₪{couponDiscount}</span>
+                  </div>
+                )}
                 <div className="border-t border-white/10 pt-2 mt-2 flex items-center justify-between">
                   <span className="text-white font-bold">סה"כ</span>
                   <span className="text-xl font-black text-primary">₪{totalPrice}</span>
@@ -608,7 +726,7 @@ const Signup = () => {
                   {totalPrice > 0 ? "התשלום בוצע בהצלחה! 🎉" : "החשבון נפתח בהצלחה! 🎉"}
                 </h1>
                 <p className="text-white/60">
-                  {totalPrice > 0 
+                  {totalPrice > 0
                     ? `שולם ₪${totalPrice} • ${PLANS.filter(p => selected[p.id]).map(p => p.title).join(" + ")}`
                     : "ניהול תקציב — חינם"
                   }
@@ -621,7 +739,6 @@ const Signup = () => {
                 {transactionId && <p className="text-white/40 text-xs">מזהה עסקה: {transactionId}</p>}
               </div>
 
-              {/* Upsell for free users */}
               {totalPrice === 0 && !PLANS.some(p => selected[p.id]) && (
                 <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 text-right space-y-3">
                   <p className="text-primary font-bold text-sm">💡 שדרגו את האירוע שלכם!</p>
