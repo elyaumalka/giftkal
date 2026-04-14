@@ -14,8 +14,9 @@ import { Badge } from "@/components/ui/badge";
 export default function EventOwners() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const { toast } = useToast();
-
+  const queryClient = useQueryClient();
   const { data: eventOwners } = useQuery({
     queryKey: ["event-owners"],
     queryFn: async () => {
