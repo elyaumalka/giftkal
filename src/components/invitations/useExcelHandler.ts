@@ -7,29 +7,29 @@ interface Guest {
   phone?: string;
   email?: string;
   relationship?: string;
+  side?: string;
 }
 
 export function useExcelHandler(eventId: string | undefined, onGuestsUploaded?: () => void) {
   const { toast } = useToast();
 
   const downloadSampleExcel = () => {
-    // יצירת קובץ אקסל לדוגמה
     const sampleData = [
-      { שם_מלא: "ישראל ישראלי", טלפון: "0501234567", אימייל: "israel@example.com", קרבה: "משפחה" },
-      { שם_מלא: "שרה כהן", טלפון: "0529876543", אימייל: "sarah@example.com", קרבה: "חברים" },
-      { שם_מלא: "משה לוי", טלפון: "0541112233", אימייל: "moshe@example.com", קרבה: "עבודה" },
+      { שם_מלא: "ישראל ישראלי", טלפון: "0501234567", אימייל: "israel@example.com", קרבה: "משפחה", צד: "general" },
+      { שם_מלא: "שרה כהן", טלפון: "0529876543", אימייל: "sarah@example.com", קרבה: "חברים", צד: "general" },
+      { שם_מלא: "משה לוי", טלפון: "0541112233", אימייל: "moshe@example.com", קרבה: "עבודה", צד: "general" },
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(sampleData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "מוזמנים");
 
-    // הגדרת רוחב עמודות
     worksheet["!cols"] = [
-      { wch: 20 }, // שם מלא
-      { wch: 15 }, // טלפון
-      { wch: 25 }, // אימייל
-      { wch: 15 }, // קרבה
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 10 },
     ];
 
     XLSX.writeFile(workbook, "רשימת_מוזמנים_דוגמה.xlsx");
@@ -52,8 +52,9 @@ export function useExcelHandler(eventId: string | undefined, onGuestsUploaded?: 
       const guests: Guest[] = jsonData.map((row: any) => ({
         full_name: row["שם_מלא"] || row["שם מלא"] || row["name"] || "",
         phone: row["טלפון"] || row["phone"] || null,
-        email: row["אימייל"] || row["email"] || null,
+        email: row["אימייל"] || row["email"] || row["מייל"] || null,
         relationship: row["קרבה"] || row["relationship"] || null,
+        side: row["צד"] || row["side"] || "general",
       })).filter(g => g.full_name);
 
       if (guests.length === 0) {
@@ -61,18 +62,22 @@ export function useExcelHandler(eventId: string | undefined, onGuestsUploaded?: 
         return;
       }
 
-      // הוספת המוזמנים לדאטאבייס
-      const guestsToInsert = guests.map(g => ({
-        ...g,
-        event_id: eventId,
-        invitation_sent: false,
-      }));
+      const BATCH_SIZE = 500;
+      let totalInserted = 0;
 
-      const { error } = await supabase.from("guests").insert(guestsToInsert);
+      for (let i = 0; i < guests.length; i += BATCH_SIZE) {
+        const batch = guests.slice(i, i + BATCH_SIZE).map(g => ({
+          ...g,
+          event_id: eventId,
+          invitation_sent: false,
+        }));
 
-      if (error) throw error;
+        const { error } = await supabase.from("guests").insert(batch);
+        if (error) throw error;
+        totalInserted += batch.length;
+      }
 
-      toast({ title: `${guests.length} מוזמנים נוספו בהצלחה!` });
+      toast({ title: `${totalInserted} מוזמנים נוספו בהצלחה!` });
       onGuestsUploaded?.();
     } catch (error: any) {
       console.error("Error uploading Excel:", error);
