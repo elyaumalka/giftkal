@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Gift, Search, ArrowRight, Calendar, MapPin, Heart, PartyPopper, Users } from "lucide-react";
@@ -28,10 +27,16 @@ const GiftSearch = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
+      const today = new Date();
+      // Allow gifts up to 3 days after event
+      const threeDaysAgo = new Date(today);
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      
       const { data } = await supabase
         .from("events")
-        .select("id, groom_name, bride_name, child_name, family_name, event_date, event_type, venues(name)")
-        .gte("event_date", new Date().toISOString().split("T")[0])
+        .select("id, groom_name, bride_name, child_name, family_name, event_date, event_type, seller_payme_id, venues(name)")
+        .gte("event_date", threeDaysAgo.toISOString().split("T")[0])
+        .not("seller_payme_id", "is", null)
         .order("event_date", { ascending: true })
         .limit(50);
       setEvents(data || []);

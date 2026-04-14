@@ -114,16 +114,12 @@ function VenueLandingPopup({ venueId, onClose }: { venueId: string; onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" onClick={onClose}>
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-
-      {/* Popup container */}
       <div
         className="relative z-10 flex flex-col mt-12 mx-2 mb-2 rounded-t-3xl rounded-b-2xl overflow-hidden bg-white flex-1 animate-slide-up shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
-        {/* Drag handle + close */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
             <X className="w-4 h-4" />
@@ -131,73 +127,43 @@ function VenueLandingPopup({ venueId, onClose }: { venueId: string; onClose: () 
           <div className="w-10 h-1 rounded-full bg-gray-300 mx-auto" />
           <div className="w-8" />
         </div>
-
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto" style={{ background: `url('/landing/bg-hexagon.png') center/cover no-repeat fixed` }}>
-
+        <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-[#051839]" />
-            </div>
+            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[#051839]" /></div>
           ) : !venue ? (
             <div className="text-center py-20 text-gray-400">האולם לא נמצא</div>
           ) : (
             <>
-              {/* Hero */}
               <div className="relative w-full">
                 <img src="/landing/hero-banquet.png" alt="" className="w-full object-cover" style={{ maxHeight: "220px" }} />
-                <div className="absolute -bottom-1 left-0 right-0 h-12">
-                  <svg viewBox="0 0 1440 50" preserveAspectRatio="none" className="w-full h-full">
-                    <path d="M0,50 Q720,0 1440,50 L1440,50 L0,50 Z" fill="white" />
-                  </svg>
-                </div>
               </div>
-
-              {/* Logo + Name */}
               <div className="relative z-10 -mt-12 flex flex-col items-center">
-                <div className="relative">
-                  <div className="absolute -inset-2 bg-[#C4A35A]/20 rounded-full blur-xl animate-pulse" />
-                  {venue.logo_url ? (
-                    <img src={venue.logo_url} alt={venueName} className="relative w-24 h-24 rounded-full border-4 border-white shadow-2xl object-cover bg-white" />
-                  ) : (
-                    <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-2xl bg-[#051839] flex items-center justify-center">
-                      <span className="text-3xl font-bold text-[#C4A35A]">{venueName?.charAt(0)}</span>
-                    </div>
-                  )}
-                </div>
+                {venue.logo_url ? (
+                  <img src={venue.logo_url} alt={venueName} className="w-24 h-24 rounded-full border-4 border-white shadow-2xl object-cover bg-white" />
+                ) : (
+                  <div className="w-24 h-24 rounded-full border-4 border-white shadow-2xl bg-[#051839] flex items-center justify-center">
+                    <span className="text-3xl font-bold text-[#C4A35A]">{venueName?.charAt(0)}</span>
+                  </div>
+                )}
                 <h2 className="mt-4 text-3xl font-extrabold text-[#051839]">{venueName}</h2>
-                <p className="text-gray-400 mt-1 text-sm">חוויה בלתי נשכחת מתחילה כאן</p>
               </div>
-
-              {/* Contact Strip */}
               <div className="mt-6 mx-4 bg-white/80 backdrop-blur-md rounded-2xl shadow-lg py-4 px-4 flex justify-center gap-6">
                 {emailAddress && (
-                  <a href={`mailto:${emailAddress}`} className="flex flex-col items-center gap-1.5 group hover-scale">
-                    <div className="w-12 h-12 rounded-xl bg-[#051839]/5 flex items-center justify-center group-hover:bg-[#051839]/10 transition-colors">
-                      <Mail className="w-5 h-5 text-[#051839]" />
-                    </div>
-                    <span className="text-[10px] text-gray-500 max-w-[80px] truncate">{emailAddress}</span>
+                  <a href={`mailto:${emailAddress}`} className="flex flex-col items-center gap-1.5">
+                    <div className="w-12 h-12 rounded-xl bg-[#051839]/5 flex items-center justify-center"><Mail className="w-5 h-5 text-[#051839]" /></div>
                   </a>
                 )}
                 {whatsappNumber && (
-                  <a href={`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1.5 group hover-scale">
-                    <div className="w-12 h-12 rounded-xl bg-[#051839]/5 flex items-center justify-center group-hover:bg-[#051839]/10 transition-colors">
-                      <MessageCircle className="w-5 h-5 text-[#051839]" />
-                    </div>
-                    <span className="text-[10px] text-gray-500">{whatsappNumber}</span>
+                  <a href={`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1.5">
+                    <div className="w-12 h-12 rounded-xl bg-[#051839]/5 flex items-center justify-center"><MessageCircle className="w-5 h-5 text-[#051839]" /></div>
                   </a>
                 )}
                 {phoneNumber && (
-                  <a href={`tel:${phoneNumber}`} className="flex flex-col items-center gap-1.5 group hover-scale">
-                    <div className="w-12 h-12 rounded-xl bg-[#051839]/5 flex items-center justify-center group-hover:bg-[#051839]/10 transition-colors">
-                      <Phone className="w-5 h-5 text-[#051839]" />
-                    </div>
-                    <span className="text-[10px] text-gray-500">{phoneNumber}</span>
+                  <a href={`tel:${phoneNumber}`} className="flex flex-col items-center gap-1.5">
+                    <div className="w-12 h-12 rounded-xl bg-[#051839]/5 flex items-center justify-center"><Phone className="w-5 h-5 text-[#051839]" /></div>
                   </a>
                 )}
               </div>
-
-              {/* Gallery Stories */}
               {galleryImages.length > 0 && (
                 <div className="mt-10 px-4 max-w-lg mx-auto">
                   <h3 className="text-2xl font-extrabold text-[#051839] text-center mb-5">גלריית תמונות</h3>
@@ -213,18 +179,9 @@ function VenueLandingPopup({ venueId, onClose }: { venueId: string; onClose: () 
                       ))}
                     </div>
                     <img src={galleryImages[storyIndex]} alt={`תמונה ${storyIndex + 1}`} className="w-full h-full object-cover" key={storyIndex} />
-                    <div className="absolute inset-y-0 right-0 w-1/3 z-10 cursor-pointer"
-                      onClick={() => { setStoryIndex((storyIndex - 1 + galleryImages.length) % galleryImages.length); setStoryProgress(0); }} />
-                    <div className="absolute inset-y-0 left-0 w-1/3 z-10 cursor-pointer"
-                      onClick={() => { setStoryIndex((storyIndex + 1) % galleryImages.length); setStoryProgress(0); }} />
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white/80 text-xs font-medium">
-                      {storyIndex + 1} / {galleryImages.length}
-                    </div>
                   </div>
                 </div>
               )}
-
-              {/* About */}
               {aboutText && (
                 <div className="mt-10 mx-3">
                   <div className="bg-white/90 backdrop-blur-md rounded-[2rem] shadow-lg py-8 px-5 max-w-3xl mx-auto text-center">
@@ -233,16 +190,10 @@ function VenueLandingPopup({ venueId, onClose }: { venueId: string; onClose: () 
                   </div>
                 </div>
               )}
-
-              {/* Lead Form */}
               <div className="mt-10 mx-3 pb-8">
                 <div className="bg-white rounded-[2rem] shadow-2xl max-w-md mx-auto py-8 px-5 space-y-5">
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#C41E3A]/10 mb-3">
-                      <Sparkles className="w-6 h-6 text-[#C41E3A]" />
-                    </div>
                     <h3 className="text-2xl font-extrabold text-[#051839]">השאירו פרטים</h3>
-                    <p className="text-[#C4A35A] font-semibold mt-1 text-base">וקבלו הצעת מחיר משתלמת!</p>
                   </div>
                   <form onSubmit={handleSubmit} className="space-y-3">
                     {[
@@ -254,19 +205,17 @@ function VenueLandingPopup({ venueId, onClose }: { venueId: string; onClose: () 
                       <div key={f.label}>
                         <label className="block text-center text-gray-500 text-xs mb-1 font-medium">{f.label}</label>
                         <Input value={f.value} onChange={(e) => f.setter(e.target.value)}
-                          className="h-12 rounded-xl bg-gray-50 border-gray-200 text-center text-[#051839] text-sm focus:ring-2 focus:ring-[#C4A35A]/30"
+                          className="h-12 rounded-xl bg-gray-50 border-gray-200 text-center text-[#051839] text-sm"
                           type={f.type} required={f.required} />
                       </div>
                     ))}
                     <button type="submit" disabled={isSubmitting}
-                      className="w-full h-16 rounded-2xl bg-[#C41E3A] text-white text-xl font-bold hover:bg-[#A8182F] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-3 shadow-lg shadow-[#C41E3A]/25">
+                      className="w-full h-16 rounded-2xl bg-[#C41E3A] text-white text-xl font-bold hover:bg-[#A8182F] disabled:opacity-50 flex items-center justify-center gap-2 mt-3 shadow-lg">
                       {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <>לשליחת הפרטים <ArrowLeft className="w-5 h-5" /></>}
                     </button>
                   </form>
                 </div>
               </div>
-
-              {/* Footer */}
               <div className="py-6 text-center">
                 <p className="text-gray-400 text-xs">Powered by <span className="text-[#C4A35A] font-semibold">Giftkal</span></p>
               </div>
@@ -320,6 +269,33 @@ export default function EventWelcome() {
         <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">😕</span></div>
         <h1 className="text-2xl font-bold text-white">האירוע לא נמצא</h1>
         <p className="text-white/50">נא לבדוק את הקישור ולנסות שוב</p>
+      </div>
+    );
+  }
+
+  // Block gifts if no active payment account
+  if (!event.seller_payme_id) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839]" dir="rtl">
+        <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">🔒</span></div>
+        <h1 className="text-2xl font-bold text-white">שירות המתנות אינו פעיל</h1>
+        <p className="text-white/50 text-center max-w-sm">שירות המתנות באשראי לא הופעל עדיין לאירוע זה</p>
+      </div>
+    );
+  }
+
+  // Block gifts more than 3 days after event
+  const eventDate = new Date(event.event_date);
+  const now = new Date();
+  const threeDaysAfter = new Date(eventDate);
+  threeDaysAfter.setDate(threeDaysAfter.getDate() + 3);
+  
+  if (now > threeDaysAfter) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839]" dir="rtl">
+        <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">⏰</span></div>
+        <h1 className="text-2xl font-bold text-white">הזמן להענקת מתנות הסתיים</h1>
+        <p className="text-white/50 text-center max-w-sm">ניתן להעניק מתנות עד 3 ימים לאחר האירוע</p>
       </div>
     );
   }
