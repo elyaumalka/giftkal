@@ -141,6 +141,32 @@ export default function GiftScreen() {
     } catch (error) { console.error("Error saving blessing card:", error); return null; }
   };
 
+  // Upload video blessing
+  const handleVideoUpload = async (file: File) => {
+    if (file.size > 50 * 1024 * 1024) {
+      toast({ title: "⚠️ קובץ גדול מדי", description: "גודל מקסימלי 50MB", variant: "destructive" });
+      return;
+    }
+    const validTypes = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo'];
+    if (!validTypes.includes(file.type)) {
+      toast({ title: "⚠️ פורמט לא נתמך", description: "נא להעלות קובץ וידאו (MP4, MOV, WebM)", variant: "destructive" });
+      return;
+    }
+    setUploadingVideo(true);
+    setBlessingVideoFile(file);
+    try {
+      const ext = file.name.split('.').pop() || 'mp4';
+      const safePayerName = payerName.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_').substring(0, 50) || 'guest';
+      const fileName = `blessing-videos/${eventId}/${Date.now()}-${safePayerName}.${ext}`;
+      const { error } = await supabase.storage.from("documents").upload(fileName, file, { contentType: file.type, upsert: false });
+      if (error) { console.error("Error uploading video:", error); toast({ title: "שגיאה בהעלאה", variant: "destructive" }); setUploadingVideo(false); return; }
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(fileName);
+      setBlessingVideoUrl(urlData.publicUrl);
+      toast({ title: "✅ הסרטון הועלה בהצלחה" });
+    } catch (err) { console.error("Video upload error:", err); toast({ title: "שגיאה בהעלאת הסרטון", variant: "destructive" }); }
+    setUploadingVideo(false);
+  };
+
   const chargeToken = useMutation({
     mutationFn: async (token: string) => {
       const amount = selectedAmount || Number(customAmount);
