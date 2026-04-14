@@ -21,6 +21,79 @@ const useInView = (threshold = 0.15) => {
   return { ref, inView };
 };
 
+/* ─── Extracted components to avoid hooks in .map() ─── */
+
+const ServiceCard = ({ icon: Icon, title, desc, price, badge, delay }: {
+  icon: any; title: string; desc: string; price: string; badge?: string; delay: number;
+}) => {
+  const { ref, inView } = useInView();
+  return (
+    <div ref={ref} className={`relative bg-card rounded-2xl p-5 text-center shadow-lg border border-border/50 transition-all duration-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: `${delay}ms` }}>
+      {badge && <span className="absolute -top-2.5 right-3 bg-primary text-primary-foreground text-xs font-bold px-3 py-0.5 rounded-full">{badge}</span>}
+      <Icon className="w-8 h-8 text-primary mx-auto mb-3" />
+      <p className="font-bold text-secondary text-sm mb-1">{title}</p>
+      <p className="text-muted-foreground text-xs mb-2">{desc}</p>
+      <p className="text-lg font-black text-primary">{price}</p>
+    </div>
+  );
+};
+
+const BenefitCard = ({ icon: Icon, title, desc, delay }: {
+  icon: any; title: string; desc: string; delay: number;
+}) => {
+  const { ref, inView } = useInView();
+  return (
+    <div ref={ref} className={`bg-card rounded-2xl p-7 shadow-lg border border-border/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: `${delay}ms` }}>
+      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+        <Icon className="w-6 h-6 text-primary" />
+      </div>
+      <h3 className="font-bold text-secondary mb-2">{title}</h3>
+      <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
+    </div>
+  );
+};
+
+const TestimonialCard = ({ text, delay }: { text: string; delay: number }) => {
+  const { ref, inView } = useInView();
+  return (
+    <div ref={ref} className={`bg-card rounded-2xl p-6 shadow-lg border border-border/50 transition-all duration-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: `${delay}ms` }}>
+      <Quote className="w-6 h-6 text-primary/30 mb-3" />
+      <p className="text-foreground text-sm leading-relaxed mb-4">"{text}"</p>
+      <div className="flex gap-0.5">
+        {Array.from({ length: 5 }).map((_, j) => (
+          <Star key={j} className="w-3.5 h-3.5 fill-primary text-primary" />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const SectionTitle = ({ emoji, title, subtitle }: { emoji: string; title: string; subtitle?: string }) => {
+  const { ref, inView } = useInView();
+  return (
+    <div ref={ref} className={`text-center mb-12 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+      <span className="text-4xl mb-4 block">{emoji}</span>
+      <h2 className="text-3xl md:text-4xl font-bold text-secondary mb-3">{title}</h2>
+      {subtitle && <p className="text-lg text-muted-foreground">{subtitle}</p>}
+    </div>
+  );
+};
+
+const ActionCard = ({ emoji, title, desc, onClick }: {
+  emoji: string; title: string; desc: string; onClick: () => void;
+}) => (
+  <div
+    onClick={onClick}
+    className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15 text-center hover:bg-white/15 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+  >
+    <span className="text-3xl block mb-2">{emoji}</span>
+    <h3 className="text-white font-bold text-sm mb-1">{title}</h3>
+    <p className="text-white/50 text-xs">{desc}</p>
+  </div>
+);
+
+/* ─── Main Page ─── */
+
 const HomePage = () => {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -41,14 +114,12 @@ const HomePage = () => {
           {/* 4 כפתורי פעולה ישירים */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             <ActionCard
-              icon={Heart}
               emoji="💍"
               title="בעלי אירועים"
               desc="פתחו אירוע וקבלו מתנות"
               onClick={() => document.getElementById("event-owners")?.scrollIntoView({ behavior: "smooth" })}
             />
             <ActionCard
-              icon={Building2}
               emoji="🏛️"
               title="בעלי אולמות"
               desc="שדרגו את השירות ללקוחות"
@@ -78,25 +149,11 @@ const HomePage = () => {
           <SectionTitle emoji="💍" title="בעלי אירועים" subtitle="כל מה שצריך לאירוע מושלם — במקום אחד" />
           
           <div className="max-w-5xl mx-auto">
-            {/* שירותים */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-              {[
-                { icon: CreditCard, title: "מתנות באשראי", desc: "גבייה מאובטחת מכל מקום", price: "₪199" },
-                { icon: Monitor, title: "עמדת מתנות", desc: "עמדה פיזית באולם", price: "₪99", badge: "מומלץ" },
-                { icon: Send, title: "הזמנות דיגיטליות", desc: "הזמנות + אישורי הגעה", price: "₪199" },
-                { icon: BarChart3, title: "ניהול תקציב", desc: "שליטה בכל שקל", price: "חינם" },
-              ].map((s, i) => {
-                const { ref, inView } = useInView();
-                return (
-                  <div key={i} ref={ref} className={`relative bg-card rounded-2xl p-5 text-center shadow-lg border border-border/50 transition-all duration-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: `${i * 80}ms` }}>
-                    {s.badge && <span className="absolute -top-2.5 right-3 bg-primary text-primary-foreground text-xs font-bold px-3 py-0.5 rounded-full">{s.badge}</span>}
-                    <s.icon className="w-8 h-8 text-primary mx-auto mb-3" />
-                    <p className="font-bold text-secondary text-sm mb-1">{s.title}</p>
-                    <p className="text-muted-foreground text-xs mb-2">{s.desc}</p>
-                    <p className="text-lg font-black text-primary">{s.price}</p>
-                  </div>
-                );
-              })}
+              <ServiceCard icon={CreditCard} title="מתנות באשראי" desc="גבייה מאובטחת מכל מקום" price="₪199" delay={0} />
+              <ServiceCard icon={Monitor} title="עמדת מתנות" desc="עמדה פיזית באולם" price="₪99" badge="מומלץ" delay={80} />
+              <ServiceCard icon={Send} title="הזמנות דיגיטליות" desc="הזמנות + אישורי הגעה" price="₪199" delay={160} />
+              <ServiceCard icon={BarChart3} title="ניהול תקציב" desc="שליטה בכל שקל" price="חינם" delay={240} />
             </div>
 
             {/* איך זה עובד */}
@@ -120,7 +177,6 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* CTA */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/signup">
                 <Button variant="gold" size="lg" className="text-lg px-10 py-6">
@@ -145,34 +201,18 @@ const HomePage = () => {
           <SectionTitle emoji="🏛️" title="בעלי אולמות" subtitle="שדרגו את חוויית האירוע ללקוחות שלכם" />
 
           <div className="max-w-5xl mx-auto">
-            {/* יתרונות */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              {[
-                { icon: Gem, title: "חוויית שירות מתקדמת", desc: "עמדת מתנות דיגיטלית לכל אירוע — מותאמת לבראנד של האולם", delay: 0 },
-                { icon: Inbox, title: "לידים מתוך האירועים", desc: "כל אורח שנותן מתנה הוא ליד פוטנציאלי לאירוע הבא שלו", delay: 100 },
-                { icon: BarChart3, title: "ניהול פניות מסודר", desc: "מערכת מרכזית לניהול כל הפניות והלידים שמגיעים מהאולם", delay: 200 },
-              ].map((item, i) => {
-                const { ref, inView } = useInView();
-                return (
-                  <div key={i} ref={ref} className={`bg-card rounded-2xl p-7 shadow-lg border border-border/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: `${item.delay}ms` }}>
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                      <item.icon className="w-6 h-6 text-primary" />
-                    </div>
-                    <h3 className="font-bold text-secondary mb-2">{item.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
-                  </div>
-                );
-              })}
+              <BenefitCard icon={Gem} title="חוויית שירות מתקדמת" desc="עמדת מתנות דיגיטלית לכל אירוע — מותאמת לבראנד של האולם" delay={0} />
+              <BenefitCard icon={Inbox} title="לידים מתוך האירועים" desc="כל אורח שנותן מתנה הוא ליד פוטנציאלי לאירוע הבא שלו" delay={100} />
+              <BenefitCard icon={BarChart3} title="ניהול פניות מסודר" desc="מערכת מרכזית לניהול כל הפניות והלידים שמגיעים מהאולם" delay={200} />
             </div>
 
-            {/* מחיר */}
             <div className="bg-card rounded-3xl p-8 shadow-xl border border-primary/20 text-center mb-10 max-w-md mx-auto">
               <p className="text-muted-foreground mb-2">עלות הצטרפות לאולם</p>
               <p className="text-5xl font-black text-primary mb-2">₪0</p>
               <p className="text-sm text-muted-foreground">ללא עלות — אתם רק מרוויחים</p>
             </div>
 
-            {/* CTA */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע פרטים על GiftKal לאולם שלי" target="_blank" rel="noopener noreferrer">
                 <Button variant="gold" size="lg" className="text-lg px-10 py-6">
@@ -196,24 +236,9 @@ const HomePage = () => {
         <div className="container mx-auto px-4">
           <SectionTitle emoji="💬" title="מה הלקוחות אומרים" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {[
-              "קיבלנו יותר מתנות ממה שציפינו — הכל היה מסודר במקום אחד",
-              "הכל היה נוח ומסודר. האורחים פשוט אהבו את זה",
-              "האורחים עפו על זה — גם מי שלא הביא מזומן שלח מתנה",
-            ].map((text, i) => {
-              const { ref, inView } = useInView();
-              return (
-                <div key={i} ref={ref} className={`bg-card rounded-2xl p-6 shadow-lg border border-border/50 transition-all duration-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`} style={{ transitionDelay: `${i * 100}ms` }}>
-                  <Quote className="w-6 h-6 text-primary/30 mb-3" />
-                  <p className="text-foreground text-sm leading-relaxed mb-4">"{text}"</p>
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <Star key={j} className="w-3.5 h-3.5 fill-primary text-primary" />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+            <TestimonialCard text="קיבלנו יותר מתנות ממה שציפינו — הכל היה מסודר במקום אחד" delay={0} />
+            <TestimonialCard text="הכל היה נוח ומסודר. האורחים פשוט אהבו את זה" delay={100} />
+            <TestimonialCard text="האורחים עפו על זה — גם מי שלא הביא מזומן שלח מתנה" delay={200} />
           </div>
         </div>
       </section>
@@ -247,31 +272,5 @@ const HomePage = () => {
     </div>
   );
 };
-
-/* ─── Sub-components ─── */
-
-const SectionTitle = ({ emoji, title, subtitle }: { emoji: string; title: string; subtitle?: string }) => {
-  const { ref, inView } = useInView();
-  return (
-    <div ref={ref} className={`text-center mb-12 transition-all duration-700 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-      <span className="text-4xl mb-4 block">{emoji}</span>
-      <h2 className="text-3xl md:text-4xl font-bold text-secondary mb-3">{title}</h2>
-      {subtitle && <p className="text-lg text-muted-foreground">{subtitle}</p>}
-    </div>
-  );
-};
-
-const ActionCard = ({ icon: Icon, emoji, title, desc, onClick }: {
-  icon: any; emoji: string; title: string; desc: string; onClick: () => void;
-}) => (
-  <div
-    onClick={onClick}
-    className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/15 text-center hover:bg-white/15 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-  >
-    <span className="text-3xl block mb-2">{emoji}</span>
-    <h3 className="text-white font-bold text-sm mb-1">{title}</h3>
-    <p className="text-white/50 text-xs">{desc}</p>
-  </div>
-);
 
 export default HomePage;
