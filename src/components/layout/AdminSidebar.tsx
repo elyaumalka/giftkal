@@ -62,6 +62,11 @@ const menuItems = [
     path: "/admin/billing",
   },
   {
+    title: "קופונים",
+    icon: SettingsIcon,
+    path: "/admin/coupons",
+  },
+  {
     title: "פניות ותקלות",
     icon: ToolsIcon,
     path: "/admin/support",
