@@ -129,6 +129,8 @@ Deno.serve(async (req) => {
           event_date: event.eventDate,
           groom_name: event.groomName || null,
           bride_name: event.brideName || null,
+          family_name: event.familyName || null,
+          child_name: event.childName || null,
           device_rental_cost: event.deviceRentalCost || 0,
           budget_enabled: event.budgetEnabled ?? false,
           gifts_enabled: event.giftsEnabled ?? false,
