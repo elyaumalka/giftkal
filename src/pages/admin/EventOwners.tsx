@@ -179,6 +179,60 @@ export default function EventOwners() {
               )}
             </span>
 
+            {/* סטטוס סליקה */}
+            <span className="text-center">
+              {event.seller_payme_id ? (
+                <Badge className="bg-green-500 text-white text-xs">פעיל</Badge>
+              ) : event.payment_setup_status === 'pending_approval' ? (
+                <div className="flex flex-col items-center gap-1">
+                  <Badge className="bg-amber-500 text-white text-xs">ממתין</Badge>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-green-600 hover:bg-green-50"
+                      disabled={approvingId === event.id}
+                      onClick={async () => {
+                        setApprovingId(event.id);
+                        try {
+                          const setupData = event.payment_setup_data as any;
+                          if (!setupData) throw new Error('אין נתוני הקמה');
+                          const response = await supabase.functions.invoke('payme-create-seller', {
+                            body: { eventId: event.id, ...setupData, gender: 0 },
+                          });
+                          if (response.error) throw new Error(response.error.message);
+                          if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה');
+                          await supabase.from('events').update({ payment_setup_status: 'approved' } as any).eq('id', event.id);
+                          queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+                          toast({ title: "חשבון סליקה הוקם בהצלחה ✅" });
+                        } catch (err: any) {
+                          toast({ title: "שגיאה", description: err.message, variant: "destructive" });
+                        } finally {
+                          setApprovingId(null);
+                        }
+                      }}
+                    >
+                      {approvingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+                      onClick={async () => {
+                        await supabase.from('events').update({ payment_setup_status: 'rejected' } as any).eq('id', event.id);
+                        queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+                        toast({ title: "הבקשה נדחתה" });
+                      }}
+                    >
+                      <XCircle className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-xs">—</span>
+              )}
+            </span>
+
             {/* העתקת כתובת מייל */}
             <Button
               variant="ghost"
