@@ -338,7 +338,9 @@ const Signup = () => {
 
       // Increment coupon usage
       if (couponApplied && couponCode) {
-        await supabase.rpc("increment_coupon_usage" as any, { coupon_code: couponCode.toUpperCase().trim() }).catch(() => {});
+        try {
+          await supabase.rpc("increment_coupon_usage" as any, { coupon_code: couponCode.toUpperCase().trim() });
+        } catch (_) { /* ignore */ }
       }
     } catch (e) {
       console.error("Error saving lead:", e);
