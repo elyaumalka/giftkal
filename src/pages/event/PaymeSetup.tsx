@@ -110,12 +110,12 @@ function SellerStatusView({ eventId, onBack }: { eventId: string; onBack: () => 
         body: { eventId, ...updateFields },
       });
       if (response.error) throw new Error(response.error.message);
-      if (response.data?.error) throw new Error(response.data.error || response.data.details);
-      toast({ title: "עודכן בהצלחה!", description: "הפרטים נשלחו לבדיקה" });
+      if (response.data?.error) throw new Error(response.data.details || response.data.error);
+      toast({ title: "עודכן בהצלחה!", description: "הפרטים נשלחו ל-PayMe" });
       setUpdateFields({});
       refetch();
     } catch (err: any) {
-      toast({ title: "שגיאה", description: err.message, variant: "destructive" });
+      toast({ title: "שגיאה בעדכון", description: err.message, variant: "destructive" });
     } finally {
       setUpdating(false);
     }
@@ -272,9 +272,9 @@ function SellerStatusView({ eventId, onBack }: { eventId: string; onBack: () => 
                     />
                   ) : field.field === 'seller_site_url' ? (
                     <Input
-                      value={updateFields[field.field] || ''}
+                      value={updateFields[field.field] || 'https://giftkal.com'}
                       onChange={(e) => setUpdateFields(prev => ({ ...prev, [field.field]: e.target.value }))}
-                      placeholder="https://example.com"
+                      placeholder="https://giftkal.com"
                       dir="ltr"
                     />
                   ) : field.field === 'bank_rejected' ? (
