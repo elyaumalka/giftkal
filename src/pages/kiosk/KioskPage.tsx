@@ -172,11 +172,11 @@ export default function KioskPage() {
           </div>
         </div>
 
-        {/* Gift page iframe - mobile width, centered on tablet */}
+        {/* Gift page iframe - responsive, fills screen */}
         <div className="flex justify-center" style={{ height: "calc(100vh - 56px)" }}>
           <iframe
             src={`/gift/${activeEvent.id}`}
-            className="border-0 w-full max-w-[430px] h-full"
+            className="border-0 w-full h-full"
             title={`מתנה ל${eventTitle}`}
           />
         </div>
@@ -200,14 +200,20 @@ export default function KioskPage() {
 
         {/* Hall name */}
         <div>
-          <h1 className="text-5xl font-bold text-white mb-2">{hall?.name}</h1>
+          <h1 className="text-6xl md:text-7xl font-bold text-white mb-2">{hall?.name}</h1>
           {venueName && <p className="text-xl text-[#C4A35A]">{venueName}</p>}
         </div>
 
         {/* Default message */}
-        <p className="text-3xl text-white/80 font-light">
+        <p className="text-4xl md:text-5xl text-white/80 font-light">
           {hall?.default_message || "ברוכים הבאים"}
         </p>
+
+        {/* Gift CTA text */}
+        <div className="flex items-center gap-3 justify-center">
+          <Gift className="w-8 h-8 text-[#C4A35A]" />
+          <p className="text-2xl md:text-3xl text-[#C4A35A] font-bold">מעניקים מתנה בקליק</p>
+        </div>
 
         {/* Clock */}
         <div className="text-white/60 space-y-1">
