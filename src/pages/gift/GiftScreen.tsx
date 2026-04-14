@@ -72,6 +72,7 @@ export default function GiftScreen() {
   const [payerEmail, setPayerEmail] = useState("");
   const [payerPhone, setPayerPhone] = useState("");
   const [relationship, setRelationship] = useState("");
+  const [selectedSide, setSelectedSide] = useState("");
   const [blessing, setBlessing] = useState("");
   const [selectedInstallments, setSelectedInstallments] = useState(1);
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
@@ -409,25 +410,51 @@ export default function GiftScreen() {
                       className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
                   </div>
                   <div>
-                    <Label className="text-white/70 font-medium text-sm">קרבה</Label>
-                    <Select value={relationship} onValueChange={setRelationship}>
-                      <SelectTrigger className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white focus:border-[#C4A35A] [&>span]:text-white/25 data-[state=open]:border-[#C4A35A]">
-                        <SelectValue placeholder="בחרו קרבה..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#0a2040] border-white/15 text-white">
-                        {RELATIONSHIP_OPTIONS.map((opt) => (
-                          <SelectItem key={opt} value={opt} className="focus:bg-white/10 focus:text-white">
-                            {opt}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-white/70 font-medium text-sm">מייל (לקבלה)</Label>
+                    <Input type="email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="example@email.com"
+                      className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
                   </div>
                 </div>
+
+                {/* Side Selection - large buttons */}
+                {(event.event_type === "חתונה" || event.event_type === "אירוסין") && (
+                  <div>
+                    <Label className="text-white/70 font-medium text-sm mb-2 block">מצד מי אתם?</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: "groom", label: `צד ${event.groom_name || "החתן"}` },
+                        { value: "bride", label: `צד ${event.bride_name || "הכלה"}` },
+                        { value: "both", label: "שניהם" },
+                      ].map((opt) => (
+                        <button key={opt.value} type="button" onClick={() => setSelectedSide(opt.value)}
+                          className={cn(
+                            "py-3.5 px-2 rounded-xl font-bold text-sm transition-all duration-200 border text-center",
+                            selectedSide === opt.value
+                              ? "bg-gradient-to-br from-[#C4A35A] to-[#E8D5A3] text-white border-[#C4A35A] shadow-md"
+                              : "bg-white/5 border-white/15 text-white/60 hover:border-[#C4A35A]/50"
+                          )}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Relationship - optional */}
                 <div>
-                  <Label className="text-white/70 font-medium text-sm">מייל (לקבלה)</Label>
-                  <Input type="email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="example@email.com"
-                    className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
+                  <Label className="text-white/70 font-medium text-sm">קרבה (אופציונלי)</Label>
+                  <Select value={relationship} onValueChange={setRelationship}>
+                    <SelectTrigger className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white focus:border-[#C4A35A] [&>span]:text-white/25 data-[state=open]:border-[#C4A35A]">
+                      <SelectValue placeholder="בחרו קרבה..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#0a2040] border-white/15 text-white max-h-[300px]">
+                      {RELATIONSHIP_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt} className="focus:bg-white/10 focus:text-white text-base py-3">
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>

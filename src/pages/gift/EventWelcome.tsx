@@ -116,7 +116,7 @@ function VenueLandingPopup({ venueId, onClose }: { venueId: string; onClose: () 
     <div className="fixed inset-0 z-50 flex flex-col" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
-        className="relative z-10 flex flex-col mt-12 mx-2 mb-2 rounded-t-3xl rounded-b-2xl overflow-hidden bg-white flex-1 animate-slide-up shadow-2xl"
+        className="relative z-10 flex flex-col mt-12 mx-2 md:mx-auto md:max-w-2xl mb-2 rounded-t-3xl rounded-b-2xl overflow-hidden bg-white max-h-[85vh] animate-slide-up shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
@@ -382,7 +382,7 @@ export default function EventWelcome() {
           style={{ background: "linear-gradient(135deg, #C41E3A 0%, #E8344E 50%, #C41E3A 100%)", boxShadow: "0 8px 32px rgba(196,30,58,0.4), 0 0 60px rgba(196,30,58,0.15)" }}>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           <Gift className="w-6 h-6 relative z-10" />
-          <span className="relative z-10">שלחו מתנה בקליק</span>
+          <span className="relative z-10">מעניקים מתנה בקליק</span>
           <ArrowLeft className="w-5 h-5 relative z-10" />
         </button>
 

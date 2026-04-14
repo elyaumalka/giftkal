@@ -84,9 +84,17 @@ const VenueOwners = () => {
             שדרגו את השירות ללקוחות<br />
             <span className="text-primary">וקבלו יותר פניות</span>
           </h1>
-          <p className="text-xl text-white/60 max-w-2xl mx-auto mb-10">
+          <p className="text-xl text-white/60 max-w-2xl mx-auto mb-6">
             מערכת גביית מתנות באשראי + ניהול לידים — ללא עלות
           </p>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 max-w-2xl mx-auto mb-10 text-right space-y-3">
+            <p className="text-white/80 text-base leading-relaxed">
+              <span className="font-bold text-primary">GiftKal</span> מאפשרת לאורחים באירועים שלכם להעניק מתנות באשראי — בצורה אלגנטית ומאובטחת, ישירות מעמדה שמוצבת באולם או דרך קישור אישי שנשלח למוזמנים.
+            </p>
+            <p className="text-white/60 text-sm leading-relaxed">
+              המערכת כוללת דף נחיתה מותאם אישית לאולם שלכם, ניהול לידים מתוך האירועים, ותמיכה מלאה בכל סוגי האירועים — חתונות, בר/בת מצוות, בריתות ועוד.
+            </p>
+          </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="#lead-form">
               <Button variant="gold" size="lg" className="text-lg px-10 py-6">
@@ -129,7 +137,7 @@ const VenueOwners = () => {
           <div className="bg-card rounded-3xl p-10 shadow-xl border border-primary/20 max-w-md mx-auto">
             <p className="text-muted-foreground mb-2">עלות הצטרפות לאולם</p>
             <p className="text-6xl font-black text-primary mb-2">₪0</p>
-            <p className="text-muted-foreground mb-6">ללא עלות • ללא התחייבות • ללא סיכון</p>
+            <p className="text-muted-foreground mb-6">ללא עלות • ללא התחייבות</p>
             <div className="space-y-2">
               {["עמדה באולם ללא עלות", "מערכת ניהול לידים חינם", "תמיכה טכנית מלאה"].map((t, i) => (
                 <div key={i} className="flex items-center gap-2 justify-center text-sm text-foreground">
