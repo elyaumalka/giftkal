@@ -162,7 +162,37 @@ export default function Support() {
         </div>
       </div>
 
-      {/* View Ticket Dialog */}
+      {/* Filter Panel */}
+      {showFilters && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 flex flex-wrap items-end gap-4">
+            <div>
+              <Label className="text-xs">מתאריך</Label>
+              <Input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="w-40 mt-1 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-xs">עד תאריך</Label>
+              <Input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="w-40 mt-1 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-xs">סטטוס</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-36 mt-1 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">הכל</SelectItem>
+                  <SelectItem value="open">פתוח</SelectItem>
+                  <SelectItem value="in_progress">בטיפול</SelectItem>
+                  <SelectItem value="closed">סגור</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterStatus("all"); }}>
+              נקה
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
           <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
