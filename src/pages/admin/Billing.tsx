@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Filter, CreditCard, CheckCircle2, History, Eye, Calendar, User, Building2 } from "lucide-react";
+import { Search, Filter, CreditCard, CheckCircle2, History, Eye, Calendar, User, Building2, X } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import NedarimBillingDialog from "@/components/billing/NedarimBillingDialog";
 
 export default function Billing() {
