@@ -387,6 +387,9 @@ const Upgrade = () => {
                 setLoading(true);
                 try {
                   await handleUpgradeSuccess("COUPON-" + couponCode.toUpperCase());
+                  if (couponApplied && couponCode) {
+                    try { await supabase.rpc("increment_coupon_usage", { coupon_code: couponCode.toUpperCase().trim() }); } catch (_) {}
+                  }
                   setStep("success");
                 } catch (e) {
                   console.error(e);
