@@ -60,11 +60,30 @@ const EVENT_TYPE_LABELS: Record<string, { names: string[]; placeholders: string[
 
 const Signup = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  /* ─── Map pricing page plan names to plan IDs ─── */
+  const planNameToId: Record<string, string> = {
+    "מתנות באשראי": "gifts",
+    "עמדת מתנות באולם": "device",
+    "הזמנות + אישורי הגעה": "invitations",
+    "ניהול תקציב": "budget",
+  };
 
   /* ─── Step management ─── */
   const [step, setStep] = useState(1);
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const getInitialSelected = () => {
+    const planParam = searchParams.get("plan");
+    if (planParam) {
+      const planId = planNameToId[planParam];
+      if (planId && planId !== "budget") {
+        return { [planId]: true };
+      }
+    }
+    return {};
+  };
+  const [selected, setSelected] = useState<Record<string, boolean>>(getInitialSelected);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState("");
