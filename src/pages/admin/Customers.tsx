@@ -126,9 +126,11 @@ export default function Customers() {
         const venueTransactions = transactions?.filter(t => venueEventIds.includes(t.event_id)) || [];
         const totalTransactions = venueTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
         
+        const profile = profiles?.find(p => p.user_id === venue.owner_id);
         return {
           ...venue,
-          ownerName: profiles?.find(p => p.user_id === venue.owner_id)?.full_name || "לא ידוע",
+          ownerName: profile?.full_name || "לא ידוע",
+          ownerPhone: profile?.phone || "",
           deviceCount: venue.devices?.length || 0,
           venueCount: 1,
           totalTransactions,
