@@ -88,6 +88,7 @@ export default function Transactions() {
     setFilterDateFrom("");
     setFilterDateTo("");
     setFilterVenueId("all");
+    setCurrentPage(1);
   };
 
   // Fetch transactions for selected event
