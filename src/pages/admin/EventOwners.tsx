@@ -98,21 +98,34 @@ export default function EventOwners() {
 
   const filteredEvents = eventOwners?.filter((e) => {
     const q = searchQuery.toLowerCase();
-    return (
+    const matchesSearch =
       e.ownerName?.toLowerCase().includes(q) ||
       e.groom_name?.toLowerCase().includes(q) ||
       e.bride_name?.toLowerCase().includes(q) ||
       e.ownerPhone?.includes(searchQuery) ||
       e.ownerEmail?.toLowerCase().includes(q) ||
-      e.venues?.name?.toLowerCase().includes(q)
-    );
+      e.venues?.name?.toLowerCase().includes(q);
+    const matchesDateFrom = !filterDateFrom || e.event_date >= filterDateFrom;
+    const matchesDateTo = !filterDateTo || e.event_date <= filterDateTo;
+    const matchesPayment =
+      filterPaymentStatus === "all" ||
+      (filterPaymentStatus === "paid" && e.charge) ||
+      (filterPaymentStatus === "unpaid" && !e.charge);
+    const matchesVenue = filterVenueId === "all" || e.venue_id === filterVenueId;
+    return matchesSearch && matchesDateFrom && matchesDateTo && matchesPayment && matchesVenue;
   });
 
-  const copyEmail = (email: string) => {
-    if (email) {
-      navigator.clipboard.writeText(email);
-      toast({ title: "הכתובת הועתקה" });
-    }
+  const venueOptions = eventOwners
+    ? [...new Map(eventOwners.filter(e => e.venues?.name).map(e => [e.venue_id, e.venues?.name])).entries()].map(([id, name]) => ({ id, name }))
+    : [];
+
+  const hasActiveFilters = filterDateFrom || filterDateTo || filterPaymentStatus !== "all" || filterVenueId !== "all";
+
+  const clearFilters = () => {
+    setFilterDateFrom("");
+    setFilterDateTo("");
+    setFilterPaymentStatus("all");
+    setFilterVenueId("all");
   };
 
   return (
