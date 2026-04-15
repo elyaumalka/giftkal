@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 export default function AdminHallsDevices() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [hallDialogOpen, setHallDialogOpen] = useState(false);
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
