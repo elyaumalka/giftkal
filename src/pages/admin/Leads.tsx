@@ -436,6 +436,23 @@ export default function Leads() {
             >
               <Eye className="w-5 h-5" />
             </button>
+
+            {/* מחיקה */}
+            <button
+              onClick={async () => {
+                if (!confirm("האם אתה בטוח שברצונך למחוק ליד זה?")) return;
+                const { error } = await supabase.from("leads").delete().eq("id", lead.id);
+                if (error) {
+                  toast({ title: "שגיאה במחיקה", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: "הליד נמחק בהצלחה" });
+                  queryClient.invalidateQueries({ queryKey: ["leads"] });
+                }
+              }}
+              className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         ))}
 
