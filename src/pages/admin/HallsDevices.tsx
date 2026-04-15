@@ -255,6 +255,69 @@ export default function AdminHallsDevices() {
               )}
             </div>
           )}
+
+          {/* Hall View Dialog */}
+          <Dialog open={!!viewHall} onOpenChange={(open) => !open && setViewHall(null)}>
+            <DialogContent dir="rtl" className="sm:max-w-lg">
+              <DialogHeader><DialogTitle>פרטי אולם</DialogTitle></DialogHeader>
+              {viewHall && (
+                <div className="space-y-4 pt-2 px-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-400">שם האולם</p>
+                      <p className="font-bold text-[#051839]">{viewHall.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">בעל אולם</p>
+                      <button
+                        onClick={() => { setViewHall(null); navigate(`/admin/customers`); }}
+                        className="font-bold text-[#C4A35A] hover:underline flex items-center gap-1"
+                      >
+                        {(viewHall.venues as any)?.name}
+                        <ExternalLink className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">סטטוס</p>
+                      <Badge variant={viewHall.is_active ? "default" : "secondary"}>
+                        {viewHall.is_active ? "פעיל" : "לא פעיל"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">הודעת ברירת מחדל</p>
+                      <p className="text-sm">{viewHall.default_message || "—"}</p>
+                    </div>
+                  </div>
+
+                  {viewHall.devices && viewHall.devices.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-400 mb-2">מכשירים מקושרים ({viewHall.devices.length})</p>
+                      <div className="space-y-2">
+                        {viewHall.devices.map((d: any) => (
+                          <div key={d.id} className="flex items-center justify-between bg-gray-50 rounded-xl p-3">
+                            <div className="flex items-center gap-2">
+                              <Monitor className="w-4 h-4 text-blue-600" />
+                              <span className="text-sm font-medium">{d.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-400">S/N: {d.serial_number}</span>
+                              <Badge variant={d.is_active ? "default" : "secondary"} className="text-xs">
+                                {d.is_active ? "פעיל" : "לא פעיל"}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-300 pt-2">
+                    נוצר: {new Date(viewHall.created_at).toLocaleDateString("he-IL")}
+                  </p>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* DEVICES TAB */}
