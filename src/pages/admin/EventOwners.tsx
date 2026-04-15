@@ -375,19 +375,32 @@ interface EventTransactionsPopupProps {
 
 function EventTransactionsPopup({ event, transactions }: EventTransactionsPopupProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterMinAmount, setFilterMinAmount] = useState("");
+  const [filterMaxAmount, setFilterMaxAmount] = useState("");
   const [blessingText, setBlessingText] = useState<string | null>(null);
   const [blessingFrom, setBlessingFrom] = useState<string>("");
 
-  const filteredTransactions = transactions.filter((t) =>
-    t.payer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.payer_email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const hasActiveFilters = filterDateFrom || filterDateTo || filterMinAmount || filterMaxAmount;
+
+  const filteredTransactions = transactions.filter((t) => {
+    const matchesSearch = t.payer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.payer_email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const tDate = t.transaction_date?.split("T")[0] || "";
+    const matchesDateFrom = !filterDateFrom || tDate >= filterDateFrom;
+    const matchesDateTo = !filterDateTo || tDate <= filterDateTo;
+    const amount = Number(t.amount);
+    const matchesMin = !filterMinAmount || amount >= Number(filterMinAmount);
+    const matchesMax = !filterMaxAmount || amount <= Number(filterMaxAmount);
+    return matchesSearch && matchesDateFrom && matchesDateTo && matchesMin && matchesMax;
+  });
 
   return (
     <div className="bg-[#e5e5e5] min-h-[500px] max-h-[80vh] overflow-y-auto">
       {/* Header Row */}
       <div className="flex items-center justify-between px-8 py-6">
-        {/* Left - Event Info */}
         <div className="flex items-center gap-16">
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-1">שם האולם</p>
@@ -403,7 +416,6 @@ function EventTransactionsPopup({ event, transactions }: EventTransactionsPopupP
           </div>
         </div>
 
-        {/* Right - Search field and Filter separately */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
             <Search className="w-4 h-4 text-muted-foreground" />
@@ -414,11 +426,40 @@ function EventTransactionsPopup({ event, transactions }: EventTransactionsPopupP
               className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
             />
           </div>
-          <button className="bg-white rounded-full p-2 shadow-sm">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`rounded-full p-2 shadow-sm transition-colors ${hasActiveFilters ? 'bg-[#1a2942] text-white' : 'bg-white text-muted-foreground hover:bg-gray-100'}`}
+          >
+            <Filter className="w-4 h-4" />
           </button>
+          {hasActiveFilters && (
+            <button onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterMinAmount(""); setFilterMaxAmount(""); }} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+              <X className="w-3 h-3" /> נקה
+            </button>
+          )}
         </div>
       </div>
+
+      {showFilters && (
+        <div className="flex items-center gap-4 bg-white rounded-2xl px-6 py-4 mx-8 mb-4 shadow-sm flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">מתאריך:</label>
+            <Input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="w-40 h-8 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">עד תאריך:</label>
+            <Input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} className="w-40 h-8 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">סכום מינימלי:</label>
+            <Input type="number" value={filterMinAmount} onChange={(e) => setFilterMinAmount(e.target.value)} className="w-28 h-8 text-sm" placeholder="₪" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">סכום מקסימלי:</label>
+            <Input type="number" value={filterMaxAmount} onChange={(e) => setFilterMaxAmount(e.target.value)} className="w-28 h-8 text-sm" placeholder="₪" />
+          </div>
+        </div>
+      )}
 
       {/* Table Header - Right to Left */}
       <div className="grid grid-cols-[1fr_1fr_1.5fr_1fr_1fr_0.8fr_auto_auto] gap-4 px-8 py-3 text-sm font-medium text-muted-foreground text-center">
