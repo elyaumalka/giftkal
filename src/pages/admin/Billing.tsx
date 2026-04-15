@@ -18,6 +18,11 @@ export default function Billing() {
   const [selectedOwner, setSelectedOwner] = useState<any>(null);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyEvent, setHistoryEvent] = useState<any>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all"); // all | paid | unpaid
+  const [filterVenueId, setFilterVenueId] = useState("all");
 
   // Fetch event owners with their events
   const { data: eventOwners, refetch } = useQuery({
