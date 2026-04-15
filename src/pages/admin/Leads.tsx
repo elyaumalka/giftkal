@@ -37,6 +37,8 @@ export default function Leads() {
   const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
   const [isEditLeadOpen, setIsEditLeadOpen] = useState(false);
   const [isViewLeadOpen, setIsViewLeadOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   
   // New lead form state
   const [newLeadFullName, setNewLeadFullName] = useState("");
@@ -67,11 +69,16 @@ export default function Leads() {
     },
   });
 
-  const filteredLeads = leads?.filter((lead) =>
-    lead.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.venue_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredLeads = leads?.filter((lead) => {
+    const matchesSearch = lead.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.venue_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.phone?.includes(searchQuery);
+    const matchesStatus = filterStatus === "all" || lead.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const hasActiveFilters = filterStatus !== "all";
 
   const resetLeadForm = () => {
     setNewLeadFullName("");
@@ -152,9 +159,17 @@ export default function Leads() {
       <div className="flex items-center justify-between">
         {/* Left - Search, Filter, Plus */}
         <div className="flex items-center gap-2">
-          <button className="bg-white rounded-full p-2 shadow-sm">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`rounded-full p-2 shadow-sm transition-colors ${hasActiveFilters ? 'bg-[#1a2942] text-white' : 'bg-white text-muted-foreground hover:bg-gray-100'}`}
+          >
+            <Filter className="w-4 h-4" />
           </button>
+          {hasActiveFilters && (
+            <button onClick={() => setFilterStatus("all")} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+              <X className="w-3 h-3" /> נקה
+            </button>
+          )}
           <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
             <Search className="w-4 h-4 text-muted-foreground" />
             <Input
@@ -367,7 +382,29 @@ export default function Leads() {
         </DialogContent>
       </Dialog>
 
-      {/* Table Header - Right to Left: Edit, Name, Phone, Email, Venue, Notes count, Tasks count, View */}
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="flex items-center gap-4 bg-white rounded-2xl px-6 py-4 shadow-sm flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">סטטוס:</label>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-36 h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="new">חדש</SelectItem>
+                <SelectItem value="contacted">פנו אליו</SelectItem>
+                <SelectItem value="interested">מעוניין</SelectItem>
+                <SelectItem value="converted">הומר ללקוח</SelectItem>
+                <SelectItem value="closed">סגור</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {/* Table Header */}
       <div className="grid grid-cols-[auto_1fr_1fr_1.5fr_1fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
         <span className="w-10"></span>
         <span>שם הליד</span>
