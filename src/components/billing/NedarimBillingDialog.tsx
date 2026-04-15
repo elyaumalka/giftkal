@@ -37,8 +37,12 @@ interface NedarimBillingDialogProps {
 
 const PLAN_OPTIONS = [
   { label: "₪1 - טסט", value: "1" },
-  { label: "מסלול רגיל - ₪200", value: "200" },
-  { label: "מסלול + אישורי הגעה - ₪400", value: "400" },
+  { label: "מתנות באשראי - ₪199", value: "199" },
+  { label: "עמדת מתנות באולם - ₪99", value: "99" },
+  { label: "הזמנות + אישורי הגעה - ₪199", value: "199_inv" },
+  { label: "מתנות + עמדה - ₪298", value: "298" },
+  { label: "מתנות + הזמנות - ₪398", value: "398" },
+  { label: "חבילה מלאה (הכל כלול) - ₪399", value: "399" },
   { label: "סכום מותאם אישית", value: "custom" },
 ];
 
