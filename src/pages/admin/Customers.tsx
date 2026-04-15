@@ -107,7 +107,7 @@ export default function Customers() {
       const ownerIds = data.map(v => v.owner_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name")
+        .select("user_id, full_name, phone")
         .in("user_id", ownerIds);
       
       // Get transaction totals per venue
@@ -126,9 +126,11 @@ export default function Customers() {
         const venueTransactions = transactions?.filter(t => venueEventIds.includes(t.event_id)) || [];
         const totalTransactions = venueTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
         
+        const profile = profiles?.find(p => p.user_id === venue.owner_id);
         return {
           ...venue,
-          ownerName: profiles?.find(p => p.user_id === venue.owner_id)?.full_name || "לא ידוע",
+          ownerName: profile?.full_name || "לא ידוע",
+          ownerPhone: profile?.phone || "",
           deviceCount: venue.devices?.length || 0,
           venueCount: 1,
           totalTransactions,
@@ -312,6 +314,13 @@ export default function Customers() {
         monthly_subscription: parseFloat(newVenueSubscription) || 0,
       }).eq("id", selectedVenue.id);
       if (error) throw error;
+
+      // Update owner phone in profiles
+      if (newOwnerPhone !== undefined) {
+        await supabase.from("profiles").update({
+          phone: newOwnerPhone || null,
+        }).eq("user_id", selectedVenue.owner_id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["venues-with-stats"] });
@@ -378,6 +387,8 @@ export default function Customers() {
 
   const openEditVenue = (venue: any) => {
     setSelectedVenue(venue);
+    setNewOwnerFullName(venue.ownerName || "");
+    setNewOwnerPhone(venue.ownerPhone || "");
     setNewVenueName(venue.name);
     setNewVenueAddress(venue.address);
     setNewVenuePhone(venue.phone || "");
@@ -773,11 +784,15 @@ export default function Customers() {
                 <Input variant="form" value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} className="text-center" />
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון אולם</Label>
                 <Input variant="form" value={newVenuePhone} onChange={(e) => setNewVenuePhone(e.target.value)} className="text-center" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון בעלים</Label>
+                <Input variant="form" value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} className="text-center" />
+              </div>
               <div>
                 <Label className="text-muted-foreground text-sm mb-2 block text-center">מייל</Label>
                 <Input variant="form" type="email" value={newVenueEmail} onChange={(e) => setNewVenueEmail(e.target.value)} className="text-center" />
