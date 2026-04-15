@@ -1190,9 +1190,17 @@ export default function Customers() {
                     שולם
                   </span>
                 ) : (
-                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-blue-500 text-white">
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await supabase.from("events").update({ payment_completed: true }).eq("id", event.id);
+                      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+                      toast({ title: "סומן כשולם בהצלחה" });
+                    }}
+                    className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-orange-500 hover:bg-orange-600 text-white cursor-pointer transition-colors"
+                  >
                     סמן כשולם
-                  </span>
+                  </button>
                 )}
               </div>
 
@@ -1203,9 +1211,17 @@ export default function Customers() {
                     הוחזר
                   </span>
                 ) : (
-                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-yellow-500 text-white">
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await supabase.from("events").update({ device_returned: true }).eq("id", event.id);
+                      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+                      toast({ title: "סומן כהוחזר בהצלחה" });
+                    }}
+                    className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-yellow-500 hover:bg-yellow-600 text-white cursor-pointer transition-colors"
+                  >
                     סמן כהוחזר
-                  </span>
+                  </button>
                 )}
               </div>
 
