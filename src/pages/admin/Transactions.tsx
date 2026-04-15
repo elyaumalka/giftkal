@@ -8,12 +8,23 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Filter, FileText, MessageCircle } from "lucide-react";
+import { Search, Filter, FileText, MessageCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Transactions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterVenueId, setFilterVenueId] = useState<string>("all");
   const { toast } = useToast();
 
   // Fetch events with transaction summaries
@@ -28,7 +39,8 @@ export default function Transactions() {
           groom_name,
           bride_name,
           owner_id,
-          venues (name),
+          venue_id,
+          venues (id, name),
           transactions (id, amount)
         `)
         .order("event_date", { ascending: false });
@@ -51,6 +63,30 @@ export default function Transactions() {
     },
   });
 
+  // Get unique venues for filter
+  const venueOptions = eventTransactions
+    ? [...new Map(eventTransactions.filter(e => e.venues?.name).map(e => [e.venues?.id || e.venue_id, e.venues?.name])).entries()].map(([id, name]) => ({ id, name }))
+    : [];
+
+  const filteredEvents = eventTransactions?.filter((event) => {
+    const matchesSearch = event.ownerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesDateFrom = !filterDateFrom || event.event_date >= filterDateFrom;
+    const matchesDateTo = !filterDateTo || event.event_date <= filterDateTo;
+    const matchesVenue = filterVenueId === "all" || event.venue_id === filterVenueId;
+
+    return matchesSearch && matchesDateFrom && matchesDateTo && matchesVenue;
+  });
+
+  const hasActiveFilters = filterDateFrom || filterDateTo || filterVenueId !== "all";
+
+  const clearFilters = () => {
+    setFilterDateFrom("");
+    setFilterDateTo("");
+    setFilterVenueId("all");
+  };
+
   // Fetch transactions for selected event
   const { data: eventDetails } = useQuery({
     queryKey: ["event-details", selectedEvent?.id],
@@ -66,12 +102,7 @@ export default function Transactions() {
     enabled: !!selectedEvent?.id,
   });
 
-  const filteredEvents = eventTransactions?.filter((event) =>
-    event.ownerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    event.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
-  const handleExportExcel = () => {
     toast({
       title: "מייצא לאקסל...",
       description: "הקובץ יורד בקרוב",
@@ -80,8 +111,8 @@ export default function Transactions() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Search and Filters - Right aligned */}
-      <div className="flex justify-start">
+      {/* Search and Filters */}
+      <div className="flex items-center gap-2 justify-start">
         <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
           <Input
             placeholder="חיפוש חופשי"
@@ -90,10 +121,47 @@ export default function Transactions() {
             className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
           />
           <Search className="w-4 h-4 text-muted-foreground" />
-          <div className="w-px h-4 bg-gray-300" />
-          <Filter className="w-4 h-4 text-muted-foreground" />
         </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`rounded-full p-2 shadow-sm transition-colors ${hasActiveFilters ? 'bg-[#1a2942] text-white' : 'bg-white text-muted-foreground hover:bg-gray-100'}`}
+        >
+          <Filter className="w-4 h-4" />
+        </button>
+        {hasActiveFilters && (
+          <button onClick={clearFilters} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+            <X className="w-3 h-3" /> נקה פילטרים
+          </button>
+        )}
       </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="flex items-center gap-4 bg-white rounded-2xl px-6 py-4 shadow-sm flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">מתאריך:</label>
+            <Input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="w-40 h-8 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">עד תאריך:</label>
+            <Input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} className="w-40 h-8 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">אולם:</label>
+            <Select value={filterVenueId} onValueChange={setFilterVenueId}>
+              <SelectTrigger className="w-40 h-8 text-sm">
+                <SelectValue placeholder="כל האולמות" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל האולמות</SelectItem>
+                {venueOptions.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
 
       {/* Table Header - Right to Left */}
       <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
