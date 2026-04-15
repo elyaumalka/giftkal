@@ -314,6 +314,13 @@ export default function Customers() {
         monthly_subscription: parseFloat(newVenueSubscription) || 0,
       }).eq("id", selectedVenue.id);
       if (error) throw error;
+
+      // Update owner phone in profiles
+      if (newOwnerPhone !== undefined) {
+        await supabase.from("profiles").update({
+          phone: newOwnerPhone || null,
+        }).eq("user_id", selectedVenue.owner_id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["venues-with-stats"] });
