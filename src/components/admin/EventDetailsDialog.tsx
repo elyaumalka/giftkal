@@ -482,9 +482,39 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                         </Button>
                       </>
                     ) : (
-                      <div className="w-full flex-1 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center min-h-[60px]">
-                        <Plus className="w-6 h-6 text-muted-foreground/50" />
-                      </div>
+                      <>
+                        <input
+                          type="file"
+                          className="hidden"
+                          ref={fileInputRef}
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file && uploadingDocType) {
+                              handleFileUpload(file, uploadingDocType);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="w-full flex-1 border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center min-h-[60px] hover:border-primary/50 hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setUploadingDocType(doc.document_type);
+                            fileInputRef.current?.click();
+                          }}
+                          disabled={uploadingDocType === doc.document_type}
+                        >
+                          {uploadingDocType === doc.document_type ? (
+                            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                          ) : (
+                            <>
+                              <Upload className="w-5 h-5 text-muted-foreground/50" />
+                              <span className="text-xs text-muted-foreground/50 mt-1">העלאה</span>
+                            </>
+                          )}
+                        </button>
+                      </>
                     )}
                   </div>
                 );
