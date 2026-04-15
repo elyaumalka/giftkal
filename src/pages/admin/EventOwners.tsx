@@ -139,22 +139,69 @@ export default function EventOwners() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Search and Filters */}
-      <div className="flex justify-start">
-        <div className="flex items-center gap-2">
-          <button className="bg-white rounded-full p-2 shadow-sm">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+      <div className="flex items-center gap-2 justify-start">
+        <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
+          <Input
+            placeholder="חיפוש חופשי"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
+          />
+          <Search className="w-4 h-4 text-muted-foreground" />
+        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`rounded-full p-2 shadow-sm transition-colors ${hasActiveFilters ? 'bg-[#1a2942] text-white' : 'bg-white text-muted-foreground hover:bg-gray-100'}`}
+        >
+          <Filter className="w-4 h-4" />
+        </button>
+        {hasActiveFilters && (
+          <button onClick={clearFilters} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+            <X className="w-3 h-3" /> נקה פילטרים
           </button>
-          <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="חיפוש חופשי"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
-            />
+        )}
+      </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="flex items-center gap-4 bg-white rounded-2xl px-6 py-4 shadow-sm flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">מתאריך:</label>
+            <Input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="w-40 h-8 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">עד תאריך:</label>
+            <Input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} className="w-40 h-8 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">סטטוס חיוב:</label>
+            <Select value={filterPaymentStatus} onValueChange={setFilterPaymentStatus}>
+              <SelectTrigger className="w-32 h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="paid">שולם</SelectItem>
+                <SelectItem value="unpaid">לא שולם</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">אולם:</label>
+            <Select value={filterVenueId} onValueChange={setFilterVenueId}>
+              <SelectTrigger className="w-40 h-8 text-sm">
+                <SelectValue placeholder="כל האולמות" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל האולמות</SelectItem>
+                {venueOptions.map((v) => (
+                  <SelectItem key={v.id} value={v.id!}>{v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Table Header - Right to Left */}
       <div className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_0.8fr_auto_auto_auto] gap-3 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
