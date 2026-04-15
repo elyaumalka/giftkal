@@ -347,12 +347,19 @@ export default function Customers() {
       const { error } = await supabase.from("events").update({
         groom_name: newEventGroomName || null,
         bride_name: newEventBrideName || null,
+        child_name: newEventChildName || null,
+        family_name: newEventFamilyName || null,
         event_date: newEventDate,
         event_type: newEventType,
         venue_id: newEventVenueId || null,
         device_rental_cost: parseFloat(newEventRentalCost) || 0,
       }).eq("id", selectedEvent.id);
       if (error) throw error;
+
+      // Update owner phone/email in profiles
+      await supabase.from("profiles").update({
+        phone: newEventOwnerPhone || null,
+      }).eq("user_id", selectedEvent.owner_id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events-list"] });
