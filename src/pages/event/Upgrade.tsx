@@ -47,8 +47,8 @@ const Upgrade = () => {
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
-
-  const VALID_COUPONS: Record<string, number> = { "GIFTKAL-TEST": 100, "GIFTKAL100": 100 };
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   // Nedarim state
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -95,8 +95,8 @@ const Upgrade = () => {
     return true;
   });
 
-  const discountPercent = couponApplied ? (VALID_COUPONS[couponCode.toUpperCase()] || 0) : 0;
-  const totalPrice = Math.max(0, Math.round(availablePlans.filter(p => selected[p.id]).reduce((sum, p) => sum + p.price, 0) * (1 - discountPercent / 100)));
+  const rawTotal = availablePlans.filter(p => selected[p.id]).reduce((sum, p) => sum + p.price, 0);
+  const totalPrice = Math.max(0, rawTotal - couponDiscount);
 
   const togglePlan = (id: string) => {
     setSelected(prev => ({ ...prev, [id]: !prev[id] }));
@@ -330,23 +330,42 @@ const Upgrade = () => {
             />
             <Button
               variant="outline"
-              disabled={couponApplied || !couponCode.trim()}
-              onClick={() => {
-                if (VALID_COUPONS[couponCode.toUpperCase()]) {
+              disabled={couponApplied || !couponCode.trim() || couponLoading}
+              onClick={async () => {
+                setCouponLoading(true);
+                try {
+                  const { data: coupon, error } = await supabase
+                    .from("coupons")
+                    .select("*")
+                    .eq("code", couponCode.toUpperCase().trim())
+                    .eq("is_active", true)
+                    .maybeSingle();
+
+                  if (error || !coupon) {
+                    toast({ title: "קופון לא תקין", variant: "destructive" });
+                    return;
+                  }
+
+                  if (coupon.max_uses && (coupon.current_uses ?? 0) >= coupon.max_uses) {
+                    toast({ title: "הקופון מוצה", variant: "destructive" });
+                    return;
+                  }
+
                   setCouponApplied(true);
-                  toast({ title: "✅ קופון הופעל בהצלחה!" });
-                } else {
-                  toast({ title: "קופון לא תקין", variant: "destructive" });
+                  setCouponDiscount(Number(coupon.discount_amount) || 0);
+                  toast({ title: `קופון הופעל! הנחה של ₪${coupon.discount_amount} ✅` });
+                } finally {
+                  setCouponLoading(false);
                 }
               }}
             >
-              {couponApplied ? "✓ הופעל" : "הפעל"}
+              {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : couponApplied ? "✓ הופעל" : "הפעל"}
             </Button>
           </div>
 
           {couponApplied && (
             <div className="bg-green-50 text-green-700 rounded-xl p-3 border border-green-200 text-center text-sm font-medium">
-              🎉 קופון {couponCode.toUpperCase()} — הנחה {discountPercent}%
+              🎉 קופון {couponCode.toUpperCase()} — הנחה ₪{couponDiscount}
             </div>
           )}
 
@@ -368,6 +387,9 @@ const Upgrade = () => {
                 setLoading(true);
                 try {
                   await handleUpgradeSuccess("COUPON-" + couponCode.toUpperCase());
+                  if (couponApplied && couponCode) {
+                    try { await supabase.rpc("increment_coupon_usage", { coupon_code: couponCode.toUpperCase().trim() }); } catch (_) {}
+                  }
                   setStep("success");
                 } catch (e) {
                   console.error(e);
