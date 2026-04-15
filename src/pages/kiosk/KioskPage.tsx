@@ -37,6 +37,7 @@ export default function KioskPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showLanding, setShowLanding] = useState(false);
 
   // Save kiosk hallId for PWA reopening
   useEffect(() => {
