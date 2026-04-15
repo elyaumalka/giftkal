@@ -908,6 +908,7 @@ export default function Customers() {
         <div className="flex items-center gap-4 px-4 py-3 text-sm text-muted-foreground font-medium">
           <div className="w-10"></div>
           <div className="flex-1 text-right">שם הלקוח</div>
+          <div className="w-28 text-center">טלפון</div>
           <div className="flex-1 text-right">שם האולם</div>
           <div className="w-28 text-center">תאריך האירוע</div>
           <div className="w-28 text-center">עלות השכרה</div>
