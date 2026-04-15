@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Gift, Monitor, Download } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import logo from "@/assets/logo.png";
 
 interface HallInfo {
@@ -36,6 +37,7 @@ export default function KioskPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showLanding, setShowLanding] = useState(false);
 
   // Save kiosk hallId for PWA reopening
   useEffect(() => {
@@ -194,7 +196,12 @@ export default function KioskPage() {
       <div className="text-center space-y-8 animate-fade-in">
         {/* Logo */}
         {venueLogo ? (
-          <img src={venueLogo} alt={venueName} className="h-32 mx-auto rounded-2xl object-contain" />
+          <img
+            src={venueLogo}
+            alt={venueName}
+            className="h-32 mx-auto rounded-2xl object-contain cursor-pointer hover:ring-2 hover:ring-[#C4A35A]/50 transition-all"
+            onClick={() => setShowLanding(true)}
+          />
         ) : (
           <img src={logo} alt="Giftkal" className="h-20 mx-auto" />
         )}
@@ -259,6 +266,17 @@ export default function KioskPage() {
             <img src={logo} alt="Giftkal" className="h-5 opacity-30" />
           </div>
         </div>
+
+        {/* Venue Landing Dialog */}
+        <Dialog open={showLanding} onOpenChange={setShowLanding}>
+          <DialogContent className="max-w-4xl w-[95vw] h-[85vh] p-0 overflow-hidden">
+            <iframe
+              src={`/venue/${hall?.venue_id}`}
+              className="w-full h-full border-0"
+              title={`דף נחיתה - ${venueName}`}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
