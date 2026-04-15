@@ -39,7 +39,6 @@ export default function Leads() {
   const [isViewLeadOpen, setIsViewLeadOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [isViewLeadOpen, setIsViewLeadOpen] = useState(false);
   
   // New lead form state
   const [newLeadFullName, setNewLeadFullName] = useState("");
