@@ -146,16 +146,62 @@ export default function Billing() {
           <h1 className="text-2xl font-bold text-[#051839]">חיוב לקוחות</h1>
           <p className="text-gray-500 text-sm mt-1">ניהול חיובים והיסטוריית תשלומים</p>
         </div>
-        <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
-          <Input
-            placeholder="חיפוש חופשי"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
-          />
-          <Search className="w-4 h-4 text-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
+            <Input
+              placeholder="חיפוש חופשי"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
+            />
+            <Search className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <Button variant="outline" size="sm" className="rounded-xl gap-2" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="w-4 h-4" />
+            סינון
+          </Button>
         </div>
       </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 flex flex-wrap items-end gap-4">
+            <div>
+              <Label className="text-xs">מתאריך</Label>
+              <Input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="w-40 mt-1 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-xs">עד תאריך</Label>
+              <Input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="w-40 mt-1 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-xs">סטטוס חיוב</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-36 mt-1 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">הכל</SelectItem>
+                  <SelectItem value="paid">שולם</SelectItem>
+                  <SelectItem value="unpaid">לא שולם</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">אולם</Label>
+              <Select value={filterVenueId} onValueChange={setFilterVenueId}>
+                <SelectTrigger className="w-44 mt-1 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל האולמות</SelectItem>
+                  {venueOptions.map(name => <SelectItem key={name} value={name!}>{name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterStatus("all"); setFilterVenueId("all"); }}>
+              נקה
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="customers" dir="rtl">
         <TabsList className="grid w-full max-w-md grid-cols-2">
