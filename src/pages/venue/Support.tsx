@@ -75,14 +75,13 @@ export default function VenueSupport() {
   });
 
   const getStatusText = (status: string, hasResponse: boolean) => {
+    if (status === "closed") return "סגור";
     if (hasResponse) return "התקבלה תשובה";
     switch (status) {
       case "open":
         return "פתוח";
       case "in_progress":
         return "בטיפול";
-      case "closed":
-        return "סגור";
       default:
         return status;
     }
