@@ -187,6 +187,7 @@ export default function Customers() {
           ...event,
           ownerName: profile?.full_name || "לא ידוע",
           ownerPhone: profile?.phone || "",
+          ownerEmail: profile?.email || "",
           missingDocsCount: missingDocs.length,
           allDocsComplete: missingDocs.length === 0,
         };
