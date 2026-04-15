@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Filter, FileText, MessageCircle, X } from "lucide-react";
+import { Search, Filter, FileText, MessageCircle, X, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import * as XLSX from "xlsx";
 
 export default function Transactions() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -103,11 +104,40 @@ export default function Transactions() {
   });
 
 
-  const handleExportExcel = () => {
-    toast({
-      title: "מייצא לאקסל...",
-      description: "הקובץ יורד בקרוב",
-    });
+  const handleExportExcel = async (eventId: string, eventName: string) => {
+    try {
+      const { data: transactions } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("event_id", eventId)
+        .order("transaction_date", { ascending: false });
+
+      if (!transactions?.length) {
+        toast({ title: "אין עסקאות לייצוא", variant: "destructive" });
+        return;
+      }
+
+      const rows = transactions.map((t) => ({
+        "תאריך": new Date(t.transaction_date).toLocaleDateString("he-IL"),
+        "שם הלקוח": t.payer_name,
+        "טלפון": t.payer_phone || "",
+        "אימייל": t.payer_email || "",
+        "סכום": Number(t.amount),
+        "תשלומים": t.installments || 1,
+        "סטטוס": t.payment_status === "completed" ? "שולם" : "ממתין",
+        "קשר": t.relationship || "",
+        "ברכה": t.blessing_text || "",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "עסקאות");
+      XLSX.writeFile(wb, `עסקאות_${eventName}.xlsx`);
+
+      toast({ title: "הקובץ יורד בהצלחה" });
+    } catch (error: any) {
+      toast({ title: "שגיאה בייצוא", description: error.message, variant: "destructive" });
+    }
   };
 
   return (
@@ -232,7 +262,7 @@ export default function Transactions() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleExportExcel}
+                onClick={() => handleExportExcel(event.id, event.ownerName || "אירוע")}
                 className="rounded-lg border-[#1a2942] text-[#1a2942] hover:bg-[#1a2942] hover:text-white gap-2 px-4"
               >
                 <FileText className="w-4 h-4" />
