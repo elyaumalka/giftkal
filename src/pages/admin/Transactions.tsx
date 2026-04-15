@@ -262,7 +262,7 @@ export default function Transactions() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleExportExcel}
+                onClick={() => handleExportExcel(event.id, event.ownerName || "אירוע")}
                 className="rounded-lg border-[#1a2942] text-[#1a2942] hover:bg-[#1a2942] hover:text-white gap-2 px-4"
               >
                 <FileText className="w-4 h-4" />
