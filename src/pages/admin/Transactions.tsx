@@ -26,6 +26,8 @@ export default function Transactions() {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterVenueId, setFilterVenueId] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
   const { toast } = useToast();
 
   // Fetch events with transaction summaries
