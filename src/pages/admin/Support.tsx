@@ -120,8 +120,11 @@ export default function Support() {
       <div className="flex items-center justify-between">
         {/* Left - Search and Filter */}
         <div className="flex items-center gap-2">
-          <button className="bg-white rounded-full p-2 shadow-sm">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className={`rounded-full p-2 shadow-sm transition-colors ${showFilters ? "bg-[#1a2942] text-white" : "bg-white"}`}
+          >
+            <Filter className="w-4 h-4" />
           </button>
           <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
             <Search className="w-4 h-4 text-muted-foreground" />
