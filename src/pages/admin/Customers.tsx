@@ -407,8 +407,13 @@ export default function Customers() {
 
   const openEditEvent = (event: any) => {
     setSelectedEvent(event);
+    setNewEventOwnerFullName(event.ownerName || "");
+    setNewEventOwnerPhone(event.ownerPhone || "");
+    setNewEventOwnerEmail(event.ownerEmail || "");
     setNewEventGroomName(event.groom_name || "");
     setNewEventBrideName(event.bride_name || "");
+    setNewEventChildName(event.child_name || "");
+    setNewEventFamilyName(event.family_name || "");
     setNewEventDate(event.event_date);
     setNewEventType(event.event_type || "חתונה");
     setNewEventVenueId(event.venue_id || "");
