@@ -103,6 +103,7 @@ export default function Transactions() {
   });
 
 
+  const handleExportExcel = () => {
     toast({
       title: "מייצא לאקסל...",
       description: "הקובץ יורד בקרוב",
