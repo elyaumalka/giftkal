@@ -20,6 +20,7 @@ export default function AdminHallsDevices() {
   const [hallDialogOpen, setHallDialogOpen] = useState(false);
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewHall, setViewHall] = useState<any>(null);
 
   // Hall form
   const [hallForm, setHallForm] = useState({ name: "", venue_id: "", default_message: "ברוכים הבאים" });
