@@ -92,10 +92,22 @@ export default function Billing() {
     },
   });
 
-  const filtered = eventOwners?.filter((e) =>
-    e.ownerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Get unique venues for filter
+  const venueOptions = Array.from(
+    new Map((eventOwners || []).filter(e => e.venues?.name).map(e => [e.venues?.name, e.venues?.name])).entries()
+  ).map(([, name]) => name);
+
+  const filtered = eventOwners?.filter((e) => {
+    const matchesSearch = e.ownerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesDate = (!filterDateFrom || e.event_date >= filterDateFrom) &&
+      (!filterDateTo || e.event_date <= filterDateTo);
+    const matchesStatus = filterStatus === "all" ||
+      (filterStatus === "paid" && e.charge) ||
+      (filterStatus === "unpaid" && !e.charge);
+    const matchesVenue = filterVenueId === "all" || e.venues?.name === filterVenueId;
+    return matchesSearch && matchesDate && matchesStatus && matchesVenue;
+  });
 
   // History filtered by search
   const filteredHistory = (allCharges || []).filter((c: any) =>
