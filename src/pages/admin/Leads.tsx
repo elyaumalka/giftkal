@@ -382,7 +382,29 @@ export default function Leads() {
         </DialogContent>
       </Dialog>
 
-      {/* Table Header - Right to Left: Edit, Name, Phone, Email, Venue, Notes count, Tasks count, View */}
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="flex items-center gap-4 bg-white rounded-2xl px-6 py-4 shadow-sm flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">סטטוס:</label>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-36 h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="new">חדש</SelectItem>
+                <SelectItem value="contacted">פנו אליו</SelectItem>
+                <SelectItem value="interested">מעוניין</SelectItem>
+                <SelectItem value="converted">הומר ללקוח</SelectItem>
+                <SelectItem value="closed">סגור</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {/* Table Header */}
       <div className="grid grid-cols-[auto_1fr_1fr_1.5fr_1fr_auto_auto_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
         <span className="w-10"></span>
         <span>שם הליד</span>
