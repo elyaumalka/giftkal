@@ -206,6 +206,45 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
     },
   });
 
+  const handleFileUpload = async (file: File, docType: string) => {
+    setUploadingDocType(docType);
+    try {
+      // Sanitize filename - remove Hebrew chars
+      const ext = file.name.split('.').pop() || 'pdf';
+      const sanitizedName = `${event.id}/${docType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(sanitizedName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(sanitizedName);
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { error: dbError } = await supabase.from('documents').insert({
+        event_id: event.id,
+        user_id: user?.id || event.owner_id,
+        document_type: docType,
+        file_name: file.name,
+        file_url: urlData.publicUrl,
+      });
+
+      if (dbError) throw dbError;
+
+      queryClient.invalidateQueries({ queryKey: ["event-documents", event.id] });
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      toast({ title: "המסמך הועלה בהצלחה" });
+    } catch (error: any) {
+      toast({ title: "שגיאה בהעלאת מסמך", description: error.message, variant: "destructive" });
+    } finally {
+      setUploadingDocType(null);
+    }
+  };
+
   const uploadedDocTypes = uploadedDocs?.map((d: any) => d.document_type) || [];
 
   return (
