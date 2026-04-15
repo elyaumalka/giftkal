@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Filter, CreditCard, CheckCircle2, History, Eye, Calendar, User, Building2 } from "lucide-react";
+import { Search, Filter, CreditCard, CheckCircle2, History, Eye, Calendar, User, Building2, X } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import NedarimBillingDialog from "@/components/billing/NedarimBillingDialog";
 
 export default function Billing() {
@@ -16,6 +18,11 @@ export default function Billing() {
   const [selectedOwner, setSelectedOwner] = useState<any>(null);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyEvent, setHistoryEvent] = useState<any>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all"); // all | paid | unpaid
+  const [filterVenueId, setFilterVenueId] = useState("all");
 
   // Fetch event owners with their events
   const { data: eventOwners, refetch } = useQuery({
@@ -85,18 +92,34 @@ export default function Billing() {
     },
   });
 
-  const filtered = eventOwners?.filter((e) =>
-    e.ownerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Get unique venues for filter
+  const venueOptions = Array.from(
+    new Map((eventOwners || []).filter(e => e.venues?.name).map(e => [e.venues?.name, e.venues?.name])).entries()
+  ).map(([, name]) => name);
+
+  const filtered = eventOwners?.filter((e) => {
+    const matchesSearch = e.ownerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesDate = (!filterDateFrom || e.event_date >= filterDateFrom) &&
+      (!filterDateTo || e.event_date <= filterDateTo);
+    const matchesStatus = filterStatus === "all" ||
+      (filterStatus === "paid" && e.charge) ||
+      (filterStatus === "unpaid" && !e.charge);
+    const matchesVenue = filterVenueId === "all" || e.venues?.name === filterVenueId;
+    return matchesSearch && matchesDate && matchesStatus && matchesVenue;
+  });
 
   // History filtered by search
-  const filteredHistory = (allCharges || []).filter((c: any) =>
-    c.owner_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.event_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.venue_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.plan_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredHistory = (allCharges || []).filter((c: any) => {
+    const matchesSearch = c.owner_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.event_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.venue_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.plan_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const cDate = c.created_at?.split("T")[0] || "";
+    const matchesDate = (!filterDateFrom || cDate >= filterDateFrom) && (!filterDateTo || cDate <= filterDateTo);
+    const matchesVenue = filterVenueId === "all" || c.venue_name === filterVenueId;
+    return matchesSearch && matchesDate && matchesVenue;
+  });
 
   const handleCharge = (owner: any) => {
     setSelectedOwner(owner);
@@ -123,16 +146,62 @@ export default function Billing() {
           <h1 className="text-2xl font-bold text-[#051839]">חיוב לקוחות</h1>
           <p className="text-gray-500 text-sm mt-1">ניהול חיובים והיסטוריית תשלומים</p>
         </div>
-        <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
-          <Input
-            placeholder="חיפוש חופשי"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
-          />
-          <Search className="w-4 h-4 text-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
+            <Input
+              placeholder="חיפוש חופשי"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
+            />
+            <Search className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <Button variant="outline" size="sm" className="rounded-xl gap-2" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="w-4 h-4" />
+            סינון
+          </Button>
         </div>
       </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 flex flex-wrap items-end gap-4">
+            <div>
+              <Label className="text-xs">מתאריך</Label>
+              <Input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="w-40 mt-1 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-xs">עד תאריך</Label>
+              <Input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="w-40 mt-1 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-xs">סטטוס חיוב</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-36 mt-1 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">הכל</SelectItem>
+                  <SelectItem value="paid">שולם</SelectItem>
+                  <SelectItem value="unpaid">לא שולם</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">אולם</Label>
+              <Select value={filterVenueId} onValueChange={setFilterVenueId}>
+                <SelectTrigger className="w-44 mt-1 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל האולמות</SelectItem>
+                  {venueOptions.map(name => <SelectItem key={name} value={name!}>{name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterStatus("all"); setFilterVenueId("all"); }}>
+              נקה
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="customers" dir="rtl">
         <TabsList className="grid w-full max-w-md grid-cols-2">
