@@ -1,12 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Phone, Mail, MessageCircle, LogIn, X, User, Loader2, Eye, EyeOff, LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useAuthReady } from "@/hooks/useAuthReady";
-import { getDashboardPath as resolveDashboardPath, getUserDisplayName, isAbortError, type AppRole } from "@/lib/auth";
+import { Phone, Mail, MessageCircle, LogIn, X } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const navLinks = [
@@ -20,18 +15,7 @@ const navLinks = [
 const MarketingNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [shouldRedirectAfterLogin, setShouldRedirectAfterLogin] = useState(false);
-  const [user, setUser] = useState<{ name: string; role: AppRole } | null>(null);
-  const loginRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { isReady: isAuthReady, session, role } = useAuthReady();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -41,103 +25,8 @@ const MarketingNavbar = () => {
 
   useEffect(() => {
     setMenuOpen(false);
-    setLoginOpen(false);
     window.scrollTo(0, 0);
   }, [location.pathname]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (loginRef.current && !loginRef.current.contains(e.target as Node)) {
-        setLoginOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (!shouldRedirectAfterLogin || !isAuthReady || !session?.user) return;
-
-    setShouldRedirectAfterLogin(false);
-    setLoginOpen(false);
-    setEmail("");
-    setPassword("");
-    navigate(resolveDashboardPath(role, "/event"), { replace: true });
-  }, [shouldRedirectAfterLogin, isAuthReady, session?.user?.id, role, navigate]);
-
-  useEffect(() => {
-    let active = true;
-
-    const syncNavbarUser = async () => {
-      if (!isAuthReady) return;
-
-      if (!session?.user) {
-        setUser(null);
-        return;
-      }
-
-      try {
-        const name = await getUserDisplayName(session.user.id, session.user.email);
-        if (!active) return;
-        setUser({
-          name,
-          role: role ?? "event_owner",
-        });
-      } catch (error) {
-        if (!active) return;
-        if (!isAbortError(error)) {
-          console.error("Navbar auth sync error:", error);
-        }
-        setUser({
-          name: session.user.email?.split("@")[0] || "משתמש",
-          role: role ?? "event_owner",
-        });
-      }
-    };
-
-    void syncNavbarUser();
-
-    return () => {
-      active = false;
-    };
-  }, [isAuthReady, session?.user?.id, session?.user?.email, role]);
-
-  const getDashboardPath = () => {
-    if (!user) return "/";
-    switch (user.role) {
-      case "admin": return "/admin";
-      case "venue_owner": return "/venue";
-      case "event_owner": return "/event";
-      default: return "/event";
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast({ title: "יש למלא אימייל וסיסמה", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-
-      setShouldRedirectAfterLogin(true);
-      toast({ title: "התחברת בהצלחה! 🎉" });
-    } catch (err: any) {
-      toast({ title: "שגיאה בהתחברות", description: err.message === "Invalid login credentials" ? "אימייל או סיסמה שגויים" : err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setLoginOpen(false);
-    navigate("/");
-  };
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
@@ -165,136 +54,10 @@ const MarketingNavbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Login / User area */}
-          <div className="relative" ref={loginRef}>
-            {user ? (
-              // Logged in state
-              <button
-                onClick={() => setLoginOpen(!loginOpen)}
-                className="text-white/80 hover:text-white hover:bg-white/10 hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium"
-              >
-                <User className="w-4 h-4 ml-1" />
-                ברוך הבא, {user.name}
-              </button>
-            ) : (
-              // Logged out state
-              <button
-                onClick={() => setLoginOpen(!loginOpen)}
-                className="text-white/70 hover:text-white hover:bg-white/10 hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium"
-              >
-                <LogIn className="w-4 h-4 ml-2" />
-                כניסה למערכת
-              </button>
-            )}
-
-            {/* Dropdown */}
-            {loginOpen && (
-              <div className="absolute left-0 top-full mt-2 w-80 bg-sidebar/98 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl p-5 animate-fade-in z-[100]" dir="rtl">
-                {user ? (
-                  // Logged in dropdown
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-white font-medium text-sm">{user.name}</p>
-                        <p className="text-white/50 text-xs">
-                          {user.role === "admin" ? "מנהל מערכת" : user.role === "venue_owner" ? "בעל אולם" : "בעל אירוע"}
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      to={getDashboardPath()}
-                      className="flex items-center gap-2 text-white/80 hover:text-primary text-sm py-2 transition-colors"
-                      onClick={() => setLoginOpen(false)}
-                    >
-                      <User className="w-4 h-4" />
-                      אזור אישי
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm py-2 transition-colors w-full text-right"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      התנתקות
-                    </button>
-                  </div>
-                ) : (
-                  // Login form
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <h3 className="text-white font-bold text-lg text-center mb-1">כניסה למערכת</h3>
-                    <p className="text-white/50 text-xs text-center mb-3">הזינו את פרטי ההתחברות שלכם</p>
-
-                    <div>
-                      <Input
-                        type="email"
-                        placeholder="אימייל"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-right h-11"
-                        dir="ltr"
-                      />
-                    </div>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="סיסמה"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-right h-11 pr-3 pl-10"
-                        dir="ltr"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      variant="gold"
-                      className="w-full h-11"
-                      disabled={loading}
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "התחברות"}
-                    </Button>
-
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <Link
-                        to="/reset-password"
-                        className="text-white/50 hover:text-primary transition-colors"
-                        onClick={() => setLoginOpen(false)}
-                      >
-                        שכחתי סיסמה
-                      </Link>
-                      <Link
-                        to="/signup"
-                        className="text-primary hover:text-primary/80 font-medium transition-colors"
-                        onClick={() => setLoginOpen(false)}
-                      >
-                        הרשמה חדשה
-                      </Link>
-                    </div>
-
-                    <div className="border-t border-white/10 pt-3 mt-2">
-                      <Link
-                        to="/access"
-                        className="text-white/40 hover:text-white/60 text-xs flex items-center justify-center gap-1 transition-colors"
-                        onClick={() => setLoginOpen(false)}
-                      >
-                        כניסה כבעל אולם / שליחת מתנה
-                      </Link>
-                    </div>
-                  </form>
-                )}
-              </div>
-            )}
-          </div>
-
+          <Link to="/access" className="text-white/70 hover:text-white hover:bg-white/10 hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium">
+            <LogIn className="w-4 h-4 ml-2" />
+            כניסה למערכת
+          </Link>
           <Link to="/pricing">
             <Button variant="gold" size="default">
               הצטרפו עכשיו
@@ -326,23 +89,9 @@ const MarketingNavbar = () => {
                 {item.label}
               </Link>
             ))}
-            {user ? (
-              <>
-                <Link to={getDashboardPath()} className="block w-full text-right text-primary font-medium py-2 text-sm">
-                  אזור אישי — {user.name}
-                </Link>
-                <button onClick={handleLogout} className="block w-full text-right text-red-400 py-2 text-sm">
-                  התנתקות
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => { setMenuOpen(false); setLoginOpen(true); }}
-                className="block w-full text-right text-white/80 hover:text-primary py-2 text-sm"
-              >
-                כניסה למערכת
-              </button>
-            )}
+            <Link to="/access" className="block w-full text-right text-white/80 hover:text-primary py-2 text-sm">
+              כניסה למערכת
+            </Link>
           </div>
         </div>
       )}

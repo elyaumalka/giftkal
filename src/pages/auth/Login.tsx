@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, X, Sparkles, Gift, Heart } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useAuthReady } from "@/hooks/useAuthReady";
-import { getDashboardPath } from "@/lib/auth";
 import logo from "@/assets/logo.png";
 
 export default function Login() {
@@ -21,12 +19,44 @@ export default function Login() {
   const [resetLoading, setResetLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isReady: isAuthReady, session, role } = useAuthReady();
 
   useEffect(() => {
-    if (!isAuthReady || !session?.user) return;
-    navigate(getDashboardPath(role, "/"), { replace: true });
-  }, [isAuthReady, session?.user?.id, role, navigate]);
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        redirectBasedOnRole(session.user.id);
+      }
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          redirectBasedOnRole(session.user.id);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const redirectBasedOnRole = async (userId: string) => {
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+
+    if (roles?.some((r) => r.role === "admin")) {
+      navigate("/admin");
+    } else if (roles?.some((r) => r.role === "venue_owner")) {
+      navigate("/venue");
+    } else if (roles?.some((r) => r.role === "event_owner")) {
+      navigate("/event");
+    } else {
+      navigate("/");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

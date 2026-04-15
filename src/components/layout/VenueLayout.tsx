@@ -1,13 +1,13 @@
 import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LogOut, Loader2 } from "lucide-react";
-import { useAuthReady } from "@/hooks/useAuthReady";
 import logo from "@/assets/logo.png";
 
+// Custom icons for venue
 import DashboardIcon from "@/assets/icons/venue/Dashboard.svg";
 import InvoicesIcon from "@/assets/icons/venue/Invoices.svg";
 import EventsIcon from "@/assets/icons/venue/Events.svg";
@@ -27,43 +27,68 @@ const menuItems = [
 
 export function VenueLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { isReady, session, role } = useAuthReady();
-  const unauthorizedToastShown = useRef(false);
 
   useEffect(() => {
-    if (!isReady) return;
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate("/login");
+          return;
+        }
 
-    if (!session) {
-      navigate("/login", { replace: true });
-      return;
-    }
+        // Check if user has venue_owner role
+        const { data: roles, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .eq("role", "venue_owner");
 
-    if (role !== "venue_owner") {
-      if (!unauthorizedToastShown.current) {
-        toast({
-          title: "אין הרשאה",
-          description: "אין לך הרשאות גישה לעמוד זה",
-          variant: "destructive",
-        });
-        unauthorizedToastShown.current = true;
+        if (error || !roles || roles.length === 0) {
+          toast({
+            title: "אין הרשאה",
+            description: "אין לך הרשאות גישה לעמוד זה",
+            variant: "destructive",
+          });
+          navigate("/login");
+          return;
+        }
+
+        setAuthorized(true);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        navigate("/login");
+      } finally {
+        setLoading(false);
       }
-      navigate("/login", { replace: true });
-      return;
-    }
+    };
 
-    unauthorizedToastShown.current = false;
-  }, [isReady, session, role, navigate, toast]);
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_OUT" || !session) {
+          navigate("/login");
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({ title: "התנתקת בהצלחה" });
-    navigate("/login", { replace: true });
+    navigate("/login");
   };
 
-  if (!isReady) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center" dir="rtl">
         <div className="flex flex-col items-center gap-4">
@@ -74,17 +99,20 @@ export function VenueLayout() {
     );
   }
 
-  if (!session || role !== "venue_owner") {
+  if (!authorized) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Top Header */}
       <header className="fixed top-0 right-0 left-0 h-16 bg-[#051839] z-50 flex items-center justify-between px-6">
+        {/* Logo on the right */}
         <div className="flex items-center">
           <img src={logo} alt="Giftkal Logo" className="h-10" />
         </div>
-
+        
+        {/* Logout button on the left */}
         <Button
           variant="ghost"
           onClick={handleLogout}
@@ -95,6 +123,7 @@ export function VenueLayout() {
         </Button>
       </header>
 
+      {/* Sidebar Container - with gap from header */}
       <div className="fixed right-4 top-24 z-40">
         <aside
           className={cn(
@@ -102,6 +131,7 @@ export function VenueLayout() {
             collapsed ? "w-20" : "w-52"
           )}
         >
+          {/* Navigation */}
           <nav className="flex-1 p-3 space-y-2">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -116,9 +146,9 @@ export function VenueLayout() {
                       : "bg-[#08275E] text-white hover:bg-[#08275E]/80"
                   )}
                 >
-                  <img
-                    src={item.icon}
-                    alt={item.title}
+                  <img 
+                    src={item.icon} 
+                    alt={item.title} 
                     className="w-6 h-6 shrink-0"
                   />
                   {!collapsed && (
