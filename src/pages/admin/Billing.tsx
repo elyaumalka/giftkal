@@ -17,7 +17,7 @@ export default function Billing() {
     queryFn: async () => {
       const { data: events } = await supabase
         .from("events")
-        .select("id, event_date, groom_name, bride_name, owner_id, venues (name)")
+        .select("id, event_date, groom_name, bride_name, owner_id, payment_completed, gifts_enabled, invitations_enabled, rsvp_enabled, venues (name)")
         .order("event_date", { ascending: false });
 
       const ownerIds = [...new Set(events?.map((e) => e.owner_id) || [])];
@@ -26,18 +26,30 @@ export default function Billing() {
         .select("user_id, full_name, email, phone")
         .in("user_id", ownerIds);
 
-      // Fetch billing charges
+      // Fetch ALL billing charges (by event_id OR owner_id)
       const eventIds = events?.map(e => e.id) || [];
-      const { data: charges } = await supabase
-        .from("billing_charges" as any)
-        .select("event_id, amount, plan_name, created_at, nedarim_transaction_id")
-        .in("event_id", eventIds);
+      const [chargesByEvent, chargesByOwner] = await Promise.all([
+        supabase.from("billing_charges" as any)
+          .select("event_id, owner_id, amount, plan_name, created_at, nedarim_transaction_id")
+          .in("event_id", eventIds),
+        supabase.from("billing_charges" as any)
+          .select("event_id, owner_id, amount, plan_name, created_at, nedarim_transaction_id")
+          .in("owner_id", ownerIds)
+          .is("event_id", null),
+      ]);
 
-      const chargeMap = new Map<string, any>();
-      (charges || []).forEach((c: any) => {
-        // Keep latest charge per event
-        if (!chargeMap.has(c.event_id) || new Date(c.created_at) > new Date(chargeMap.get(c.event_id).created_at)) {
-          chargeMap.set(c.event_id, c);
+      // Build charge map: by event_id first, then by owner_id as fallback
+      const chargeByEventMap = new Map<string, any>();
+      ((chargesByEvent.data || []) as any[]).forEach((c: any) => {
+        if (!chargeByEventMap.has(c.event_id) || new Date(c.created_at) > new Date(chargeByEventMap.get(c.event_id).created_at)) {
+          chargeByEventMap.set(c.event_id, c);
+        }
+      });
+
+      const chargeByOwnerMap = new Map<string, any>();
+      ((chargesByOwner.data || []) as any[]).forEach((c: any) => {
+        if (!chargeByOwnerMap.has(c.owner_id) || new Date(c.created_at) > new Date(chargeByOwnerMap.get(c.owner_id).created_at)) {
+          chargeByOwnerMap.set(c.owner_id, c);
         }
       });
 
@@ -45,7 +57,8 @@ export default function Billing() {
 
       return events?.map((event) => {
         const profile = profileMap.get(event.owner_id);
-        const charge = chargeMap.get(event.id);
+        // Try charge by event_id first, then by owner_id (for signup-time payments)
+        const charge = chargeByEventMap.get(event.id) || chargeByOwnerMap.get(event.owner_id) || null;
         return {
           ...event,
           ownerName: profile?.full_name || `${event.groom_name || ""} & ${event.bride_name || ""}`,
