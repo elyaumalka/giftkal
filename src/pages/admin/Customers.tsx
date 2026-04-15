@@ -188,11 +188,15 @@ export default function Customers() {
     v.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredEvents = events?.filter((e) =>
-    (e.groom_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.bride_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredEvents = events?.filter((e) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      e.ownerName?.toLowerCase().includes(q) ||
+      e.groom_name?.toLowerCase().includes(q) ||
+      e.bride_name?.toLowerCase().includes(q) ||
+      e.venues?.name?.toLowerCase().includes(q)
+    );
+  });
 
   // Create venue owner + venue
   const createVenueWithOwner = useMutation({
