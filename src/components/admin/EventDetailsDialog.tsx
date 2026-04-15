@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, User, X } from "lucide-react";
+import { Plus, User, X, Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -39,6 +39,8 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [localPaymentCompleted, setLocalPaymentCompleted] = useState(event.payment_completed);
   const [localDeviceReturned, setLocalDeviceReturned] = useState(event.device_returned);
   const [localBudgetEnabled, setLocalBudgetEnabled] = useState(event.budget_enabled ?? false);
+  const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
@@ -203,6 +205,45 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       toast({ title: newStatus ? "ניהול תקציב הופעל" : "ניהול תקציב כובה" });
     },
   });
+
+  const handleFileUpload = async (file: File, docType: string) => {
+    setUploadingDocType(docType);
+    try {
+      // Sanitize filename - remove Hebrew chars
+      const ext = file.name.split('.').pop() || 'pdf';
+      const sanitizedName = `${event.id}/${docType.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(sanitizedName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(sanitizedName);
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { error: dbError } = await supabase.from('documents').insert({
+        event_id: event.id,
+        user_id: user?.id || event.owner_id,
+        document_type: docType,
+        file_name: file.name,
+        file_url: urlData.publicUrl,
+      });
+
+      if (dbError) throw dbError;
+
+      queryClient.invalidateQueries({ queryKey: ["event-documents", event.id] });
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      toast({ title: "המסמך הועלה בהצלחה" });
+    } catch (error: any) {
+      toast({ title: "שגיאה בהעלאת מסמך", description: error.message, variant: "destructive" });
+    } finally {
+      setUploadingDocType(null);
+    }
+  };
 
   const uploadedDocTypes = uploadedDocs?.map((d: any) => d.document_type) || [];
 
@@ -441,9 +482,39 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                         </Button>
                       </>
                     ) : (
-                      <div className="w-full flex-1 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center min-h-[60px]">
-                        <Plus className="w-6 h-6 text-muted-foreground/50" />
-                      </div>
+                      <>
+                        <input
+                          type="file"
+                          className="hidden"
+                          ref={fileInputRef}
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file && uploadingDocType) {
+                              handleFileUpload(file, uploadingDocType);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="w-full flex-1 border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center min-h-[60px] hover:border-primary/50 hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setUploadingDocType(doc.document_type);
+                            fileInputRef.current?.click();
+                          }}
+                          disabled={uploadingDocType === doc.document_type}
+                        >
+                          {uploadingDocType === doc.document_type ? (
+                            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                          ) : (
+                            <>
+                              <Upload className="w-5 h-5 text-muted-foreground/50" />
+                              <span className="text-xs text-muted-foreground/50 mt-1">העלאה</span>
+                            </>
+                          )}
+                        </button>
+                      </>
                     )}
                   </div>
                 );
