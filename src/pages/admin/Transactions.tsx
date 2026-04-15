@@ -106,6 +106,8 @@ export default function Transactions() {
     enabled: !!selectedEvent?.id,
   });
 
+  const totalPages = Math.ceil((filteredEvents?.length || 0) / ITEMS_PER_PAGE);
+  const paginatedEvents = filteredEvents?.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const handleExportExcel = async (eventId: string, eventName: string) => {
     try {
