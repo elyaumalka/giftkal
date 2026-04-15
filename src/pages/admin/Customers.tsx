@@ -54,6 +54,13 @@ export default function Customers() {
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isEditVenueOpen, setIsEditVenueOpen] = useState(false);
   const [isEditEventOpen, setIsEditEventOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filter states
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterVenueId, setFilterVenueId] = useState<string>("all");
   
   // Combined form state - User + Venue
   const [newOwnerFullName, setNewOwnerFullName] = useState("");
