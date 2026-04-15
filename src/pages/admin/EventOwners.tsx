@@ -126,7 +126,13 @@ export default function EventOwners() {
     setFilterDateTo("");
     setFilterPaymentStatus("all");
     setFilterVenueId("all");
+  const copyEmail = (email: string) => {
+    if (email) {
+      navigator.clipboard.writeText(email);
+      toast({ title: "הכתובת הועתקה" });
+    }
   };
+
 
   return (
     <div className="space-y-6 animate-fade-in">
