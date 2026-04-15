@@ -384,6 +384,8 @@ export default function Customers() {
     setNewEventOwnerPhone("");
     setNewEventGroomName("");
     setNewEventBrideName("");
+    setNewEventChildName("");
+    setNewEventFamilyName("");
     setNewEventDate("");
     setNewEventType("חתונה");
     setNewEventVenueId("");
