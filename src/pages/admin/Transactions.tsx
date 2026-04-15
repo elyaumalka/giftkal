@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Filter, FileText, MessageCircle, X, Download } from "lucide-react";
+import { Search, Filter, FileText, MessageCircle, X, Download, ChevronRight, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
