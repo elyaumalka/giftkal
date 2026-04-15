@@ -46,6 +46,12 @@ const PLAN_OPTIONS = [
   { label: "סכום מותאם אישית", value: "custom" },
 ];
 
+const getPlanAmount = (planValue: string): number => {
+  if (planValue === "custom") return 0;
+  if (planValue === "199_inv") return 199;
+  return Number(planValue) || 0;
+};
+
 export default function NedarimBillingDialog({
   open,
   onOpenChange,
