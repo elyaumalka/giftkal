@@ -17,6 +17,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Support() {
   const [activeTab, setActiveTab] = useState<"inquiries" | "issues">("inquiries");
@@ -25,6 +27,10 @@ export default function Support() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isRespondOpen, setIsRespondOpen] = useState(false);
   const [response, setResponse] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
