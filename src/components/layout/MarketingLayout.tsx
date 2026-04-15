@@ -122,16 +122,26 @@ const MarketingNavbar = () => {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       toast({ title: "התחברת בהצלחה! 🎉" });
       setLoginOpen(false);
       setEmail("");
       setPassword("");
-      // Navigate to appropriate dashboard
-      setTimeout(() => {
-        navigate(getDashboardPath());
-      }, 500);
+      // Fetch role directly and navigate
+      const userId = signInData.user?.id;
+      if (userId) {
+        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+        if (roles?.some(r => r.role === "admin")) {
+          navigate("/admin");
+        } else if (roles?.some(r => r.role === "venue_owner")) {
+          navigate("/venue");
+        } else if (roles?.some(r => r.role === "event_owner")) {
+          navigate("/event");
+        } else {
+          navigate("/event");
+        }
+      }
     } catch (err: any) {
       toast({ title: "שגיאה בהתחברות", description: err.message === "Invalid login credentials" ? "אימייל או סיסמה שגויים" : err.message, variant: "destructive" });
     } finally {
