@@ -240,6 +240,9 @@ export default function AdminHallsDevices() {
                       <Badge variant={hall.is_active ? "default" : "secondary"}>
                         {hall.is_active ? "פעיל" : "לא פעיל"}
                       </Badge>
+                      <Button variant="ghost" size="icon" onClick={() => setViewHall(hall)}>
+                        <Eye className="w-4 h-4 text-[#C4A35A]" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => deleteHall.mutate(hall.id)}>
                         <Trash2 className="w-4 h-4 text-red-400" />
                       </Button>
