@@ -83,10 +83,17 @@ export default function EventOwners() {
     enabled: !!selectedEvent?.id,
   });
 
-  const filteredEvents = eventOwners?.filter((e) =>
-    e.ownerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEvents = eventOwners?.filter((e) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      e.ownerName?.toLowerCase().includes(q) ||
+      e.groom_name?.toLowerCase().includes(q) ||
+      e.bride_name?.toLowerCase().includes(q) ||
+      e.ownerPhone?.includes(searchQuery) ||
+      e.ownerEmail?.toLowerCase().includes(q) ||
+      e.venues?.name?.toLowerCase().includes(q)
+    );
+  });
 
   const copyEmail = (email: string) => {
     if (email) {
