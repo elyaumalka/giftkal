@@ -63,11 +63,15 @@ export default function Support() {
     },
   });
 
-  const filteredTickets = tickets?.filter((ticket) =>
-    ticket.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTickets = tickets?.filter((ticket) => {
+    const matchesSearch = ticket.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === "all" || ticket.status === filterStatus;
+    const cDate = ticket.created_at?.split("T")[0] || "";
+    const matchesDate = (!filterDateFrom || cDate >= filterDateFrom) && (!filterDateTo || cDate <= filterDateTo);
+    return matchesSearch && matchesStatus && matchesDate;
+  });
 
   const respondToTicket = useMutation({
     mutationFn: async ({ ticketId, responseText }: { ticketId: string; responseText: string }) => {
