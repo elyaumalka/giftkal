@@ -157,7 +157,7 @@ export default function Customers() {
       const ownerIds = data.map(e => e.owner_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name")
+        .select("user_id, full_name, phone")
         .in("user_id", ownerIds);
       
       // Get documents for each event to check missing docs
