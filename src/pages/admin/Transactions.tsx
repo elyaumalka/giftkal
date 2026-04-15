@@ -87,7 +87,22 @@ export default function Transactions() {
     setFilterVenueId("all");
   };
 
-  const handleExportExcel = () => {
+  // Fetch transactions for selected event
+  const { data: eventDetails } = useQuery({
+    queryKey: ["event-details", selectedEvent?.id],
+    queryFn: async () => {
+      if (!selectedEvent?.id) return null;
+      const { data } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("event_id", selectedEvent.id)
+        .order("transaction_date", { ascending: false });
+      return data;
+    },
+    enabled: !!selectedEvent?.id,
+  });
+
+
     toast({
       title: "מייצא לאקסל...",
       description: "הקובץ יורד בקרוב",
