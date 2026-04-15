@@ -281,8 +281,10 @@ export default function Customers() {
             phone: newEventOwnerPhone,
           },
           event: {
-            groomName: newEventGroomName,
-            brideName: newEventBrideName,
+            groomName: newEventGroomName || null,
+            brideName: newEventBrideName || null,
+            childName: newEventChildName || null,
+            familyName: newEventFamilyName || null,
             eventDate: newEventDate,
             eventType: newEventType,
             venueId: newEventVenueId || null,
