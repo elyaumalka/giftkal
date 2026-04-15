@@ -384,7 +384,7 @@ export default function Leads() {
         {filteredLeads?.map((lead) => (
           <div
             key={lead.id}
-            className="grid grid-cols-[auto_1fr_1fr_1.5fr_1fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+            className="grid grid-cols-[auto_auto_1fr_1fr_1.5fr_1fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
           >
             {/* עריכה - first on right */}
             <button
