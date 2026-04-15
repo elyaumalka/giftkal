@@ -80,6 +80,8 @@ export default function Customers() {
   const [newEventOwnerPhone, setNewEventOwnerPhone] = useState("");
   const [newEventGroomName, setNewEventGroomName] = useState("");
   const [newEventBrideName, setNewEventBrideName] = useState("");
+  const [newEventChildName, setNewEventChildName] = useState("");
+  const [newEventFamilyName, setNewEventFamilyName] = useState("");
   const [newEventDate, setNewEventDate] = useState("");
   const [newEventType, setNewEventType] = useState("חתונה");
   const [newEventVenueId, setNewEventVenueId] = useState("");
@@ -279,8 +281,10 @@ export default function Customers() {
             phone: newEventOwnerPhone,
           },
           event: {
-            groomName: newEventGroomName,
-            brideName: newEventBrideName,
+            groomName: newEventGroomName || null,
+            brideName: newEventBrideName || null,
+            childName: newEventChildName || null,
+            familyName: newEventFamilyName || null,
             eventDate: newEventDate,
             eventType: newEventType,
             venueId: newEventVenueId || null,
@@ -380,6 +384,8 @@ export default function Customers() {
     setNewEventOwnerPhone("");
     setNewEventGroomName("");
     setNewEventBrideName("");
+    setNewEventChildName("");
+    setNewEventFamilyName("");
     setNewEventDate("");
     setNewEventType("חתונה");
     setNewEventVenueId("");
@@ -607,24 +613,67 @@ export default function Customers() {
                   </div>
                 </div>
 
-                {/* Row 2: Event Details */}
+                {/* Row 2: Event Type + Dynamic Fields */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block text-center">שם החתן</Label>
-                    <Input variant="form" value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} className="text-center" />
+                    <Label className="text-muted-foreground text-sm mb-2 block text-center">סוג אירוע</Label>
+                    <Select value={newEventType} onValueChange={setNewEventType}>
+                      <SelectTrigger className="h-12 rounded-xl bg-muted border-0 text-center">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="חתונה">חתונה</SelectItem>
+                        <SelectItem value="אירוסין">אירוסין</SelectItem>
+                        <SelectItem value="בר מצווה">בר מצווה</SelectItem>
+                        <SelectItem value="בת מצווה">בת מצווה</SelectItem>
+                        <SelectItem value="ברית">ברית</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הכלה</Label>
-                    <Input variant="form" value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} className="text-center" />
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm mb-2 block text-center">תאריך אירוע</Label>
-                    <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} className="text-center" />
-                  </div>
+                  {(newEventType === "חתונה" || newEventType === "אירוסין") ? (
+                    <>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">שם החתן</Label>
+                        <Input variant="form" value={newEventGroomName} onChange={(e) => setNewEventGroomName(e.target.value)} className="text-center" />
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הכלה</Label>
+                        <Input variant="form" value={newEventBrideName} onChange={(e) => setNewEventBrideName(e.target.value)} className="text-center" />
+                      </div>
+                    </>
+                  ) : newEventType === "ברית" ? (
+                    <>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">שם משפחה</Label>
+                        <Input variant="form" value={newEventFamilyName} onChange={(e) => setNewEventFamilyName(e.target.value)} className="text-center" />
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">תאריך אירוע</Label>
+                        <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} className="text-center" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">שם הילד/ה</Label>
+                        <Input variant="form" value={newEventChildName} onChange={(e) => setNewEventChildName(e.target.value)} className="text-center" />
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-sm mb-2 block text-center">שם משפחה</Label>
+                        <Input variant="form" value={newEventFamilyName} onChange={(e) => setNewEventFamilyName(e.target.value)} className="text-center" />
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* Row 3: Venue and Cost */}
+                {/* Row 3: Date (if not already shown) + Venue + Cost */}
                 <div className="grid grid-cols-3 gap-4">
+                  {newEventType !== "ברית" && (
+                    <div>
+                      <Label className="text-muted-foreground text-sm mb-2 block text-center">תאריך אירוע</Label>
+                      <Input variant="form" type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} className="text-center" />
+                    </div>
+                  )}
                   <div>
                     <Label className="text-muted-foreground text-sm mb-2 block text-center">אולם</Label>
                     <Select value={newEventVenueId} onValueChange={setNewEventVenueId}>
