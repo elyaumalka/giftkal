@@ -1,0 +1,2 @@
+ALTER TABLE public.leads DROP CONSTRAINT leads_lead_type_check;
+ALTER TABLE public.leads ADD CONSTRAINT leads_lead_type_check CHECK (lead_type = ANY (ARRAY['venue_owner', 'event_owner', 'contact_form', 'signup_paid', 'signup_free']));
