@@ -37,10 +37,20 @@ interface NedarimBillingDialogProps {
 
 const PLAN_OPTIONS = [
   { label: "₪1 - טסט", value: "1" },
-  { label: "מסלול רגיל - ₪200", value: "200" },
-  { label: "מסלול + אישורי הגעה - ₪400", value: "400" },
+  { label: "מתנות באשראי - ₪199", value: "199" },
+  { label: "עמדת מתנות באולם - ₪99", value: "99" },
+  { label: "הזמנות + אישורי הגעה - ₪199", value: "199_inv" },
+  { label: "מתנות + עמדה - ₪298", value: "298" },
+  { label: "מתנות + הזמנות - ₪398", value: "398" },
+  { label: "חבילה מלאה (הכל כלול) - ₪399", value: "399" },
   { label: "סכום מותאם אישית", value: "custom" },
 ];
+
+const getPlanAmount = (planValue: string): number => {
+  if (planValue === "custom") return 0;
+  if (planValue === "199_inv") return 199;
+  return Number(planValue) || 0;
+};
 
 export default function NedarimBillingDialog({
   open,
@@ -135,7 +145,7 @@ export default function NedarimBillingDialog({
           setError(payload.Value.Message || "שגיאה בביצוע התשלום");
         } else {
           // Save billing record
-          const chargeAmount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
+          const chargeAmount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : getPlanAmount(selectedPlan));
           const planLabel = PLAN_OPTIONS.find(p => p.value === selectedPlan)?.label || selectedPlan;
           try {
             await supabase.from("billing_charges" as any).insert({
@@ -196,7 +206,7 @@ export default function NedarimBillingDialog({
       setError("נא למלא שם");
       return;
     }
-    const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
+    const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : getPlanAmount(selectedPlan));
     if (!amount || amount <= 0) {
       setError("נא לבחור מסלול");
       return;
@@ -241,7 +251,7 @@ export default function NedarimBillingDialog({
     iframeRef.current?.contentWindow?.postMessage(paymentData, "*");
   };
 
-  const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
+  const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : getPlanAmount(selectedPlan));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
