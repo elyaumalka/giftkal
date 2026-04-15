@@ -196,7 +196,12 @@ export default function KioskPage() {
       <div className="text-center space-y-8 animate-fade-in">
         {/* Logo */}
         {venueLogo ? (
-          <img src={venueLogo} alt={venueName} className="h-32 mx-auto rounded-2xl object-contain" />
+          <img
+            src={venueLogo}
+            alt={venueName}
+            className="h-32 mx-auto rounded-2xl object-contain cursor-pointer hover:ring-2 hover:ring-[#C4A35A]/50 transition-all"
+            onClick={() => setShowLanding(true)}
+          />
         ) : (
           <img src={logo} alt="Giftkal" className="h-20 mx-auto" />
         )}
