@@ -83,6 +83,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "billing_charges_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       budget_categories: {
@@ -159,6 +166,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
@@ -281,6 +295,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
           {
@@ -488,6 +509,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
@@ -911,6 +939,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
@@ -987,9 +1022,120 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_events: {
+        Row: {
+          bride_grandparents: string | null
+          bride_name: string | null
+          bride_parents: string | null
+          budget_enabled: boolean | null
+          ceremony_time: string | null
+          child_name: string | null
+          custom_venue_location: string | null
+          custom_venue_name: string | null
+          event_date: string | null
+          event_type: string | null
+          family_name: string | null
+          gifts_enabled: boolean | null
+          groom_grandparents: string | null
+          groom_name: string | null
+          groom_parents: string | null
+          hall_id: string | null
+          id: string | null
+          invitation_design_url: string | null
+          invitation_text: string | null
+          invitations_enabled: boolean | null
+          reception_time: string | null
+          rsvp_enabled: boolean | null
+          seller_payme_id: string | null
+          share_token_bride: string | null
+          share_token_general: string | null
+          share_token_groom: string | null
+          venue_id: string | null
+          voice_text: string | null
+        }
+        Insert: {
+          bride_grandparents?: string | null
+          bride_name?: string | null
+          bride_parents?: string | null
+          budget_enabled?: boolean | null
+          ceremony_time?: string | null
+          child_name?: string | null
+          custom_venue_location?: string | null
+          custom_venue_name?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          family_name?: string | null
+          gifts_enabled?: boolean | null
+          groom_grandparents?: string | null
+          groom_name?: string | null
+          groom_parents?: string | null
+          hall_id?: string | null
+          id?: string | null
+          invitation_design_url?: string | null
+          invitation_text?: string | null
+          invitations_enabled?: boolean | null
+          reception_time?: string | null
+          rsvp_enabled?: boolean | null
+          seller_payme_id?: string | null
+          share_token_bride?: string | null
+          share_token_general?: string | null
+          share_token_groom?: string | null
+          venue_id?: string | null
+          voice_text?: string | null
+        }
+        Update: {
+          bride_grandparents?: string | null
+          bride_name?: string | null
+          bride_parents?: string | null
+          budget_enabled?: boolean | null
+          ceremony_time?: string | null
+          child_name?: string | null
+          custom_venue_location?: string | null
+          custom_venue_name?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          family_name?: string | null
+          gifts_enabled?: boolean | null
+          groom_grandparents?: string | null
+          groom_name?: string | null
+          groom_parents?: string | null
+          hall_id?: string | null
+          id?: string | null
+          invitation_design_url?: string | null
+          invitation_text?: string | null
+          invitations_enabled?: boolean | null
+          reception_time?: string | null
+          rsvp_enabled?: boolean | null
+          seller_payme_id?: string | null
+          share_token_bride?: string | null
+          share_token_general?: string | null
+          share_token_groom?: string | null
+          venue_id?: string | null
+          voice_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_hall_id_fkey"
+            columns: ["hall_id"]
+            isOneToOne: false
+            referencedRelation: "halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      guest_event_has_valid_share_token: {
+        Args: { _event_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
@@ -1000,6 +1146,10 @@ export type Database = {
       increment_coupon_usage: {
         Args: { coupon_code: string }
         Returns: undefined
+      }
+      is_event_public_accessible: {
+        Args: { _event_id: string }
+        Returns: boolean
       }
     }
     Enums: {
