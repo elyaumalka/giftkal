@@ -69,11 +69,16 @@ export default function Leads() {
     },
   });
 
-  const filteredLeads = leads?.filter((lead) =>
-    lead.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.venue_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredLeads = leads?.filter((lead) => {
+    const matchesSearch = lead.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.venue_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.phone?.includes(searchQuery);
+    const matchesStatus = filterStatus === "all" || lead.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const hasActiveFilters = filterStatus !== "all";
 
   const resetLeadForm = () => {
     setNewLeadFullName("");
