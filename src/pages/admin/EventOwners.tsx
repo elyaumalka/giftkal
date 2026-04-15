@@ -11,10 +11,23 @@ import {
 import { Search, Eye, FileText, Copy, Filter, MessageCircle, CheckCircle2, CreditCard, Loader2, ShieldCheck, XCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 export default function EventOwners() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterPaymentStatus, setFilterPaymentStatus] = useState<string>("all");
+  const [filterVenueId, setFilterVenueId] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: eventOwners } = useQuery({
