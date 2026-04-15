@@ -17,6 +17,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Support() {
   const [activeTab, setActiveTab] = useState<"inquiries" | "issues">("inquiries");
@@ -25,6 +27,10 @@ export default function Support() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isRespondOpen, setIsRespondOpen] = useState(false);
   const [response, setResponse] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -57,11 +63,15 @@ export default function Support() {
     },
   });
 
-  const filteredTickets = tickets?.filter((ticket) =>
-    ticket.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTickets = tickets?.filter((ticket) => {
+    const matchesSearch = ticket.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.venues?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === "all" || ticket.status === filterStatus;
+    const cDate = ticket.created_at?.split("T")[0] || "";
+    const matchesDate = (!filterDateFrom || cDate >= filterDateFrom) && (!filterDateTo || cDate <= filterDateTo);
+    return matchesSearch && matchesStatus && matchesDate;
+  });
 
   const respondToTicket = useMutation({
     mutationFn: async ({ ticketId, responseText }: { ticketId: string; responseText: string }) => {
@@ -110,8 +120,11 @@ export default function Support() {
       <div className="flex items-center justify-between">
         {/* Left - Search and Filter */}
         <div className="flex items-center gap-2">
-          <button className="bg-white rounded-full p-2 shadow-sm">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className={`rounded-full p-2 shadow-sm transition-colors ${showFilters ? "bg-[#1a2942] text-white" : "bg-white"}`}
+          >
+            <Filter className="w-4 h-4" />
           </button>
           <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
             <Search className="w-4 h-4 text-muted-foreground" />
@@ -149,7 +162,37 @@ export default function Support() {
         </div>
       </div>
 
-      {/* View Ticket Dialog */}
+      {/* Filter Panel */}
+      {showFilters && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 flex flex-wrap items-end gap-4">
+            <div>
+              <Label className="text-xs">מתאריך</Label>
+              <Input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="w-40 mt-1 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-xs">עד תאריך</Label>
+              <Input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="w-40 mt-1 rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-xs">סטטוס</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-36 mt-1 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">הכל</SelectItem>
+                  <SelectItem value="open">פתוח</SelectItem>
+                  <SelectItem value="in_progress">בטיפול</SelectItem>
+                  <SelectItem value="closed">סגור</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterStatus("all"); }}>
+              נקה
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
           <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
