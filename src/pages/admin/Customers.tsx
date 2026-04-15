@@ -784,11 +784,15 @@ export default function Customers() {
                 <Input variant="form" value={newVenueAddress} onChange={(e) => setNewVenueAddress(e.target.value)} className="text-center" />
               </div>
               <div>
-                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון אולם</Label>
                 <Input variant="form" value={newVenuePhone} onChange={(e) => setNewVenuePhone(e.target.value)} className="text-center" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון בעלים</Label>
+                <Input variant="form" value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} className="text-center" />
+              </div>
               <div>
                 <Label className="text-muted-foreground text-sm mb-2 block text-center">מייל</Label>
                 <Input variant="form" type="email" value={newVenueEmail} onChange={(e) => setNewVenueEmail(e.target.value)} className="text-center" />
