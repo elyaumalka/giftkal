@@ -222,7 +222,13 @@ export default function AdminHallsDevices() {
                       </div>
                       <div>
                         <h3 className="font-bold text-[#051839]">{hall.name}</h3>
-                        <p className="text-xs text-gray-400">{(hall.venues as any)?.name}</p>
+                        <button
+                          onClick={() => navigate(`/admin/customers`)}
+                          className="text-xs text-[#C4A35A] hover:underline flex items-center gap-1"
+                        >
+                          {(hall.venues as any)?.name}
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
