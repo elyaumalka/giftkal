@@ -145,7 +145,7 @@ export default function NedarimBillingDialog({
           setError(payload.Value.Message || "שגיאה בביצוע התשלום");
         } else {
           // Save billing record
-          const chargeAmount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
+          const chargeAmount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : getPlanAmount(selectedPlan));
           const planLabel = PLAN_OPTIONS.find(p => p.value === selectedPlan)?.label || selectedPlan;
           try {
             await supabase.from("billing_charges" as any).insert({
