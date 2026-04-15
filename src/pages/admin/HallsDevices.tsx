@@ -53,7 +53,7 @@ export default function AdminHallsDevices() {
     queryFn: async () => {
       const { data } = await supabase
         .from("devices")
-        .select("*, venues(name), halls(name)")
+        .select("*, venues(id, name, owner_id), halls(name)")
         .order("created_at", { ascending: false });
       return data || [];
     },
