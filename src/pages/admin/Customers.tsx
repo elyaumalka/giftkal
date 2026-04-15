@@ -107,7 +107,7 @@ export default function Customers() {
       const ownerIds = data.map(v => v.owner_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name")
+        .select("user_id, full_name, phone")
         .in("user_id", ownerIds);
       
       // Get transaction totals per venue
