@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Phone, Mail, MessageCircle, LogIn, X, User, Loader2, Eye, EyeOff, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthReady } from "@/hooks/useAuthReady";
+import { getDashboardPath as resolveDashboardPath, getUserDisplayName, getUserRole, isAbortError, type AppRole } from "@/lib/auth";
 import logo from "@/assets/logo.png";
 
 const navLinks = [
@@ -23,11 +25,12 @@ const MarketingNavbar = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: AppRole } | null>(null);
   const loginRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isReady: isAuthReady, session, role } = useAuthReady();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -41,7 +44,6 @@ const MarketingNavbar = () => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (loginRef.current && !loginRef.current.contains(e.target as Node)) {
@@ -52,57 +54,42 @@ const MarketingNavbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Check auth state
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        // Get profile name
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
+    let active = true;
 
-        // Get role
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id);
+    const syncNavbarUser = async () => {
+      if (!isAuthReady) return;
 
-        const role = roles?.[0]?.role || "event_owner";
-        setUser({
-          name: profile?.full_name || session.user.email?.split("@")[0] || "משתמש",
-          role,
-        });
-      } else {
+      if (!session?.user) {
         setUser(null);
+        return;
       }
-    });
 
-    // Initial check
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id);
-
-        const role = roles?.[0]?.role || "event_owner";
+      try {
+        const name = await getUserDisplayName(session.user.id, session.user.email);
+        if (!active) return;
         setUser({
-          name: profile?.full_name || session.user.email?.split("@")[0] || "משתמש",
-          role,
+          name,
+          role: role ?? "event_owner",
+        });
+      } catch (error) {
+        if (!active) return;
+        if (!isAbortError(error)) {
+          console.error("Navbar auth sync error:", error);
+        }
+        setUser({
+          name: session.user.email?.split("@")[0] || "משתמש",
+          role: role ?? "event_owner",
         });
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
-  }, []);
+    void syncNavbarUser();
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthReady, session?.user?.id, session?.user?.email, role]);
 
   const getDashboardPath = () => {
     if (!user) return "/";
@@ -124,24 +111,14 @@ const MarketingNavbar = () => {
     try {
       const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+
+      const nextRole = signInData.user ? await getUserRole(signInData.user.id) : null;
+
       toast({ title: "התחברת בהצלחה! 🎉" });
       setLoginOpen(false);
       setEmail("");
       setPassword("");
-      // Fetch role directly and navigate
-      const userId = signInData.user?.id;
-      if (userId) {
-        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-        if (roles?.some(r => r.role === "admin")) {
-          navigate("/admin");
-        } else if (roles?.some(r => r.role === "venue_owner")) {
-          navigate("/venue");
-        } else if (roles?.some(r => r.role === "event_owner")) {
-          navigate("/event");
-        } else {
-          navigate("/event");
-        }
-      }
+      navigate(resolveDashboardPath(nextRole, "/event"), { replace: true });
     } catch (err: any) {
       toast({ title: "שגיאה בהתחברות", description: err.message === "Invalid login credentials" ? "אימייל או סיסמה שגויים" : err.message, variant: "destructive" });
     } finally {
