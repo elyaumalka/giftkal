@@ -179,9 +179,9 @@ export default function AdminHallsDevices() {
                   <Plus className="w-4 h-4" /> אולם חדש
                 </Button>
               </DialogTrigger>
-              <DialogContent dir="rtl">
+              <DialogContent dir="rtl" className="sm:max-w-md">
                 <DialogHeader><DialogTitle>הוסף אולם חדש</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-4">
+                <div className="space-y-4 pt-4 px-2">
                   <div>
                     <Label>בעל אולם</Label>
                     <Select value={hallForm.venue_id} onValueChange={(v) => setHallForm(p => ({ ...p, venue_id: v }))}>
