@@ -159,9 +159,17 @@ export default function Leads() {
       <div className="flex items-center justify-between">
         {/* Left - Search, Filter, Plus */}
         <div className="flex items-center gap-2">
-          <button className="bg-white rounded-full p-2 shadow-sm">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`rounded-full p-2 shadow-sm transition-colors ${hasActiveFilters ? 'bg-[#1a2942] text-white' : 'bg-white text-muted-foreground hover:bg-gray-100'}`}
+          >
+            <Filter className="w-4 h-4" />
           </button>
+          {hasActiveFilters && (
+            <button onClick={() => setFilterStatus("all")} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+              <X className="w-3 h-3" /> נקה
+            </button>
+          )}
           <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-sm">
             <Search className="w-4 h-4 text-muted-foreground" />
             <Input
