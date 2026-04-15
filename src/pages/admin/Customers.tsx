@@ -157,7 +157,7 @@ export default function Customers() {
       const ownerIds = data.map(e => e.owner_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name")
+        .select("user_id, full_name, phone")
         .in("user_id", ownerIds);
       
       // Get documents for each event to check missing docs
@@ -180,9 +180,11 @@ export default function Customers() {
         const uploadedDocTypes = eventDocs.map(d => d.document_type);
         const missingDocs = requiredDocTypes.filter(type => !uploadedDocTypes.includes(type));
         
+        const profile = profiles?.find(p => p.user_id === event.owner_id);
         return {
           ...event,
-          ownerName: profiles?.find(p => p.user_id === event.owner_id)?.full_name || "לא ידוע",
+          ownerName: profile?.full_name || "לא ידוע",
+          ownerPhone: profile?.phone || "",
           missingDocsCount: missingDocs.length,
           allDocsComplete: missingDocs.length === 0,
         };
@@ -894,6 +896,7 @@ export default function Customers() {
         <div className="flex items-center gap-4 px-4 py-3 text-sm text-muted-foreground font-medium">
           <div className="w-10"></div>
           <div className="flex-1 text-right">שם הלקוח</div>
+          <div className="w-28 text-center">טלפון</div>
           <div className="flex-1 text-right">כתובת האולם</div>
           <div className="w-24 text-center">כמות אולמות</div>
           <div className="w-24 text-center">כמות מכשירים</div>
@@ -907,6 +910,7 @@ export default function Customers() {
         <div className="flex items-center gap-4 px-4 py-3 text-sm text-muted-foreground font-medium">
           <div className="w-10"></div>
           <div className="flex-1 text-right">שם הלקוח</div>
+          <div className="w-28 text-center">טלפון</div>
           <div className="flex-1 text-right">שם האולם</div>
           <div className="w-28 text-center">תאריך האירוע</div>
           <div className="w-28 text-center">עלות השכרה</div>
@@ -973,6 +977,11 @@ export default function Customers() {
               {/* Customer Name */}
               <div className="flex-1 font-semibold text-secondary text-right">
                 {venue.ownerName}
+              </div>
+
+              {/* Customer Phone */}
+              <div className="w-28 text-center text-muted-foreground">
+                {venue.ownerPhone || "—"}
               </div>
 
               {/* Venue Address */}
@@ -1078,6 +1087,11 @@ export default function Customers() {
               {/* Customer Name */}
               <div className="flex-1 font-semibold text-secondary text-right">
                 {event.ownerName || "—"}
+              </div>
+
+              {/* Customer Phone */}
+              <div className="w-28 text-center text-muted-foreground">
+                {event.ownerPhone || "—"}
               </div>
 
               {/* Venue Name */}
