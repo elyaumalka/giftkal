@@ -6,7 +6,7 @@ import { Phone, Mail, MessageCircle, LogIn, X, User, Loader2, Eye, EyeOff, LogOu
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthReady } from "@/hooks/useAuthReady";
-import { getDashboardPath as resolveDashboardPath, getUserDisplayName, getUserRole, isAbortError, type AppRole } from "@/lib/auth";
+import { getDashboardPath as resolveDashboardPath, getUserDisplayName, isAbortError, type AppRole } from "@/lib/auth";
 import logo from "@/assets/logo.png";
 
 const navLinks = [
@@ -25,6 +25,7 @@ const MarketingNavbar = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [shouldRedirectAfterLogin, setShouldRedirectAfterLogin] = useState(false);
   const [user, setUser] = useState<{ name: string; role: AppRole } | null>(null);
   const loginRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -53,6 +54,16 @@ const MarketingNavbar = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!shouldRedirectAfterLogin || !isAuthReady || !session?.user) return;
+
+    setShouldRedirectAfterLogin(false);
+    setLoginOpen(false);
+    setEmail("");
+    setPassword("");
+    navigate(resolveDashboardPath(role, "/event"), { replace: true });
+  }, [shouldRedirectAfterLogin, isAuthReady, session?.user?.id, role, navigate]);
 
   useEffect(() => {
     let active = true;
@@ -109,16 +120,11 @@ const MarketingNavbar = () => {
     }
     setLoading(true);
     try {
-      const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      const nextRole = signInData.user ? await getUserRole(signInData.user.id) : null;
-
+      setShouldRedirectAfterLogin(true);
       toast({ title: "התחברת בהצלחה! 🎉" });
-      setLoginOpen(false);
-      setEmail("");
-      setPassword("");
-      navigate(resolveDashboardPath(nextRole, "/event"), { replace: true });
     } catch (err: any) {
       toast({ title: "שגיאה בהתחברות", description: err.message === "Invalid login credentials" ? "אימייל או סיסמה שגויים" : err.message, variant: "destructive" });
     } finally {
