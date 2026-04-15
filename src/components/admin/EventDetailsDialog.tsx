@@ -39,6 +39,8 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [localPaymentCompleted, setLocalPaymentCompleted] = useState(event.payment_completed);
   const [localDeviceReturned, setLocalDeviceReturned] = useState(event.device_returned);
   const [localBudgetEnabled, setLocalBudgetEnabled] = useState(event.budget_enabled ?? false);
+  const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
