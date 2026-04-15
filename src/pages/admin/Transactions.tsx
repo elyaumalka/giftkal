@@ -104,11 +104,40 @@ export default function Transactions() {
   });
 
 
-  const handleExportExcel = () => {
-    toast({
-      title: "מייצא לאקסל...",
-      description: "הקובץ יורד בקרוב",
-    });
+  const handleExportExcel = async (eventId: string, eventName: string) => {
+    try {
+      const { data: transactions } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("event_id", eventId)
+        .order("transaction_date", { ascending: false });
+
+      if (!transactions?.length) {
+        toast({ title: "אין עסקאות לייצוא", variant: "destructive" });
+        return;
+      }
+
+      const rows = transactions.map((t) => ({
+        "תאריך": new Date(t.transaction_date).toLocaleDateString("he-IL"),
+        "שם הלקוח": t.payer_name,
+        "טלפון": t.payer_phone || "",
+        "אימייל": t.payer_email || "",
+        "סכום": Number(t.amount),
+        "תשלומים": t.installments || 1,
+        "סטטוס": t.payment_status === "completed" ? "שולם" : "ממתין",
+        "קשר": t.relationship || "",
+        "ברכה": t.blessing_text || "",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "עסקאות");
+      XLSX.writeFile(wb, `עסקאות_${eventName}.xlsx`);
+
+      toast({ title: "הקובץ יורד בהצלחה" });
+    } catch (error: any) {
+      toast({ title: "שגיאה בייצוא", description: error.message, variant: "destructive" });
+    }
   };
 
   return (
