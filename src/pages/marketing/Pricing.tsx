@@ -81,7 +81,7 @@ const PlanCard = ({ plan, delay }: { plan: typeof plans[0]; delay: number }) => 
           </li>
         ))}
       </ul>
-      <Link to="/signup">
+      <Link to={`/signup?plan=${encodeURIComponent(plan.title)}`}>
         <Button variant={plan.badge === "🔥 מומלץ" ? "gold" : "outline"} className="w-full">
           בחירה
         </Button>
