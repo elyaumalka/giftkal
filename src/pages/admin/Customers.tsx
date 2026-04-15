@@ -663,10 +663,89 @@ export default function Customers() {
         </div>
 
         {/* Filter */}
-        <Button variant="ghost" size="icon" className="text-muted-foreground">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={cn("text-muted-foreground", showFilters && "bg-secondary/10 text-secondary")}
+          onClick={() => setShowFilters(!showFilters)}
+        >
           <Filter className="w-5 h-5" />
         </Button>
       </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-wrap items-end gap-4 animate-fade-in">
+          {activeTab === "events" && (
+            <>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground">מתאריך</label>
+                <Input
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                  className="w-40 text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground">עד תאריך</label>
+                <Input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                  className="w-40 text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-muted-foreground">אולם</label>
+                <Select value={filterVenueId} onValueChange={setFilterVenueId}>
+                  <SelectTrigger className="w-40 text-sm">
+                    <SelectValue placeholder="כל האולמות" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">כל האולמות</SelectItem>
+                    {venues?.map((v) => (
+                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-muted-foreground">סטטוס</label>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-40 text-sm">
+                <SelectValue placeholder="הכל" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                {activeTab === "events" ? (
+                  <>
+                    <SelectItem value="paid">שולם</SelectItem>
+                    <SelectItem value="unpaid">לא שולם</SelectItem>
+                    <SelectItem value="docs_complete">מסמכים הושלמו</SelectItem>
+                    <SelectItem value="docs_missing">מסמכים חסרים</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="paid">יש עסקאות</SelectItem>
+                    <SelectItem value="unpaid">אין עסקאות</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); setFilterStatus("all"); setFilterVenueId("all"); }}
+            className="rounded-full text-xs"
+          >
+            נקה סינון
+          </Button>
+        </div>
+      )}
 
       {/* Edit Venue Dialog */}
       <Dialog open={isEditVenueOpen} onOpenChange={setIsEditVenueOpen}>
