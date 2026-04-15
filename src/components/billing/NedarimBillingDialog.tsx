@@ -206,7 +206,7 @@ export default function NedarimBillingDialog({
       setError("נא למלא שם");
       return;
     }
-    const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
+    const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : getPlanAmount(selectedPlan));
     if (!amount || amount <= 0) {
       setError("נא לבחור מסלול");
       return;
