@@ -262,9 +262,9 @@ export default function AdminHallsDevices() {
                   <Plus className="w-4 h-4" /> מכשיר חדש
                 </Button>
               </DialogTrigger>
-              <DialogContent dir="rtl">
+              <DialogContent dir="rtl" className="sm:max-w-md">
                 <DialogHeader><DialogTitle>הוסף מכשיר חדש</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-4">
+                <div className="space-y-4 pt-4 px-2">
                   <div>
                     <Label>בעל אולם</Label>
                     <Select value={deviceForm.venue_id} onValueChange={(v) => setDeviceForm(p => ({ ...p, venue_id: v, hall_id: "" }))}>
