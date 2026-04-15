@@ -977,6 +977,11 @@ export default function Customers() {
                 {venue.ownerName}
               </div>
 
+              {/* Customer Phone */}
+              <div className="w-28 text-center text-muted-foreground">
+                {venue.ownerPhone || "—"}
+              </div>
+
               {/* Venue Address */}
               <div className="flex-1 text-muted-foreground text-right">
                 {venue.address}
