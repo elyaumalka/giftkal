@@ -211,37 +211,26 @@ export default function Transactions() {
 
       {/* Event Rows */}
       <div className="space-y-3">
-        {filteredEvents?.map((event) => (
+        {paginatedEvents?.map((event) => (
           <div
             key={event.id}
             className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
           >
-            {/* תאריך */}
             <span className="text-center font-medium">
               {new Date(event.event_date).toLocaleDateString("he-IL")}
             </span>
-            
-            {/* בעל האירוע */}
             <span className="text-center font-medium">
               {event.ownerName}
             </span>
-            
-            {/* שם האולם */}
             <span className="text-center font-medium">
               {event.venues?.name || "—"}
             </span>
-            
-            {/* כמות עסקאות */}
             <span className="text-center font-bold">
               {event.transactionCount}
             </span>
-            
-            {/* סך כל העסקאות */}
             <span className="text-center font-bold text-[#c9a54e]">
               ₪ {event.totalAmount.toLocaleString()}
             </span>
-
-            {/* Action Buttons */}
             <div className="flex items-center gap-3 justify-end w-64">
               <Dialog>
                 <DialogTrigger asChild>
@@ -263,7 +252,6 @@ export default function Transactions() {
                   />
                 </DialogContent>
               </Dialog>
-
               <Button
                 variant="outline"
                 size="sm"
@@ -283,6 +271,33 @@ export default function Transactions() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="rounded-full"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+          <span className="text-sm font-medium">
+            עמוד {currentPage} מתוך {totalPages} ({filteredEvents?.length} אירועים)
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="rounded-full"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
