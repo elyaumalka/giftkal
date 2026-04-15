@@ -180,9 +180,11 @@ export default function Customers() {
         const uploadedDocTypes = eventDocs.map(d => d.document_type);
         const missingDocs = requiredDocTypes.filter(type => !uploadedDocTypes.includes(type));
         
+        const profile = profiles?.find(p => p.user_id === event.owner_id);
         return {
           ...event,
-          ownerName: profiles?.find(p => p.user_id === event.owner_id)?.full_name || "לא ידוע",
+          ownerName: profile?.full_name || "לא ידוע",
+          ownerPhone: profile?.phone || "",
           missingDocsCount: missingDocs.length,
           allDocsComplete: missingDocs.length === 0,
         };
