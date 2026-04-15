@@ -10,11 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Monitor, Plus, Trash2, Loader2, Link2, Search } from "lucide-react";
+import { Building2, Monitor, Plus, Trash2, Loader2, Link2, Search, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminHallsDevices() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [hallDialogOpen, setHallDialogOpen] = useState(false);
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,7 +41,7 @@ export default function AdminHallsDevices() {
     queryFn: async () => {
       const { data } = await supabase
         .from("halls")
-        .select("*, venues(name), devices(id, name, serial_number, is_active)")
+        .select("*, venues(id, name, owner_id), devices(id, name, serial_number, is_active)")
         .order("created_at", { ascending: false });
       return data || [];
     },
@@ -51,7 +53,7 @@ export default function AdminHallsDevices() {
     queryFn: async () => {
       const { data } = await supabase
         .from("devices")
-        .select("*, venues(name), halls(name)")
+        .select("*, venues(id, name, owner_id), halls(name)")
         .order("created_at", { ascending: false });
       return data || [];
     },
@@ -220,7 +222,13 @@ export default function AdminHallsDevices() {
                       </div>
                       <div>
                         <h3 className="font-bold text-[#051839]">{hall.name}</h3>
-                        <p className="text-xs text-gray-400">{(hall.venues as any)?.name}</p>
+                        <button
+                          onClick={() => navigate(`/admin/customers`)}
+                          className="text-xs text-[#C4A35A] hover:underline flex items-center gap-1"
+                        >
+                          {(hall.venues as any)?.name}
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -310,10 +318,14 @@ export default function AdminHallsDevices() {
                       </div>
                       <div>
                         <h3 className="font-bold text-[#051839]">{device.name}</h3>
-                        <p className="text-xs text-gray-400">
+                        <button
+                          onClick={() => navigate(`/admin/customers`)}
+                          className="text-xs text-[#C4A35A] hover:underline flex items-center gap-1"
+                        >
                           {(device.venues as any)?.name}
                           {(device.halls as any)?.name && ` → ${(device.halls as any).name}`}
-                        </p>
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
                         <p className="text-xs text-gray-300">S/N: {device.serial_number}</p>
                       </div>
                     </div>
