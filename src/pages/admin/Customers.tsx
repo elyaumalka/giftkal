@@ -189,20 +189,40 @@ export default function Customers() {
   });
 
   // Filter data based on search
-  const filteredVenues = venues?.filter((v) =>
-    v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    v.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    v.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredVenues = venues?.filter((v) => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q || v.name.toLowerCase().includes(q) ||
+      v.address.toLowerCase().includes(q) ||
+      v.ownerName.toLowerCase().includes(q);
+    
+    const matchesStatus = filterStatus === "all" || 
+      (filterStatus === "paid" && v.totalTransactions > 0) ||
+      (filterStatus === "unpaid" && v.totalTransactions === 0);
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const filteredEvents = events?.filter((e) => {
     const q = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = !q || (
       e.ownerName?.toLowerCase().includes(q) ||
       e.groom_name?.toLowerCase().includes(q) ||
       e.bride_name?.toLowerCase().includes(q) ||
       e.venues?.name?.toLowerCase().includes(q)
     );
+
+    const matchesDate = (!filterDateFrom || e.event_date >= filterDateFrom) &&
+      (!filterDateTo || e.event_date <= filterDateTo);
+
+    const matchesStatus = filterStatus === "all" ||
+      (filterStatus === "docs_complete" && e.allDocsComplete) ||
+      (filterStatus === "docs_missing" && !e.allDocsComplete) ||
+      (filterStatus === "paid" && e.payment_completed) ||
+      (filterStatus === "unpaid" && !e.payment_completed);
+
+    const matchesVenue = filterVenueId === "all" || e.venue_id === filterVenueId;
+
+    return matchesSearch && matchesDate && matchesStatus && matchesVenue;
   });
 
   // Create venue owner + venue
