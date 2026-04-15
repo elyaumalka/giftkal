@@ -1,4 +1,4 @@
-import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, NavLink, useLocation, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -108,9 +108,9 @@ export function VenueLayout() {
       {/* Top Header */}
       <header className="fixed top-0 right-0 left-0 h-16 bg-[#051839] z-50 flex items-center justify-between px-6">
         {/* Logo on the right */}
-        <div className="flex items-center">
+        <Link to="/" className="flex items-center">
           <img src={logo} alt="Giftkal Logo" className="h-10" />
-        </div>
+        </Link>
         
         {/* Logout button on the left */}
         <Button
