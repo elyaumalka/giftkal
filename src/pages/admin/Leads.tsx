@@ -25,6 +25,7 @@ import {
   ClipboardList,
   X,
   User,
+  Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
