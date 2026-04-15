@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, X, Sparkles, Gift, Heart } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuthReady } from "@/hooks/useAuthReady";
-import { getDashboardPath, getUserRole } from "@/lib/auth";
+import { getDashboardPath } from "@/lib/auth";
 import logo from "@/assets/logo.png";
 
 export default function Login() {
@@ -51,7 +51,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -65,13 +65,10 @@ export default function Login() {
         return;
       }
 
-      const nextRole = signInData.user ? await getUserRole(signInData.user.id) : null;
-
       toast({
         title: "התחברת בהצלחה!",
         description: "ברוך הבא למערכת",
       });
-      navigate(getDashboardPath(nextRole, "/"), { replace: true });
     } catch (error: any) {
       toast({
         title: "שגיאה בהתחברות",
