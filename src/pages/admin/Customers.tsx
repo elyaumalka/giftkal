@@ -378,6 +378,8 @@ export default function Customers() {
 
   const openEditVenue = (venue: any) => {
     setSelectedVenue(venue);
+    setNewOwnerFullName(venue.ownerName || "");
+    setNewOwnerPhone(venue.ownerPhone || "");
     setNewVenueName(venue.name);
     setNewVenueAddress(venue.address);
     setNewVenuePhone(venue.phone || "");
