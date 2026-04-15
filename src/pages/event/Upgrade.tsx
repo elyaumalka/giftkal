@@ -330,23 +330,42 @@ const Upgrade = () => {
             />
             <Button
               variant="outline"
-              disabled={couponApplied || !couponCode.trim()}
-              onClick={() => {
-                if (VALID_COUPONS[couponCode.toUpperCase()]) {
+              disabled={couponApplied || !couponCode.trim() || couponLoading}
+              onClick={async () => {
+                setCouponLoading(true);
+                try {
+                  const { data: coupon, error } = await supabase
+                    .from("coupons")
+                    .select("*")
+                    .eq("code", couponCode.toUpperCase().trim())
+                    .eq("is_active", true)
+                    .maybeSingle();
+
+                  if (error || !coupon) {
+                    toast({ title: "קופון לא תקין", variant: "destructive" });
+                    return;
+                  }
+
+                  if (coupon.max_uses && (coupon.current_uses ?? 0) >= coupon.max_uses) {
+                    toast({ title: "הקופון מוצה", variant: "destructive" });
+                    return;
+                  }
+
                   setCouponApplied(true);
-                  toast({ title: "✅ קופון הופעל בהצלחה!" });
-                } else {
-                  toast({ title: "קופון לא תקין", variant: "destructive" });
+                  setCouponDiscount(Number(coupon.discount_amount) || 0);
+                  toast({ title: `קופון הופעל! הנחה של ₪${coupon.discount_amount} ✅` });
+                } finally {
+                  setCouponLoading(false);
                 }
               }}
             >
-              {couponApplied ? "✓ הופעל" : "הפעל"}
+              {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : couponApplied ? "✓ הופעל" : "הפעל"}
             </Button>
           </div>
 
           {couponApplied && (
             <div className="bg-green-50 text-green-700 rounded-xl p-3 border border-green-200 text-center text-sm font-medium">
-              🎉 קופון {couponCode.toUpperCase()} — הנחה {discountPercent}%
+              🎉 קופון {couponCode.toUpperCase()} — הנחה ₪{couponDiscount}
             </div>
           )}
 
