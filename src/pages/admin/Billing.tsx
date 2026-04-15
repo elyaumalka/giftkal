@@ -110,12 +110,16 @@ export default function Billing() {
   });
 
   // History filtered by search
-  const filteredHistory = (allCharges || []).filter((c: any) =>
-    c.owner_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.event_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.venue_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.plan_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredHistory = (allCharges || []).filter((c: any) => {
+    const matchesSearch = c.owner_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.event_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.venue_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.plan_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const cDate = c.created_at?.split("T")[0] || "";
+    const matchesDate = (!filterDateFrom || cDate >= filterDateFrom) && (!filterDateTo || cDate <= filterDateTo);
+    const matchesVenue = filterVenueId === "all" || c.venue_name === filterVenueId;
+    return matchesSearch && matchesDate && matchesVenue;
+  });
 
   const handleCharge = (owner: any) => {
     setSelectedOwner(owner);
