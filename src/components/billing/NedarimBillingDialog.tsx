@@ -251,7 +251,7 @@ export default function NedarimBillingDialog({
     iframeRef.current?.contentWindow?.postMessage(paymentData, "*");
   };
 
-  const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : Number(selectedPlan));
+  const amount = fixedAmount || (selectedPlan === "custom" ? Number(customAmount) : getPlanAmount(selectedPlan));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
