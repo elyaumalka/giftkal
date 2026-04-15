@@ -80,6 +80,8 @@ export default function Customers() {
   const [newEventOwnerPhone, setNewEventOwnerPhone] = useState("");
   const [newEventGroomName, setNewEventGroomName] = useState("");
   const [newEventBrideName, setNewEventBrideName] = useState("");
+  const [newEventChildName, setNewEventChildName] = useState("");
+  const [newEventFamilyName, setNewEventFamilyName] = useState("");
   const [newEventDate, setNewEventDate] = useState("");
   const [newEventType, setNewEventType] = useState("חתונה");
   const [newEventVenueId, setNewEventVenueId] = useState("");
