@@ -25,6 +25,7 @@ import {
   ClipboardList,
   X,
   User,
+  Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
@@ -383,7 +384,7 @@ export default function Leads() {
         {filteredLeads?.map((lead) => (
           <div
             key={lead.id}
-            className="grid grid-cols-[auto_1fr_1fr_1.5fr_1fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+            className="grid grid-cols-[auto_auto_1fr_1fr_1.5fr_1fr_auto_auto_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
           >
             {/* עריכה - first on right */}
             <button
@@ -434,6 +435,23 @@ export default function Leads() {
               className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors"
             >
               <Eye className="w-5 h-5" />
+            </button>
+
+            {/* מחיקה */}
+            <button
+              onClick={async () => {
+                if (!confirm("האם אתה בטוח שברצונך למחוק ליד זה?")) return;
+                const { error } = await supabase.from("leads").delete().eq("id", lead.id);
+                if (error) {
+                  toast({ title: "שגיאה במחיקה", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: "הליד נמחק בהצלחה" });
+                  queryClient.invalidateQueries({ queryKey: ["leads"] });
+                }
+              }}
+              className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         ))}
