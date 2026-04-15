@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Monitor, Plus, Trash2, Loader2, Link2, Search, ExternalLink } from "lucide-react";
+import { Building2, Monitor, Plus, Trash2, Loader2, Link2, Search, ExternalLink, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminHallsDevices() {
