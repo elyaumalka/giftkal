@@ -890,6 +890,23 @@ export default function Customers() {
             <Pencil className="w-5 h-5" />
           </div>
           <div className="bg-white p-6 space-y-6">
+            {/* Owner Info Row */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם בעל האירוע</Label>
+                <Input variant="form" value={newEventOwnerFullName} onChange={(e) => setNewEventOwnerFullName(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                <Input variant="form" value={newEventOwnerPhone} onChange={(e) => setNewEventOwnerPhone(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">מייל</Label>
+                <Input variant="form" type="email" value={newEventOwnerEmail} disabled className="text-center bg-muted/50" />
+              </div>
+            </div>
+
+            {/* Event Details Row */}
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label className="text-muted-foreground text-sm mb-2 block text-center">שם החתן</Label>
