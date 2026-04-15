@@ -153,7 +153,7 @@ export default function Transactions() {
           <Input
             placeholder="חיפוש חופשי"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-right w-32 p-0 h-6 text-sm"
           />
           <Search className="w-4 h-4 text-muted-foreground" />
