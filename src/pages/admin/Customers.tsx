@@ -159,7 +159,7 @@ export default function Customers() {
       const ownerIds = data.map(e => e.owner_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name, phone")
+        .select("user_id, full_name, phone, email")
         .in("user_id", ownerIds);
       
       // Get documents for each event to check missing docs
@@ -187,6 +187,7 @@ export default function Customers() {
           ...event,
           ownerName: profile?.full_name || "לא ידוע",
           ownerPhone: profile?.phone || "",
+          ownerEmail: profile?.email || "",
           missingDocsCount: missingDocs.length,
           allDocsComplete: missingDocs.length === 0,
         };
@@ -346,12 +347,19 @@ export default function Customers() {
       const { error } = await supabase.from("events").update({
         groom_name: newEventGroomName || null,
         bride_name: newEventBrideName || null,
+        child_name: newEventChildName || null,
+        family_name: newEventFamilyName || null,
         event_date: newEventDate,
         event_type: newEventType,
         venue_id: newEventVenueId || null,
         device_rental_cost: parseFloat(newEventRentalCost) || 0,
       }).eq("id", selectedEvent.id);
       if (error) throw error;
+
+      // Update owner phone/email in profiles
+      await supabase.from("profiles").update({
+        phone: newEventOwnerPhone || null,
+      }).eq("user_id", selectedEvent.owner_id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events-list"] });
@@ -407,8 +415,13 @@ export default function Customers() {
 
   const openEditEvent = (event: any) => {
     setSelectedEvent(event);
+    setNewEventOwnerFullName(event.ownerName || "");
+    setNewEventOwnerPhone(event.ownerPhone || "");
+    setNewEventOwnerEmail(event.ownerEmail || "");
     setNewEventGroomName(event.groom_name || "");
     setNewEventBrideName(event.bride_name || "");
+    setNewEventChildName(event.child_name || "");
+    setNewEventFamilyName(event.family_name || "");
     setNewEventDate(event.event_date);
     setNewEventType(event.event_type || "חתונה");
     setNewEventVenueId(event.venue_id || "");
@@ -877,6 +890,23 @@ export default function Customers() {
             <Pencil className="w-5 h-5" />
           </div>
           <div className="bg-white p-6 space-y-6">
+            {/* Owner Info Row */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">שם בעל האירוע</Label>
+                <Input variant="form" value={newEventOwnerFullName} onChange={(e) => setNewEventOwnerFullName(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">טלפון</Label>
+                <Input variant="form" value={newEventOwnerPhone} onChange={(e) => setNewEventOwnerPhone(e.target.value)} className="text-center" />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm mb-2 block text-center">מייל</Label>
+                <Input variant="form" type="email" value={newEventOwnerEmail} disabled className="text-center bg-muted/50" />
+              </div>
+            </div>
+
+            {/* Event Details Row */}
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label className="text-muted-foreground text-sm mb-2 block text-center">שם החתן</Label>
