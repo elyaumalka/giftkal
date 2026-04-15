@@ -1,4 +1,4 @@
-import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, NavLink, useLocation, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
