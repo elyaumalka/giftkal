@@ -385,11 +385,18 @@ export default function PaymeSetup() {
                 </div>
               </div>
 
-              {/* Address Section */}
+              {/* Address & Website Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <MapPin className="w-5 h-5" />
-                  <h3>כתובת</h3>
+                  <h3>כתובת ואתר</h3>
+                </div>
+
+                <div>
+                  <Label htmlFor="siteUrl">כתובת אתר *</Label>
+                  <Input id="siteUrl" type="url" value={formData.siteUrl || ''} onChange={(e) => handleChange('siteUrl', e.target.value)} placeholder="https://giftkal.com" className={errors.siteUrl ? 'border-red-500' : ''} dir="ltr" />
+                  {errors.siteUrl && <p className="text-red-500 text-sm mt-1">{errors.siteUrl}</p>}
+                  <p className="text-xs text-muted-foreground mt-1">כתובת האתר שבו תתבצע גביית המתנות</p>
                 </div>
                 
                 <div>
