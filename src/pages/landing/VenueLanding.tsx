@@ -4,8 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Mail, MessageCircle, Loader2, ArrowLeft, Sparkles, CreditCard } from "lucide-react";
-import NedarimBillingDialog from "@/components/billing/NedarimBillingDialog";
+import { Phone, Mail, MessageCircle, Loader2, ArrowLeft, Sparkles } from "lucide-react";
 
 /* ── tiny hook: fade-in on scroll ── */
 function useReveal() {
@@ -33,7 +32,6 @@ export default function VenueLanding() {
   const [email, setEmail] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [billingOpen, setBillingOpen] = useState(false);
   
   const [storyIndex, setStoryIndex] = useState(0);
   const [storyProgress, setStoryProgress] = useState(0);
@@ -164,6 +162,7 @@ export default function VenueLanding() {
       </div>
 
       {/* ═══════ CONTACT STRIP ═══════ */}
+      {(emailAddress || whatsappNumber || phoneNumber) && (
       <div className="mt-8 mx-4 md:mx-auto md:max-w-lg bg-white/80 backdrop-blur-md rounded-2xl shadow-lg py-5 px-4 flex justify-center gap-8">
         {emailAddress && (
           <a href={`mailto:${emailAddress}`} className="flex flex-col items-center gap-2 group hover-scale">
@@ -191,6 +190,7 @@ export default function VenueLanding() {
           </a>
         )}
       </div>
+      )}
 
       {/* ═══════ GALLERY — Stories Style ═══════ */}
       {galleryImages.length > 0 && (
@@ -307,26 +307,8 @@ export default function VenueLanding() {
         </div>
       </div>
 
-      {/* ═══════ PAYMENT BUTTON — Floating ═══════ */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-        <button
-          onClick={() => setBillingOpen(true)}
-          className="flex items-center gap-2 bg-[#C4A35A] hover:bg-[#B8963E] text-white font-bold px-8 py-4 rounded-full shadow-2xl shadow-[#C4A35A]/30 transition-all hover:scale-105 active:scale-95 text-lg"
-        >
-          <CreditCard className="w-5 h-5" />
-          שלם עכשיו
-        </button>
-      </div>
-
-      <NedarimBillingDialog
-        open={billingOpen}
-        onOpenChange={setBillingOpen}
-        description={`תשלום עבור שירותי ${venueName}`}
-        onSuccess={() => setBillingOpen(false)}
-      />
-
       {/* ═══════ FOOTER ═══════ */}
-      <div className="py-8 pb-24 text-center">
+      <div className="py-8 text-center">
         <p className="text-gray-400 text-xs">
           Powered by <span className="text-[#C4A35A] font-semibold">Giftkal</span>
         </p>
