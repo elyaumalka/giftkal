@@ -454,6 +454,65 @@ export default function PaymeSetup() {
                 </div>
               </div>
 
+              {/* Documents Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-lg font-semibold">
+                  <Upload className="w-5 h-5" />
+                  <h3>מסמכים נדרשים</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">צילום תעודת זהות ואישור ניהול חשבון בנק נדרשים לאישור חשבון הסליקה</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <Label className="font-medium">צילום תעודת זהות</Label>
+                    <input
+                      ref={socialIdInputRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(e, setSocialIdFile)}
+                    />
+                    <Button
+                      type="button"
+                      variant={socialIdFile ? "outline" : "secondary"}
+                      className="w-full gap-2"
+                      onClick={() => socialIdInputRef.current?.click()}
+                    >
+                      {socialIdFile ? (
+                        <><FileCheck className="w-4 h-4 text-green-500" />{socialIdFile.name}</>
+                      ) : (
+                        <><Upload className="w-4 h-4" />בחר קובץ</>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">PDF, JPG, PNG • עד 5MB</p>
+                  </div>
+
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <Label className="font-medium">אישור ניהול חשבון בנק</Label>
+                    <input
+                      ref={bankApprovalInputRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(e, setBankApprovalFile)}
+                    />
+                    <Button
+                      type="button"
+                      variant={bankApprovalFile ? "outline" : "secondary"}
+                      className="w-full gap-2"
+                      onClick={() => bankApprovalInputRef.current?.click()}
+                    >
+                      {bankApprovalFile ? (
+                        <><FileCheck className="w-4 h-4 text-green-500" />{bankApprovalFile.name}</>
+                      ) : (
+                        <><Upload className="w-4 h-4" />בחר קובץ</>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">PDF, JPG, PNG • עד 5MB</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Submit Button */}
               <div className="pt-4 border-t">
                 <Button type="submit" className="w-full h-12 text-lg gap-2" disabled={submitForApproval.isPending}>
