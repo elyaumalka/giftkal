@@ -892,6 +892,7 @@ export type Database = {
           payment_status: string | null
           receipt_url: string | null
           relationship: string | null
+          side: string | null
           transaction_date: string
           venue_id: string | null
         }
@@ -911,6 +912,7 @@ export type Database = {
           payment_status?: string | null
           receipt_url?: string | null
           relationship?: string | null
+          side?: string | null
           transaction_date?: string
           venue_id?: string | null
         }
@@ -930,6 +932,7 @@ export type Database = {
           payment_status?: string | null
           receipt_url?: string | null
           relationship?: string | null
+          side?: string | null
           transaction_date?: string
           venue_id?: string | null
         }
