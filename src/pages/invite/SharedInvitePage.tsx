@@ -39,31 +39,26 @@ export default function SharedInvitePage() {
     queryFn: async () => {
       if (!token) return null;
 
-      // Try each side token
-      for (const side of ["groom", "bride", "general"] as SideType[]) {
-        const col = `share_token_${side}`;
-        const { data } = await (supabase
-          .from("events")
-          .select("id, event_type, groom_name, bride_name, event_date, custom_venue_name, custom_venue_location") as any)
-          .eq(col, token)
-          .maybeSingle();
+      // Use secure RPC function to look up event by share token
+      const { data: results } = await supabase
+        .rpc("lookup_event_by_share_token", { _token: token });
 
-        if (data) {
-          const { data: fullData } = await supabase
-            .from("events")
-            .select("*")
-            .eq("id", data.id)
-            .single();
-
-          return {
-            event: {
-              ...data,
-              child_name: (fullData as any)?.child_name || null,
-              family_name: (fullData as any)?.family_name || null,
-            } as EventData,
-            side,
-          };
-        }
+      if (results && results.length > 0) {
+        const result = results[0];
+        return {
+          event: {
+            id: result.id,
+            event_type: result.event_type,
+            groom_name: result.groom_name,
+            bride_name: result.bride_name,
+            child_name: result.child_name,
+            family_name: result.family_name,
+            event_date: result.event_date,
+            custom_venue_name: result.custom_venue_name,
+            custom_venue_location: result.custom_venue_location,
+          } as EventData,
+          side: result.side as SideType,
+        };
       }
       return null;
     },

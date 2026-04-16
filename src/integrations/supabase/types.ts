@@ -1027,7 +1027,6 @@ export type Database = {
           bride_grandparents: string | null
           bride_name: string | null
           bride_parents: string | null
-          budget_enabled: boolean | null
           ceremony_time: string | null
           child_name: string | null
           custom_venue_location: string | null
@@ -1042,14 +1041,12 @@ export type Database = {
           hall_id: string | null
           id: string | null
           invitation_design_url: string | null
+          invitation_notes: string | null
           invitation_text: string | null
           invitations_enabled: boolean | null
           reception_time: string | null
           rsvp_enabled: boolean | null
           seller_payme_id: string | null
-          share_token_bride: string | null
-          share_token_general: string | null
-          share_token_groom: string | null
           venue_id: string | null
           voice_text: string | null
         }
@@ -1057,7 +1054,6 @@ export type Database = {
           bride_grandparents?: string | null
           bride_name?: string | null
           bride_parents?: string | null
-          budget_enabled?: boolean | null
           ceremony_time?: string | null
           child_name?: string | null
           custom_venue_location?: string | null
@@ -1072,14 +1068,12 @@ export type Database = {
           hall_id?: string | null
           id?: string | null
           invitation_design_url?: string | null
+          invitation_notes?: string | null
           invitation_text?: string | null
           invitations_enabled?: boolean | null
           reception_time?: string | null
           rsvp_enabled?: boolean | null
           seller_payme_id?: string | null
-          share_token_bride?: string | null
-          share_token_general?: string | null
-          share_token_groom?: string | null
           venue_id?: string | null
           voice_text?: string | null
         }
@@ -1087,7 +1081,6 @@ export type Database = {
           bride_grandparents?: string | null
           bride_name?: string | null
           bride_parents?: string | null
-          budget_enabled?: boolean | null
           ceremony_time?: string | null
           child_name?: string | null
           custom_venue_location?: string | null
@@ -1102,14 +1095,12 @@ export type Database = {
           hall_id?: string | null
           id?: string | null
           invitation_design_url?: string | null
+          invitation_notes?: string | null
           invitation_text?: string | null
           invitations_enabled?: boolean | null
           reception_time?: string | null
           rsvp_enabled?: boolean | null
           seller_payme_id?: string | null
-          share_token_bride?: string | null
-          share_token_general?: string | null
-          share_token_groom?: string | null
           venue_id?: string | null
           voice_text?: string | null
         }
@@ -1150,6 +1141,21 @@ export type Database = {
       is_event_public_accessible: {
         Args: { _event_id: string }
         Returns: boolean
+      }
+      lookup_event_by_share_token: {
+        Args: { _token: string }
+        Returns: {
+          bride_name: string
+          child_name: string
+          custom_venue_location: string
+          custom_venue_name: string
+          event_date: string
+          event_type: string
+          family_name: string
+          groom_name: string
+          id: string
+          side: string
+        }[]
       }
     }
     Enums: {

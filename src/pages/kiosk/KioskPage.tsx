@@ -105,7 +105,7 @@ export default function KioskPage() {
     const today = new Date().toISOString().split("T")[0];
 
     const { data: events } = await supabase
-      .from("events")
+      .from("public_events")
       .select("id, groom_name, bride_name, child_name, family_name, event_type, event_date, reception_time, ceremony_time")
       .eq("hall_id", hallId)
       .eq("event_date", today);
