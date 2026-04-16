@@ -271,7 +271,7 @@ export default function KioskPage() {
         <Dialog open={showLanding} onOpenChange={setShowLanding}>
           <DialogContent className="max-w-4xl w-[95vw] h-[85vh] p-0 overflow-hidden">
             <iframe
-              src={`/venue/${hall?.venue_id}`}
+              src={`/landing/${hall?.venue_id}`}
               className="w-full h-full border-0"
               title={`דף נחיתה - ${venueName}`}
             />
