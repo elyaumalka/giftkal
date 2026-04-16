@@ -1276,6 +1276,10 @@ export default function Customers() {
                     <Bell className="w-3 h-3" />
                     ממתין לאישור
                   </span>
+                ) : event.kycStatus === 'rejected' ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-600 text-white">
+                    נדחו — ממתין להעלאה מחדש
+                  </span>
                 ) : event.seller_payme_id ? (
                   <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
                     חסרים מסמכים
