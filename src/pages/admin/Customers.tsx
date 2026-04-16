@@ -30,6 +30,7 @@ import {
   LogIn,
   Loader2,
   Trash2,
+  Bell,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
