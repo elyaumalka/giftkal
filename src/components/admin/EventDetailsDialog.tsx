@@ -41,6 +41,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [localBudgetEnabled, setLocalBudgetEnabled] = useState(event.budget_enabled ?? false);
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [approvingKyc, setApprovingKyc] = useState(false);
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
