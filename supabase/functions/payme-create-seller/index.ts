@@ -11,6 +11,7 @@ interface CreateSellerRequest {
   firstName: string;
   lastName: string;
   socialId: string;
+  socialIdDate: string; // DD/MM/YYYY
   birthdate: string; // DD/MM/YYYY
   gender: number; // 0=male, 1=female
   email: string;
@@ -25,6 +26,7 @@ interface CreateSellerRequest {
   merchantName: string;
   merchantNameEn?: string;
   description?: string;
+  siteUrl?: string;
   // Address
   city: string;
   street: string;
@@ -244,6 +246,7 @@ Deno.serve(async (req) => {
       seller_first_name: body.firstName.trim(),
       seller_last_name: body.lastName.trim(),
       seller_social_id: body.socialId,
+      seller_social_id_date: body.socialIdDate || '',
       seller_birthdate: body.birthdate,
       seller_gender: body.gender || 0,
       seller_email: body.email.trim().toLowerCase(),
@@ -261,7 +264,7 @@ Deno.serve(async (req) => {
       seller_merchant_name_en: body.merchantNameEn || transliterateHebrew(body.merchantName.trim()),
       seller_dba: body.merchantName.trim(),
       seller_dba_en: body.merchantNameEn || transliterateHebrew(body.merchantName.trim()),
-      seller_site_url: 'https://giftkal.com',
+      seller_site_url: body.siteUrl || 'https://giftkal.com',
       seller_description: body.description || `אירוע - ${body.merchantName}`,
       seller_address_city: body.city.trim(),
       seller_address_street: body.street.trim(),

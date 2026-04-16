@@ -51,6 +51,7 @@ const formSchema = z.object({
   firstName: z.string().trim().min(2, 'שם פרטי חייב להכיל לפחות 2 תווים').max(50),
   lastName: z.string().trim().min(2, 'שם משפחה חייב להכיל לפחות 2 תווים').max(50),
   socialId: z.string().regex(/^\d{9}$/, 'תעודת זהות חייבת להכיל 9 ספרות'),
+  socialIdDate: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'תאריך הנפקה בפורמט DD/MM/YYYY'),
   birthdate: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'תאריך בפורמט DD/MM/YYYY'),
   email: z.string().email('כתובת מייל לא תקינה').max(100),
   phone: z.string().regex(/^0\d{9}$/, 'מספר טלפון לא תקין (10 ספרות)'),
@@ -61,6 +62,7 @@ const formSchema = z.object({
   incCode: z.string().optional(),
   merchantName: z.string().trim().min(2, 'שם העסק חייב להכיל לפחות 2 תווים').max(100),
   merchantNameEn: z.string().trim().min(2, 'שם העסק באנגלית חייב להכיל לפחות 2 תווים').max(100).regex(/^[a-zA-Z0-9\s\-_]+$/, 'יש להזין רק תווים באנגלית'),
+  siteUrl: z.string().url('כתובת אתר לא תקינה').max(200),
   city: z.string().trim().min(2, 'יש להזין עיר').max(50),
   street: z.string().trim().min(2, 'יש להזין רחוב').max(100),
   streetNumber: z.string().trim().min(1, 'יש להזין מספר בית').max(10),
@@ -79,6 +81,7 @@ export default function PaymeSetup() {
     firstName: '',
     lastName: '',
     socialId: '',
+    socialIdDate: '',
     birthdate: '',
     email: '',
     phone: '',
@@ -89,6 +92,7 @@ export default function PaymeSetup() {
     incCode: '',
     merchantName: '',
     merchantNameEn: '',
+    siteUrl: 'https://giftkal.com',
     city: '',
     street: '',
     streetNumber: '',
@@ -304,6 +308,19 @@ export default function PaymeSetup() {
                     {errors.socialId && <p className="text-red-500 text-sm mt-1">{errors.socialId}</p>}
                   </div>
                   <div>
+                    <Label htmlFor="socialIdDate">תאריך הנפקת ת.ז. *</Label>
+                    <Input id="socialIdDate" value={formData.socialIdDate || ''} onChange={(e) => {
+                      let val = e.target.value.replace(/\D/g, '');
+                      if (val.length >= 2) val = val.slice(0, 2) + '/' + val.slice(2);
+                      if (val.length >= 5) val = val.slice(0, 5) + '/' + val.slice(5, 9);
+                      handleChange('socialIdDate', val);
+                    }} placeholder="DD/MM/YYYY" maxLength={10} className={errors.socialIdDate ? 'border-red-500' : ''} />
+                    {errors.socialIdDate && <p className="text-red-500 text-sm mt-1">{errors.socialIdDate}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                     <Label htmlFor="birthdate">תאריך לידה *</Label>
                     <Input id="birthdate" value={formData.birthdate || ''} onChange={(e) => {
                       let val = e.target.value.replace(/\D/g, '');
@@ -368,11 +385,18 @@ export default function PaymeSetup() {
                 </div>
               </div>
 
-              {/* Address Section */}
+              {/* Address & Website Section */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-lg font-semibold">
                   <MapPin className="w-5 h-5" />
-                  <h3>כתובת</h3>
+                  <h3>כתובת ואתר</h3>
+                </div>
+
+                <div>
+                  <Label htmlFor="siteUrl">כתובת אתר *</Label>
+                  <Input id="siteUrl" type="url" value={formData.siteUrl || ''} onChange={(e) => handleChange('siteUrl', e.target.value)} placeholder="https://giftkal.com" className={errors.siteUrl ? 'border-red-500' : ''} dir="ltr" />
+                  {errors.siteUrl && <p className="text-red-500 text-sm mt-1">{errors.siteUrl}</p>}
+                  <p className="text-xs text-muted-foreground mt-1">כתובת האתר שבו תתבצע גביית המתנות</p>
                 </div>
                 
                 <div>
