@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag, Clock, XCircle, AlertTriangle, RefreshCw, Send } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag, Clock, XCircle, AlertTriangle, RefreshCw, Send, Upload, FileCheck } from "lucide-react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 
