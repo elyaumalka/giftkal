@@ -111,6 +111,7 @@ function App() {
            <Route path="/kiosk/:hallId" element={<KioskPage />} />
           <Route path="/api/yemot" element={<YemotApiDocs />} />
           <Route path="/api/docs" element={<SystemApiDocs />} />
+          <Route path="/api/nedarim" element={<NedarimApiDocs />} />
 
           {/* Admin routes */}
           <Route path="/admin" element={<AdminLayout />}>
