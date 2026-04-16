@@ -73,6 +73,7 @@ import KioskPage from "./pages/kiosk/KioskPage";
 // API Docs
 import YemotApiDocs from "./pages/api/YemotApiDocs";
 import SystemApiDocs from "./pages/api/SystemApiDocs";
+import NedarimApiDocs from "./pages/api/NedarimApiDocs";
 
 const queryClient = new QueryClient();
 
