@@ -215,11 +215,15 @@ export default function PaymeSetup() {
     );
   }
 
-  // Show approved status
+  // Show approved status - with document upload if KYC not complete
   if (event?.seller_payme_id) {
+    const kycStatus = (event as any).kyc_docs_status;
+    const setupData = event.payment_setup_data as any;
+    const hasFiles = !!(setupData?.socialIdFile || setupData?.bankApprovalFile);
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
-        <Card className="max-w-md w-full">
+        <Card className="max-w-lg w-full">
           <CardHeader className="text-center">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <CardTitle>חשבון הסליקה פעיל ✅</CardTitle>
@@ -227,7 +231,105 @@ export default function PaymeSetup() {
               החשבון שלך מאושר ופעיל. האורחים יכולים לשלוח מתנות באשראי.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* KYC Document Upload Section */}
+            {kycStatus !== 'approved' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-medium mb-1">בשביל העברת הכספים יש לצרף:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>צילום תעודת זהות</li>
+                      <li>אישור ניהול חשבון בנק</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {hasFiles && kycStatus === 'pending' ? (
+                  <div className="bg-white rounded-lg p-3 text-center">
+                    <p className="text-sm text-amber-700 font-medium">המסמכים נשלחו ונמצאים בבדיקה ⏳</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="border rounded-lg p-3 bg-white space-y-2">
+                      <Label className="text-xs font-medium">צילום תעודת זהות</Label>
+                      <input
+                        ref={socialIdInputRef}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff"
+                        className="hidden"
+                        onChange={(e) => handleFileChange(e, setSocialIdFile)}
+                      />
+                      <Button
+                        type="button"
+                        variant={socialIdFile ? "outline" : "secondary"}
+                        size="sm"
+                        className="w-full gap-1 text-xs"
+                        onClick={() => socialIdInputRef.current?.click()}
+                      >
+                        {socialIdFile ? (
+                          <><FileCheck className="w-3 h-3 text-green-500" />{socialIdFile.name}</>
+                        ) : (
+                          <><Upload className="w-3 h-3" />בחר קובץ</>
+                        )}
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg p-3 bg-white space-y-2">
+                      <Label className="text-xs font-medium">אישור ניהול חשבון</Label>
+                      <input
+                        ref={bankApprovalInputRef}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff"
+                        className="hidden"
+                        onChange={(e) => handleFileChange(e, setBankApprovalFile)}
+                      />
+                      <Button
+                        type="button"
+                        variant={bankApprovalFile ? "outline" : "secondary"}
+                        size="sm"
+                        className="w-full gap-1 text-xs"
+                        onClick={() => bankApprovalInputRef.current?.click()}
+                      >
+                        {bankApprovalFile ? (
+                          <><FileCheck className="w-3 h-3 text-green-500" />{bankApprovalFile.name}</>
+                        ) : (
+                          <><Upload className="w-3 h-3" />בחר קובץ</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {(socialIdFile || bankApprovalFile) && !hasFiles && (
+                  <Button
+                    className="w-full gap-2"
+                    onClick={async () => {
+                      try {
+                        const currentSetupData = (event.payment_setup_data as any) || {};
+                        const updatedData: any = { ...currentSetupData };
+                        if (socialIdFile) updatedData.socialIdFile = socialIdFile;
+                        if (bankApprovalFile) updatedData.bankApprovalFile = bankApprovalFile;
+
+                        await supabase.from('events').update({
+                          payment_setup_data: updatedData,
+                          kyc_docs_status: 'pending',
+                        }).eq('id', eventId);
+
+                        queryClient.invalidateQueries({ queryKey: ['event-payme', eventId] });
+                        toast({ title: "המסמכים נשלחו בהצלחה!", description: "הצוות יבדוק ויאשר בהקדם" });
+                      } catch (err: any) {
+                        toast({ title: "שגיאה", description: err.message, variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <Send className="w-4 h-4" />
+                    שלח מסמכים לאישור
+                  </Button>
+                )}
+              </div>
+            )}
+
             <Button className="w-full" onClick={() => navigate('/event')}>חזרה לדאשבורד</Button>
           </CardContent>
         </Card>
