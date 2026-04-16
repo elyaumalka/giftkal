@@ -195,13 +195,14 @@ async function handleTransactions(action: string, supabase: any, url: URL, body:
       return okResponse({ transaction: data });
     }
     case 'CreateTransaction': {
-      const { event_id, payer_name, amount, payer_phone, payer_email, relationship, blessing_text, venue_id, installments, payment_status } = body;
+      const { event_id, payer_name, amount, payer_phone, payer_email, relationship, blessing_text, venue_id, installments, payment_status, side } = body;
       if (!event_id || !payer_name || !amount) return errorResponse('event_id, payer_name, and amount are required', 400);
       const { data, error } = await supabase.from('transactions').insert({
         event_id, payer_name, amount, payer_phone: payer_phone || null,
         payer_email: payer_email || null, relationship: relationship || null,
         blessing_text: blessing_text || null, venue_id: venue_id || null,
         installments: installments || 1, payment_status: payment_status || 'completed',
+        side: side || null,
       }).select().single();
       if (error) return errorResponse(error.message, 400);
       return okResponse({ transaction: data });
