@@ -375,10 +375,19 @@ export default function PaymeSetup() {
 
             {/* KYC Document Upload Section */}
             {kycStatus !== 'approved' && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <div className={`${kycStatus === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-4 space-y-3`}>
+                {/* Rejection reason */}
+                {kycStatus === 'rejected' && setupData?.kyc_rejection_reason && (
+                  <div className="bg-white border border-red-200 rounded-lg p-3">
+                    <p className="text-sm font-medium text-red-800 mb-1">❌ המסמכים נדחו</p>
+                    <p className="text-sm text-red-700">{setupData.kyc_rejection_reason}</p>
+                    <p className="text-xs text-red-600 mt-2">יש להעלות מסמכים חדשים</p>
+                  </div>
+                )}
+
                 <div className="flex items-start gap-3">
-                  <Upload className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div className="text-sm text-blue-800">
+                  <Upload className={`w-5 h-5 ${kycStatus === 'rejected' ? 'text-red-600' : 'text-blue-600'} mt-0.5`} />
+                  <div className={`text-sm ${kycStatus === 'rejected' ? 'text-red-800' : 'text-blue-800'}`}>
                     <p className="font-medium mb-1">בשביל העברת הכספים יש לצרף:</p>
                     <ul className="list-disc list-inside space-y-1">
                       <li>צילום תעודת זהות</li>
