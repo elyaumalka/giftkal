@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { event_id, payer_name, payer_phone, payer_email, payer_id, amount, relationship, blessing_text } = body;
+    const { event_id, payer_name, payer_phone, payer_email, payer_id, amount, relationship, blessing_text, side } = body;
 
     if (!event_id || !amount || !payer_name) {
       return new Response(
