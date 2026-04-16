@@ -609,6 +609,10 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                 <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
                   הושלמו בהצלחה ✅
                 </span>
+              ) : kycStatus === 'rejected' ? (
+                <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
+                  נדחו — ממתין להעלאה מחדש
+                </span>
               ) : kycStatus === 'pending' || hasAnyKycFile ? (
                 <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-white">
                   ממתין לאישור
