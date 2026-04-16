@@ -183,6 +183,14 @@ export default function Customers() {
         const uploadedDocTypes = eventDocs.map(d => d.document_type);
         const missingDocs = requiredDocTypes.filter(type => !uploadedDocTypes.includes(type));
         
+        // Compute KYC docs status
+        const setupData = event.payment_setup_data as any;
+        const hasKycFiles = !!(setupData?.socialIdFile || setupData?.bankApprovalFile);
+        let kycStatus: string | null = event.kyc_docs_status;
+        if (!kycStatus && hasKycFiles && event.seller_payme_id) {
+          kycStatus = 'pending';
+        }
+        
         const profile = profiles?.find(p => p.user_id === event.owner_id);
         return {
           ...event,
@@ -191,6 +199,8 @@ export default function Customers() {
           ownerEmail: profile?.email || "",
           missingDocsCount: missingDocs.length,
           allDocsComplete: missingDocs.length === 0,
+          kycStatus,
+          hasKycFiles,
         };
       });
     },
