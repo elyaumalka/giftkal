@@ -341,6 +341,7 @@ export type Database = {
           invitation_notes: string | null
           invitation_text: string | null
           invitations_enabled: boolean | null
+          kyc_docs_status: string | null
           owner_id: string
           payment_completed: boolean | null
           payment_setup_data: Json | null
@@ -383,6 +384,7 @@ export type Database = {
           invitation_notes?: string | null
           invitation_text?: string | null
           invitations_enabled?: boolean | null
+          kyc_docs_status?: string | null
           owner_id: string
           payment_completed?: boolean | null
           payment_setup_data?: Json | null
@@ -425,6 +427,7 @@ export type Database = {
           invitation_notes?: string | null
           invitation_text?: string | null
           invitations_enabled?: boolean | null
+          kyc_docs_status?: string | null
           owner_id?: string
           payment_completed?: boolean | null
           payment_setup_data?: Json | null
