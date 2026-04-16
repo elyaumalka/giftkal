@@ -99,6 +99,33 @@ export default function PaymeSetup() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'form' | 'submitted'>('form');
+  const [socialIdFile, setSocialIdFile] = useState<{ base64: string; name: string; mimeType: string } | null>(null);
+  const [bankApprovalFile, setBankApprovalFile] = useState<{ base64: string; name: string; mimeType: string } | null>(null);
+  const socialIdInputRef = useRef<HTMLInputElement>(null);
+  const bankApprovalInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (file: { base64: string; name: string; mimeType: string } | null) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'image/bmp', 'image/tiff'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "סוג קובץ לא נתמך", description: "יש להעלות קובץ מסוג PDF, JPG, PNG, BMP או TIFF", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "קובץ גדול מדי", description: "גודל מקסימלי 5MB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      setter({ base64, name: file.name, mimeType: file.type });
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Check if event already has seller or pending setup
   const { data: event, isLoading: eventLoading } = useQuery({
@@ -121,11 +148,19 @@ export default function PaymeSetup() {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) throw new Error('לא מחובר');
 
+      const setupData: any = { ...data };
+      if (socialIdFile) {
+        setupData.socialIdFile = socialIdFile;
+      }
+      if (bankApprovalFile) {
+        setupData.bankApprovalFile = bankApprovalFile;
+      }
+
       const { error } = await supabase
         .from('events')
         .update({
           payment_setup_status: 'pending_approval',
-          payment_setup_data: data as any,
+          payment_setup_data: setupData,
         })
         .eq('id', eventId);
 
