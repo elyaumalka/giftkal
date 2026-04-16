@@ -260,8 +260,6 @@ export default function PaymeSetup() {
                     <p className="text-sm text-amber-700 font-medium">המסמכים נשלחו ונמצאים בבדיקה ⏳</p>
                   </div>
                 ) : (
-                  </div>
-                ) : (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="border rounded-lg p-3 bg-white space-y-2">
                       <Label className="text-xs font-medium">צילום תעודת זהות</Label>
