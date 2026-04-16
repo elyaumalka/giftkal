@@ -314,6 +314,62 @@ Deno.serve(async (req) => {
       // Don't fail - seller was created in PayMe
     }
 
+    // Upload seller documents if provided in payment_setup_data
+    try {
+      const { data: eventData } = await supabase
+        .from('events')
+        .select('payment_setup_data')
+        .eq('id', body.eventId)
+        .single();
+
+      const setupData = eventData?.payment_setup_data as any;
+      const filesToUpload: Array<{ base64: string; name: string; mimeType: string; type: number }> = [];
+
+      if (setupData?.socialIdFile?.base64) {
+        filesToUpload.push({ ...setupData.socialIdFile, type: 1 });
+      }
+      if (setupData?.bankApprovalFile?.base64) {
+        filesToUpload.push({ ...setupData.bankApprovalFile, type: 2 });
+      }
+
+      if (filesToUpload.length > 0) {
+        console.log(`Uploading ${filesToUpload.length} KYC documents for seller ${paymeResult.seller_payme_id}`);
+        
+        const sellerFiles = filesToUpload.map(f => ({
+          name: f.name,
+          type: f.type,
+          base64: f.base64,
+          mime_type: f.mimeType,
+        }));
+
+        const uploadResponse = await fetch('https://live.payme.io/api/upload-seller-files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payme_client_key: paymeClientKey,
+            seller_payme_id: paymeResult.seller_payme_id,
+            seller_files: sellerFiles,
+          }),
+        });
+
+        const uploadResult = await uploadResponse.json();
+        console.log('PayMe upload-seller-files response:', JSON.stringify(uploadResult));
+
+        if (uploadResult.status_code !== 0) {
+          console.error('Failed to upload seller files:', uploadResult);
+        }
+
+        // Clear file data from payment_setup_data to save space
+        if (setupData) {
+          delete setupData.socialIdFile;
+          delete setupData.bankApprovalFile;
+          await supabase.from('events').update({ payment_setup_data: setupData }).eq('id', body.eventId);
+        }
+      }
+    } catch (fileError) {
+      console.error('Error uploading seller files (non-fatal):', fileError);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

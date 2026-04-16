@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag, Clock, XCircle, AlertTriangle, RefreshCw, Send } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag, Clock, XCircle, AlertTriangle, RefreshCw, Send, Upload, FileCheck } from "lucide-react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 
@@ -99,6 +99,33 @@ export default function PaymeSetup() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'form' | 'submitted'>('form');
+  const [socialIdFile, setSocialIdFile] = useState<{ base64: string; name: string; mimeType: string } | null>(null);
+  const [bankApprovalFile, setBankApprovalFile] = useState<{ base64: string; name: string; mimeType: string } | null>(null);
+  const socialIdInputRef = useRef<HTMLInputElement>(null);
+  const bankApprovalInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (file: { base64: string; name: string; mimeType: string } | null) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'image/bmp', 'image/tiff'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "סוג קובץ לא נתמך", description: "יש להעלות קובץ מסוג PDF, JPG, PNG, BMP או TIFF", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "קובץ גדול מדי", description: "גודל מקסימלי 5MB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      setter({ base64, name: file.name, mimeType: file.type });
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Check if event already has seller or pending setup
   const { data: event, isLoading: eventLoading } = useQuery({
@@ -121,11 +148,19 @@ export default function PaymeSetup() {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) throw new Error('לא מחובר');
 
+      const setupData: any = { ...data };
+      if (socialIdFile) {
+        setupData.socialIdFile = socialIdFile;
+      }
+      if (bankApprovalFile) {
+        setupData.bankApprovalFile = bankApprovalFile;
+      }
+
       const { error } = await supabase
         .from('events')
         .update({
           payment_setup_status: 'pending_approval',
-          payment_setup_data: data as any,
+          payment_setup_data: setupData,
         })
         .eq('id', eventId);
 
@@ -415,6 +450,65 @@ export default function PaymeSetup() {
                     <Label htmlFor="streetNumber">מספר *</Label>
                     <Input id="streetNumber" value={formData.streetNumber || ''} onChange={(e) => handleChange('streetNumber', e.target.value)} className={errors.streetNumber ? 'border-red-500' : ''} />
                     {errors.streetNumber && <p className="text-red-500 text-sm mt-1">{errors.streetNumber}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Documents Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-lg font-semibold">
+                  <Upload className="w-5 h-5" />
+                  <h3>מסמכים נדרשים</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">צילום תעודת זהות ואישור ניהול חשבון בנק נדרשים לאישור חשבון הסליקה</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <Label className="font-medium">צילום תעודת זהות</Label>
+                    <input
+                      ref={socialIdInputRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(e, setSocialIdFile)}
+                    />
+                    <Button
+                      type="button"
+                      variant={socialIdFile ? "outline" : "secondary"}
+                      className="w-full gap-2"
+                      onClick={() => socialIdInputRef.current?.click()}
+                    >
+                      {socialIdFile ? (
+                        <><FileCheck className="w-4 h-4 text-green-500" />{socialIdFile.name}</>
+                      ) : (
+                        <><Upload className="w-4 h-4" />בחר קובץ</>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">PDF, JPG, PNG • עד 5MB</p>
+                  </div>
+
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <Label className="font-medium">אישור ניהול חשבון בנק</Label>
+                    <input
+                      ref={bankApprovalInputRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.bmp,.tiff"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(e, setBankApprovalFile)}
+                    />
+                    <Button
+                      type="button"
+                      variant={bankApprovalFile ? "outline" : "secondary"}
+                      className="w-full gap-2"
+                      onClick={() => bankApprovalInputRef.current?.click()}
+                    >
+                      {bankApprovalFile ? (
+                        <><FileCheck className="w-4 h-4 text-green-500" />{bankApprovalFile.name}</>
+                      ) : (
+                        <><Upload className="w-4 h-4" />בחר קובץ</>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">PDF, JPG, PNG • עד 5MB</p>
                   </div>
                 </div>
               </div>
