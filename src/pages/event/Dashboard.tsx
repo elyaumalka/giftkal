@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CreditCard, Gift, Send, Monitor, Sparkles, CheckCircle, Clock, AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertCircle, CreditCard, Gift, Send, Monitor, Sparkles, CheckCircle, Clock, AlertTriangle, RefreshCw, Upload, FileCheck } from "lucide-react";
 import StatIcon from "@/assets/icons/event/StatIcon.svg";
 import { Badge } from "@/components/ui/badge";
 
@@ -185,6 +185,44 @@ export default function EventDashboard() {
           )}
         </>
       )}
+
+      {/* KYC Documents Banner - always show when docs not approved */}
+      {data?.event && (data.event as any).kyc_docs_status !== 'approved' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <Upload className="w-5 h-5 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base font-bold text-blue-800">
+                  {(data.event as any).kyc_docs_status === 'pending' ? 'מסמכים ממתינים לאישור ⏳' : 'נדרשים מסמכים להעברת כספים 📄'}
+                </h3>
+                {(data.event as any).kyc_docs_status === 'pending' && (
+                  <Badge className="bg-amber-500 text-white text-xs">ממתין</Badge>
+                )}
+              </div>
+              <p className="text-blue-700 text-sm mb-2">
+                {(data.event as any).kyc_docs_status === 'pending' 
+                  ? 'המסמכים נשלחו ונמצאים בבדיקה'
+                  : 'בשביל העברת הכספים יש לצרף צילום תעודת זהות ואישור ניהול חשבון בנק'
+                }
+              </p>
+              {(data.event as any).kyc_docs_status !== 'pending' && (
+                <Button 
+                  onClick={() => navigate(`/event/${data.event.id}/payme-setup`)}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Upload className="w-4 h-4 ml-2" />
+                  העלאת מסמכים
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Average Gift */}
