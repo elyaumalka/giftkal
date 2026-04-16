@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, User, X, Upload, Loader2 } from "lucide-react";
+import { Plus, User, X, Upload, Loader2, FileCheck, Send, Eye, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@radix-ui/react-dialog";
