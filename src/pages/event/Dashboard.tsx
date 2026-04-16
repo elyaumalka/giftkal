@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CreditCard, Gift, Send, Monitor, Sparkles, CheckCircle, Clock, AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertCircle, CreditCard, Gift, Send, Monitor, Sparkles, CheckCircle, Clock, AlertTriangle, RefreshCw, Upload, FileCheck } from "lucide-react";
 import StatIcon from "@/assets/icons/event/StatIcon.svg";
 import { Badge } from "@/components/ui/badge";
 
