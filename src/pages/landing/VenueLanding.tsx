@@ -9,10 +9,14 @@ import { Phone, Mail, MessageCircle, Loader2, ArrowLeft, Sparkles } from "lucide
 /* ── tiny hook: fade-in on scroll ── */
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      setVisible(true);
+      return;
+    }
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
       { threshold: 0.15 }
@@ -196,7 +200,7 @@ export default function VenueLanding() {
       {galleryImages.length > 0 && (
         <div
           ref={revealGallery.ref}
-          className={`mt-12 px-4 max-w-lg mx-auto transition-all duration-700 ${revealGallery.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          className={`mt-12 px-4 max-w-lg mx-auto transition-all duration-700 ${revealGallery.visible ? "opacity-100 translate-y-0" : "opacity-100 translate-y-0"}`}
         >
           <h2 className="text-3xl md:text-4xl font-extrabold text-[#051839] text-center mb-6">גלריית תמונות</h2>
 
@@ -247,7 +251,7 @@ export default function VenueLanding() {
       {aboutText && (
         <div
           ref={revealAbout.ref}
-          className={`mt-12 mx-3 md:mx-6 transition-all duration-700 ${revealAbout.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          className={`mt-12 mx-3 md:mx-6 transition-all duration-700 ${revealAbout.visible ? "opacity-100 translate-y-0" : "opacity-100 translate-y-0"}`}
         >
           <div className="bg-white/90 backdrop-blur-md rounded-[2rem] shadow-lg py-10 px-6 md:px-12 max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-extrabold text-[#051839] mb-5">אודות האולם</h2>
@@ -259,7 +263,7 @@ export default function VenueLanding() {
       {/* ═══════ LEAD FORM — framed ═══════ */}
       <div
         ref={revealForm.ref}
-        className={`mt-12 mx-3 md:mx-6 pb-12 transition-all duration-700 ${revealForm.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+        className={`mt-12 mx-3 md:mx-6 pb-12 transition-all duration-700 ${revealForm.visible ? "opacity-100 translate-y-0" : "opacity-100 translate-y-0"}`}
       >
         <div className="bg-white rounded-[2rem] shadow-2xl max-w-md mx-auto py-10 px-6 md:px-10 space-y-6">
           <div className="text-center">
