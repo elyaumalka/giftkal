@@ -245,7 +245,7 @@ export default function EventWelcome() {
     queryKey: ["event-welcome", eventId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("events")
+        .from("public_events")
         .select(`*, venues (id, name, address, logo_url, banner_url, phone, email)`)
         .eq("id", eventId)
         .maybeSingle();
