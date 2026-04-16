@@ -143,6 +143,7 @@ Deno.serve(async (req) => {
         amount: Number(amount),
         relationship: relationship || null,
         blessing_text: blessing_text || null,
+        side: side || null,
         payment_status: 'pending',
       })
       .select()
