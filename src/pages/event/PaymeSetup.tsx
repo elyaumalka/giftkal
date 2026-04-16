@@ -134,7 +134,7 @@ export default function PaymeSetup() {
       if (!eventId) return null;
       const { data, error } = await supabase
         .from('events')
-        .select('id, groom_name, bride_name, seller_payme_id, owner_id, payment_setup_status, payment_setup_data')
+        .select('id, groom_name, bride_name, seller_payme_id, owner_id, payment_setup_status, payment_setup_data, kyc_docs_status')
         .eq('id', eventId)
         .maybeSingle();
       if (error) throw error;
