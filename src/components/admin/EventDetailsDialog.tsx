@@ -248,6 +248,63 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
 
   const uploadedDocTypes = uploadedDocs?.map((d: any) => d.document_type) || [];
 
+  const setupData = event.payment_setup_data as any;
+  const hasSocialIdFile = !!setupData?.socialIdFile;
+  const hasBankApprovalFile = !!setupData?.bankApprovalFile;
+  const hasAnyKycFile = hasSocialIdFile || hasBankApprovalFile;
+  const kycStatus = event.kyc_docs_status;
+
+  const handleApproveKyc = async () => {
+    setApprovingKyc(true);
+    try {
+      if (!event.seller_payme_id) {
+        toast({ title: "שגיאה", description: "אין חשבון סליקה פעיל לאירוע זה", variant: "destructive" });
+        return;
+      }
+
+      const filesToUpload: Array<{ base64: string; name: string; mimeType: string; type: number }> = [];
+      if (setupData?.socialIdFile?.base64) {
+        filesToUpload.push({ ...setupData.socialIdFile, type: 1 });
+      }
+      if (setupData?.bankApprovalFile?.base64) {
+        filesToUpload.push({ ...setupData.bankApprovalFile, type: 2 });
+      }
+
+      if (filesToUpload.length === 0) {
+        toast({ title: "שגיאה", description: "אין מסמכים לשליחה", variant: "destructive" });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('payme-upload-seller-files', {
+        body: {
+          seller_payme_id: event.seller_payme_id,
+          files: filesToUpload,
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Upload failed');
+
+      // Update kyc status and clear files from setup data
+      const cleanedSetupData = { ...setupData };
+      delete cleanedSetupData.socialIdFile;
+      delete cleanedSetupData.bankApprovalFile;
+
+      await supabase.from('events').update({
+        kyc_docs_status: 'approved',
+        payment_setup_data: cleanedSetupData,
+      }).eq('id', event.id);
+
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      queryClient.invalidateQueries({ queryKey: ["event-payme", event.id] });
+      toast({ title: "המסמכים נשלחו בהצלחה ל-PayMe ✅" });
+    } catch (error: any) {
+      toast({ title: "שגיאה בשליחת המסמכים", description: error.message, variant: "destructive" });
+    } finally {
+      setApprovingKyc(false);
+    }
+  };
+
   return (
     <div className="flex flex-col max-h-[85vh]" dir="rtl">
       {/* Header - Title on RIGHT, buttons on LEFT */}
