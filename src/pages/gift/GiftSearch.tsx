@@ -33,7 +33,7 @@ const GiftSearch = () => {
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
       
       const { data } = await supabase
-        .from("events")
+        .from("public_events")
         .select("id, groom_name, bride_name, child_name, family_name, event_date, event_type, seller_payme_id, venues(name)")
         .gte("event_date", threeDaysAgo.toISOString().split("T")[0])
         .not("seller_payme_id", "is", null)

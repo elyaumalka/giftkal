@@ -22,7 +22,7 @@ export default function PublicRSVP() {
     queryFn: async () => {
       if (!eventId) return null;
       const { data } = await supabase
-        .from("events")
+        .from("public_events")
         .select("*")
         .eq("id", eventId)
         .single();
