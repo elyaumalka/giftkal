@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, User, X, Upload, Loader2, FileCheck, Send, Eye, AlertCircle } from "lucide-react";
+import { Plus, User, X, Upload, Loader2, FileCheck, Send, Eye, AlertCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -42,6 +43,9 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [approvingKyc, setApprovingKyc] = useState(false);
+  const [rejectingKyc, setRejectingKyc] = useState(false);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
