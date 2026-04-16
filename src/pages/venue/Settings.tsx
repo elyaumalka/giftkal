@@ -173,12 +173,18 @@ export default function VenueSettings() {
     const url = await uploadFile(file, 'landing-logo');
     
     if (url) {
-      const config = venue.landing_page_config as any || {};
+      // Fetch fresh config from DB to avoid overwriting other fields
+      const { data: freshVenue } = await supabase
+        .from("venues")
+        .select("landing_page_config")
+        .eq("id", venue.id)
+        .single();
+      const freshConfig = (freshVenue?.landing_page_config as any) || {};
       await supabase
         .from("venues")
         .update({ 
           logo_url: url,
-          landing_page_config: { ...config, logo: url }
+          landing_page_config: { ...freshConfig, logo: url }
         })
         .eq("id", venue.id);
       
@@ -193,8 +199,6 @@ export default function VenueSettings() {
     if (!files || files.length === 0 || !venue?.id) return;
 
     setUploadingGallery(true);
-    const config = venue.landing_page_config as any || {};
-    const existingGallery = config.gallery || [];
     const newGalleryUrls: string[] = [];
 
     for (const file of Array.from(files)) {
@@ -203,11 +207,20 @@ export default function VenueSettings() {
     }
 
     if (newGalleryUrls.length > 0) {
+      // Fetch fresh config from DB to avoid overwriting other fields
+      const { data: freshVenue } = await supabase
+        .from("venues")
+        .select("landing_page_config")
+        .eq("id", venue.id)
+        .single();
+      const freshConfig = (freshVenue?.landing_page_config as any) || {};
+      const existingGallery = freshConfig.gallery || [];
+      
       await supabase
         .from("venues")
         .update({ 
           landing_page_config: { 
-            ...config, 
+            ...freshConfig, 
             gallery: [...existingGallery, ...newGalleryUrls] 
           }
         })
