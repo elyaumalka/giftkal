@@ -532,13 +532,18 @@ export default function Customers() {
           <button
             onClick={() => setActiveTab("events")}
             className={cn(
-              "px-8 py-3 rounded-full text-sm font-medium transition-all",
+              "px-8 py-3 rounded-full text-sm font-medium transition-all relative",
               activeTab === "events"
                 ? "bg-secondary text-white"
                 : "text-muted-foreground hover:text-secondary"
             )}
           >
             בעלי אירועים
+            {pendingKycCount > 0 && (
+              <span className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                {pendingKycCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -817,6 +822,9 @@ export default function Customers() {
                     <SelectItem value="unpaid">לא שולם</SelectItem>
                     <SelectItem value="docs_complete">מסמכים הושלמו</SelectItem>
                     <SelectItem value="docs_missing">מסמכים חסרים</SelectItem>
+                    <SelectItem value="kyc_pending">סליקה: ממתין לאישור</SelectItem>
+                    <SelectItem value="kyc_approved">סליקה: הושלם</SelectItem>
+                    <SelectItem value="kyc_missing">סליקה: חסרים מסמכים</SelectItem>
                   </>
                 ) : (
                   <>
@@ -1011,6 +1019,7 @@ export default function Customers() {
           <div className="w-28 text-center">עלות השכרה</div>
           <div className="w-28 text-center">הוחזר/לא הוחזר</div>
           <div className="w-32 text-center">מסמכים חסרים</div>
+          <div className="w-36 text-center">מסמכי סליקה</div>
           <div className="w-10"></div>
         </div>
       )}
