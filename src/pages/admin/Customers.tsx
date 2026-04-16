@@ -1263,6 +1263,28 @@ export default function Customers() {
                 )}
               </div>
 
+              {/* KYC Documents Status Badge */}
+              <div className="w-36 text-center">
+                {event.kycStatus === 'approved' ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
+                    הושלמו בהצלחה
+                  </span>
+                ) : event.kycStatus === 'pending' ? (
+                  <span className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-white animate-pulse">
+                    <Bell className="w-3 h-3" />
+                    ממתין לאישור
+                  </span>
+                ) : event.seller_payme_id ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
+                    חסרים מסמכים
+                  </span>
+                ) : (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-gray-300 text-gray-600">
+                    —
+                  </span>
+                )}
+              </div>
+
               {/* View Button */}
               <Dialog>
                 <DialogTrigger asChild>
