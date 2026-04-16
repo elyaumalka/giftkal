@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, User, X, Upload, Loader2 } from "lucide-react";
+import { Plus, User, X, Upload, Loader2, FileCheck, Send, Eye, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -41,6 +41,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [localBudgetEnabled, setLocalBudgetEnabled] = useState(event.budget_enabled ?? false);
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [approvingKyc, setApprovingKyc] = useState(false);
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
@@ -246,6 +247,63 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   };
 
   const uploadedDocTypes = uploadedDocs?.map((d: any) => d.document_type) || [];
+
+  const setupData = event.payment_setup_data as any;
+  const hasSocialIdFile = !!setupData?.socialIdFile;
+  const hasBankApprovalFile = !!setupData?.bankApprovalFile;
+  const hasAnyKycFile = hasSocialIdFile || hasBankApprovalFile;
+  const kycStatus = event.kyc_docs_status;
+
+  const handleApproveKyc = async () => {
+    setApprovingKyc(true);
+    try {
+      if (!event.seller_payme_id) {
+        toast({ title: "שגיאה", description: "אין חשבון סליקה פעיל לאירוע זה", variant: "destructive" });
+        return;
+      }
+
+      const filesToUpload: Array<{ base64: string; name: string; mimeType: string; type: number }> = [];
+      if (setupData?.socialIdFile?.base64) {
+        filesToUpload.push({ ...setupData.socialIdFile, type: 1 });
+      }
+      if (setupData?.bankApprovalFile?.base64) {
+        filesToUpload.push({ ...setupData.bankApprovalFile, type: 2 });
+      }
+
+      if (filesToUpload.length === 0) {
+        toast({ title: "שגיאה", description: "אין מסמכים לשליחה", variant: "destructive" });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('payme-upload-seller-files', {
+        body: {
+          seller_payme_id: event.seller_payme_id,
+          files: filesToUpload,
+        }
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Upload failed');
+
+      // Update kyc status and clear files from setup data
+      const cleanedSetupData = { ...setupData };
+      delete cleanedSetupData.socialIdFile;
+      delete cleanedSetupData.bankApprovalFile;
+
+      await supabase.from('events').update({
+        kyc_docs_status: 'approved',
+        payment_setup_data: cleanedSetupData,
+      }).eq('id', event.id);
+
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      queryClient.invalidateQueries({ queryKey: ["event-payme", event.id] });
+      toast({ title: "המסמכים נשלחו בהצלחה ל-PayMe ✅" });
+    } catch (error: any) {
+      toast({ title: "שגיאה בשליחת המסמכים", description: error.message, variant: "destructive" });
+    } finally {
+      setApprovingKyc(false);
+    }
+  };
 
   return (
     <div className="flex flex-col max-h-[85vh]" dir="rtl">
@@ -534,6 +592,110 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
             </div>
           </div>
         </div>
+
+        {/* KYC Documents Section */}
+        {event.seller_payme_id && (
+          <div className="mt-6 bg-muted rounded-2xl p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-secondary flex items-center gap-2">
+                <FileCheck className="w-5 h-5" />
+                מסמכי סליקה (KYC)
+              </h3>
+              {kycStatus === 'approved' ? (
+                <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
+                  הושלמו בהצלחה ✅
+                </span>
+              ) : kycStatus === 'pending' || hasAnyKycFile ? (
+                <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-white">
+                  ממתין לאישור
+                </span>
+              ) : (
+                <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
+                  חסרים מסמכים
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Social ID File */}
+              <div className="bg-white rounded-xl p-4 border shadow-sm">
+                <p className="text-sm font-medium text-secondary mb-2">צילום תעודת זהות</p>
+                {hasSocialIdFile ? (
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="w-4 h-4 text-green-500" />
+                    <span className="text-xs text-muted-foreground truncate">{setupData.socialIdFile.name}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7"
+                      onClick={() => {
+                        const blob = new Blob(
+                          [Uint8Array.from(atob(setupData.socialIdFile.base64), c => c.charCodeAt(0))],
+                          { type: setupData.socialIdFile.mimeType }
+                        );
+                        window.open(URL.createObjectURL(blob), '_blank');
+                      }}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      צפייה
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <AlertCircle className="w-4 h-4 text-red-400" />
+                    <span className="text-xs">לא הועלה</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Bank Approval File */}
+              <div className="bg-white rounded-xl p-4 border shadow-sm">
+                <p className="text-sm font-medium text-secondary mb-2">אישור ניהול חשבון בנק</p>
+                {hasBankApprovalFile ? (
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="w-4 h-4 text-green-500" />
+                    <span className="text-xs text-muted-foreground truncate">{setupData.bankApprovalFile.name}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7"
+                      onClick={() => {
+                        const blob = new Blob(
+                          [Uint8Array.from(atob(setupData.bankApprovalFile.base64), c => c.charCodeAt(0))],
+                          { type: setupData.bankApprovalFile.mimeType }
+                        );
+                        window.open(URL.createObjectURL(blob), '_blank');
+                      }}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      צפייה
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <AlertCircle className="w-4 h-4 text-red-400" />
+                    <span className="text-xs">לא הועלה</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Approve Button */}
+            {hasAnyKycFile && kycStatus !== 'approved' && (
+              <Button
+                onClick={handleApproveKyc}
+                disabled={approvingKyc}
+                className="w-full rounded-full bg-green-600 hover:bg-green-700 text-white gap-2"
+              >
+                {approvingKyc ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" />שולח מסמכים ל-PayMe...</>
+                ) : (
+                  <><Send className="w-4 h-4" />אשר ושלח מסמכים ל-PayMe</>
+                )}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -30,6 +30,7 @@ import {
   LogIn,
   Loader2,
   Trash2,
+  Bell,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
@@ -182,6 +183,14 @@ export default function Customers() {
         const uploadedDocTypes = eventDocs.map(d => d.document_type);
         const missingDocs = requiredDocTypes.filter(type => !uploadedDocTypes.includes(type));
         
+        // Compute KYC docs status
+        const setupData = event.payment_setup_data as any;
+        const hasKycFiles = !!(setupData?.socialIdFile || setupData?.bankApprovalFile);
+        let kycStatus: string | null = event.kyc_docs_status;
+        if (!kycStatus && hasKycFiles && event.seller_payme_id) {
+          kycStatus = 'pending';
+        }
+        
         const profile = profiles?.find(p => p.user_id === event.owner_id);
         return {
           ...event,
@@ -190,6 +199,8 @@ export default function Customers() {
           ownerEmail: profile?.email || "",
           missingDocsCount: missingDocs.length,
           allDocsComplete: missingDocs.length === 0,
+          kycStatus,
+          hasKycFiles,
         };
       });
     },
@@ -225,12 +236,17 @@ export default function Customers() {
       (filterStatus === "docs_complete" && e.allDocsComplete) ||
       (filterStatus === "docs_missing" && !e.allDocsComplete) ||
       (filterStatus === "paid" && e.payment_completed) ||
-      (filterStatus === "unpaid" && !e.payment_completed);
+      (filterStatus === "unpaid" && !e.payment_completed) ||
+      (filterStatus === "kyc_pending" && e.kycStatus === 'pending') ||
+      (filterStatus === "kyc_approved" && e.kycStatus === 'approved') ||
+      (filterStatus === "kyc_missing" && !e.kycStatus && e.seller_payme_id);
 
     const matchesVenue = filterVenueId === "all" || e.venue_id === filterVenueId;
 
     return matchesSearch && matchesDate && matchesStatus && matchesVenue;
   });
+
+  const pendingKycCount = events?.filter(e => e.kycStatus === 'pending').length || 0;
 
   // Create venue owner + venue
   const createVenueWithOwner = useMutation({
@@ -516,13 +532,18 @@ export default function Customers() {
           <button
             onClick={() => setActiveTab("events")}
             className={cn(
-              "px-8 py-3 rounded-full text-sm font-medium transition-all",
+              "px-8 py-3 rounded-full text-sm font-medium transition-all relative",
               activeTab === "events"
                 ? "bg-secondary text-white"
                 : "text-muted-foreground hover:text-secondary"
             )}
           >
             בעלי אירועים
+            {pendingKycCount > 0 && (
+              <span className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                {pendingKycCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -801,6 +822,9 @@ export default function Customers() {
                     <SelectItem value="unpaid">לא שולם</SelectItem>
                     <SelectItem value="docs_complete">מסמכים הושלמו</SelectItem>
                     <SelectItem value="docs_missing">מסמכים חסרים</SelectItem>
+                    <SelectItem value="kyc_pending">סליקה: ממתין לאישור</SelectItem>
+                    <SelectItem value="kyc_approved">סליקה: הושלם</SelectItem>
+                    <SelectItem value="kyc_missing">סליקה: חסרים מסמכים</SelectItem>
                   </>
                 ) : (
                   <>
@@ -995,6 +1019,7 @@ export default function Customers() {
           <div className="w-28 text-center">עלות השכרה</div>
           <div className="w-28 text-center">הוחזר/לא הוחזר</div>
           <div className="w-32 text-center">מסמכים חסרים</div>
+          <div className="w-36 text-center">מסמכי סליקה</div>
           <div className="w-10"></div>
         </div>
       )}
@@ -1234,6 +1259,28 @@ export default function Customers() {
                 ) : (
                   <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
                     חסר {event.missingDocsCount} מסמכים
+                  </span>
+                )}
+              </div>
+
+              {/* KYC Documents Status Badge */}
+              <div className="w-36 text-center">
+                {event.kycStatus === 'approved' ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
+                    הושלמו בהצלחה
+                  </span>
+                ) : event.kycStatus === 'pending' ? (
+                  <span className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-white animate-pulse">
+                    <Bell className="w-3 h-3" />
+                    ממתין לאישור
+                  </span>
+                ) : event.seller_payme_id ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
+                    חסרים מסמכים
+                  </span>
+                ) : (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-gray-300 text-gray-600">
+                    —
                   </span>
                 )}
               </div>
