@@ -11,6 +11,7 @@ interface CreateSellerRequest {
   firstName: string;
   lastName: string;
   socialId: string;
+  socialIdDate: string; // DD/MM/YYYY
   birthdate: string; // DD/MM/YYYY
   gender: number; // 0=male, 1=female
   email: string;
@@ -25,6 +26,7 @@ interface CreateSellerRequest {
   merchantName: string;
   merchantNameEn?: string;
   description?: string;
+  siteUrl?: string;
   // Address
   city: string;
   street: string;
