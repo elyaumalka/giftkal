@@ -239,6 +239,7 @@ export default function Customers() {
       (filterStatus === "unpaid" && !e.payment_completed) ||
       (filterStatus === "kyc_pending" && e.kycStatus === 'pending') ||
       (filterStatus === "kyc_approved" && e.kycStatus === 'approved') ||
+      (filterStatus === "kyc_rejected" && e.kycStatus === 'rejected') ||
       (filterStatus === "kyc_missing" && !e.kycStatus && e.seller_payme_id);
 
     const matchesVenue = filterVenueId === "all" || e.venue_id === filterVenueId;
@@ -824,6 +825,7 @@ export default function Customers() {
                     <SelectItem value="docs_missing">מסמכים חסרים</SelectItem>
                     <SelectItem value="kyc_pending">סליקה: ממתין לאישור</SelectItem>
                     <SelectItem value="kyc_approved">סליקה: הושלם</SelectItem>
+                    <SelectItem value="kyc_rejected">סליקה: נדחה</SelectItem>
                     <SelectItem value="kyc_missing">סליקה: חסרים מסמכים</SelectItem>
                   </>
                 ) : (
@@ -1273,6 +1275,10 @@ export default function Customers() {
                   <span className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-white animate-pulse">
                     <Bell className="w-3 h-3" />
                     ממתין לאישור
+                  </span>
+                ) : event.kycStatus === 'rejected' ? (
+                  <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-600 text-white">
+                    נדחו — ממתין להעלאה מחדש
                   </span>
                 ) : event.seller_payme_id ? (
                   <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">

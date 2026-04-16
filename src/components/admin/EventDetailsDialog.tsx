@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, User, X, Upload, Loader2, FileCheck, Send, Eye, AlertCircle } from "lucide-react";
+import { Plus, User, X, Upload, Loader2, FileCheck, Send, Eye, AlertCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -42,6 +43,9 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [approvingKyc, setApprovingKyc] = useState(false);
+  const [rejectingKyc, setRejectingKyc] = useState(false);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
@@ -605,6 +609,10 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                 <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
                   הושלמו בהצלחה ✅
                 </span>
+              ) : kycStatus === 'rejected' ? (
+                <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-red-500 text-white">
+                  נדחו — ממתין להעלאה מחדש
+                </span>
               ) : kycStatus === 'pending' || hasAnyKycFile ? (
                 <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-white">
                   ממתין לאישור
@@ -680,19 +688,96 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
               </div>
             </div>
 
-            {/* Approve Button */}
+            {/* Approve & Reject Buttons */}
             {hasAnyKycFile && kycStatus !== 'approved' && (
-              <Button
-                onClick={handleApproveKyc}
-                disabled={approvingKyc}
-                className="w-full rounded-full bg-green-600 hover:bg-green-700 text-white gap-2"
-              >
-                {approvingKyc ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" />שולח מסמכים ל-PayMe...</>
+              <div className="space-y-3">
+                {showRejectForm ? (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+                    <p className="text-sm font-medium text-red-800">סיבת הדחייה:</p>
+                    <Textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      placeholder="הסבר לבעל האירוע למה המסמכים לא התקבלו..."
+                      className="text-sm"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={async () => {
+                          if (!rejectReason.trim()) {
+                            toast({ title: "יש להזין סיבת דחייה", variant: "destructive" });
+                            return;
+                          }
+                          setRejectingKyc(true);
+                          try {
+                            const cleanedSetupData = { ...setupData };
+                            delete cleanedSetupData.socialIdFile;
+                            delete cleanedSetupData.bankApprovalFile;
+                            cleanedSetupData.kyc_rejection_reason = rejectReason.trim();
+
+                            await supabase.from('events').update({
+                              kyc_docs_status: 'rejected',
+                              payment_setup_data: cleanedSetupData,
+                            }).eq('id', event.id);
+
+                            queryClient.invalidateQueries({ queryKey: ["events-list"] });
+                            queryClient.invalidateQueries({ queryKey: ["event-payme", event.id] });
+                            toast({ title: "המסמכים נדחו והמשתמש יתבקש להעלות מחדש" });
+                            setShowRejectForm(false);
+                            setRejectReason("");
+                          } catch (error: any) {
+                            toast({ title: "שגיאה", description: error.message, variant: "destructive" });
+                          } finally {
+                            setRejectingKyc(false);
+                          }
+                        }}
+                        disabled={rejectingKyc || !rejectReason.trim()}
+                        className="flex-1 rounded-full bg-red-600 hover:bg-red-700 text-white gap-2"
+                      >
+                        {rejectingKyc ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        אשר דחייה
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={() => { setShowRejectForm(false); setRejectReason(""); }}
+                      >
+                        ביטול
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
-                  <><Send className="w-4 h-4" />אשר ושלח מסמכים ל-PayMe</>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleApproveKyc}
+                      disabled={approvingKyc}
+                      className="flex-1 rounded-full bg-green-600 hover:bg-green-700 text-white gap-2"
+                    >
+                      {approvingKyc ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" />שולח מסמכים ל-PayMe...</>
+                      ) : (
+                        <><Send className="w-4 h-4" />אשר ושלח מסמכים ל-PayMe</>
+                      )}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="rounded-full gap-2"
+                      onClick={() => setShowRejectForm(true)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      דחה מסמכים
+                    </Button>
+                  </div>
                 )}
-              </Button>
+              </div>
+            )}
+
+            {/* Show rejection reason if already rejected */}
+            {kycStatus === 'rejected' && setupData?.kyc_rejection_reason && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <p className="text-sm font-medium text-red-800 mb-1">סיבת דחייה אחרונה:</p>
+                <p className="text-sm text-red-700">{setupData.kyc_rejection_reason}</p>
+              </div>
             )}
           </div>
         )}

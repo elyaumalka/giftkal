@@ -188,39 +188,55 @@ export default function EventDashboard() {
 
       {/* KYC Documents Banner - always show when docs not approved */}
       {data?.event && (data.event as any).kyc_docs_status !== 'approved' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <Upload className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-base font-bold text-blue-800">
-                  {(data.event as any).kyc_docs_status === 'pending' ? 'מסמכים ממתינים לאישור ⏳' : 'נדרשים מסמכים להעברת כספים 📄'}
-                </h3>
-                {(data.event as any).kyc_docs_status === 'pending' && (
-                  <Badge className="bg-amber-500 text-white text-xs">ממתין</Badge>
-                )}
+        (() => {
+          const kycStatus = (data.event as any).kyc_docs_status;
+          const setupData = data.event.payment_setup_data as any;
+          const isRejected = kycStatus === 'rejected';
+          const rejectionReason = setupData?.kyc_rejection_reason;
+          return (
+            <div className={`${isRejected ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'} border rounded-2xl p-5 shadow-sm`}>
+              <div className="flex items-start gap-4">
+                <div className={`w-10 h-10 rounded-full ${isRejected ? 'bg-red-100' : 'bg-blue-100'} flex items-center justify-center flex-shrink-0`}>
+                  <Upload className={`w-5 h-5 ${isRejected ? 'text-red-600' : 'text-blue-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className={`text-base font-bold ${isRejected ? 'text-red-800' : 'text-blue-800'}`}>
+                      {isRejected ? 'המסמכים נדחו — יש להעלות מחדש ❌'
+                        : kycStatus === 'pending' ? 'מסמכים ממתינים לאישור ⏳'
+                        : 'נדרשים מסמכים להעברת כספים 📄'}
+                    </h3>
+                    {kycStatus === 'pending' && (
+                      <Badge className="bg-amber-500 text-white text-xs">ממתין</Badge>
+                    )}
+                    {isRejected && (
+                      <Badge variant="destructive" className="text-xs">נדחה</Badge>
+                    )}
+                  </div>
+                  {isRejected && rejectionReason && (
+                    <p className="text-red-700 text-sm mb-2 font-medium">סיבה: {rejectionReason}</p>
+                  )}
+                  <p className={`${isRejected ? 'text-red-700' : 'text-blue-700'} text-sm mb-2`}>
+                    {kycStatus === 'pending'
+                      ? 'המסמכים נשלחו ונמצאים בבדיקה'
+                      : 'בשביל העברת הכספים יש לצרף צילום תעודת זהות ואישור ניהול חשבון בנק'
+                    }
+                  </p>
+                  {kycStatus !== 'pending' && (
+                    <Button 
+                      onClick={() => navigate(`/event/${data.event.id}/payme-setup`)}
+                      size="sm"
+                      className={isRejected ? "bg-red-600 hover:bg-red-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}
+                    >
+                      <Upload className="w-4 h-4 ml-2" />
+                      העלאת מסמכים
+                    </Button>
+                  )}
+                </div>
               </div>
-              <p className="text-blue-700 text-sm mb-2">
-                {(data.event as any).kyc_docs_status === 'pending' 
-                  ? 'המסמכים נשלחו ונמצאים בבדיקה'
-                  : 'בשביל העברת הכספים יש לצרף צילום תעודת זהות ואישור ניהול חשבון בנק'
-                }
-              </p>
-              {(data.event as any).kyc_docs_status !== 'pending' && (
-                <Button 
-                  onClick={() => navigate(`/event/${data.event.id}/payme-setup`)}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Upload className="w-4 h-4 ml-2" />
-                  העלאת מסמכים
-                </Button>
-              )}
             </div>
-          </div>
-        </div>
+          );
+        })()
       )}
 
       {/* Stats Cards */}
