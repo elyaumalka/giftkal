@@ -1,0 +1,1 @@
+ALTER TABLE public.transactions ADD COLUMN side text DEFAULT NULL;
