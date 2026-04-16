@@ -73,6 +73,7 @@ import KioskPage from "./pages/kiosk/KioskPage";
 // API Docs
 import YemotApiDocs from "./pages/api/YemotApiDocs";
 import SystemApiDocs from "./pages/api/SystemApiDocs";
+import NedarimApiDocs from "./pages/api/NedarimApiDocs";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,7 @@ function App() {
            <Route path="/kiosk/:hallId" element={<KioskPage />} />
           <Route path="/api/yemot" element={<YemotApiDocs />} />
           <Route path="/api/docs" element={<SystemApiDocs />} />
+          <Route path="/api/nedarim" element={<NedarimApiDocs />} />
 
           {/* Admin routes */}
           <Route path="/admin" element={<AdminLayout />}>
