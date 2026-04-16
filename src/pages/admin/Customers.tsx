@@ -236,12 +236,17 @@ export default function Customers() {
       (filterStatus === "docs_complete" && e.allDocsComplete) ||
       (filterStatus === "docs_missing" && !e.allDocsComplete) ||
       (filterStatus === "paid" && e.payment_completed) ||
-      (filterStatus === "unpaid" && !e.payment_completed);
+      (filterStatus === "unpaid" && !e.payment_completed) ||
+      (filterStatus === "kyc_pending" && e.kycStatus === 'pending') ||
+      (filterStatus === "kyc_approved" && e.kycStatus === 'approved') ||
+      (filterStatus === "kyc_missing" && !e.kycStatus && e.seller_payme_id);
 
     const matchesVenue = filterVenueId === "all" || e.venue_id === filterVenueId;
 
     return matchesSearch && matchesDate && matchesStatus && matchesVenue;
   });
+
+  const pendingKycCount = events?.filter(e => e.kycStatus === 'pending').length || 0;
 
   // Create venue owner + venue
   const createVenueWithOwner = useMutation({
