@@ -288,6 +288,25 @@ export default function AdminHallsDevices() {
                       <p className="text-sm">{viewHall.default_message || "—"}</p>
                     </div>
                   </div>
+                  <div className="bg-[#051839]/5 rounded-xl p-3 border border-[#C4A35A]/20">
+                    <p className="text-xs text-gray-500 mb-2">קוד גישה לקיוסק (Kiosk Launcher)</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <code className="bg-[#051839] text-[#C4A35A] px-3 py-2 rounded-lg font-mono text-lg tracking-widest">
+                        {viewHall.kiosk_access_code || "—"}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/kiosk-launcher/${viewHall.kiosk_access_code}`);
+                          toast({ title: "הקישור הועתק" });
+                        }}
+                        className="gap-1"
+                      >
+                        <Link2 className="w-3 h-3" /> העתק קישור השקה
+                      </Button>
+                    </div>
+                  </div>
 
                   {viewHall.devices && viewHall.devices.length > 0 && (
                     <div>
