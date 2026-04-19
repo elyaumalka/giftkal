@@ -566,6 +566,74 @@ async function handleInvoices(action: string, supabase: any, url: URL, body: any
 
 async function handleDevices(action: string, supabase: any, url: URL, body: any) {
   switch (action) {
+    case 'IdentifyDevice': {
+      // Identify the active event for a kiosk device by serial_number or hall_id.
+      // Returns: hall info, today's active event (if any), and gift URL.
+      const serialNumber = url.searchParams.get('serial_number') || body.serial_number;
+      const hallIdParam = url.searchParams.get('hall_id') || body.hall_id;
+
+      if (!serialNumber && !hallIdParam) {
+        return errorResponse('serial_number or hall_id is required', 400);
+      }
+
+      let resolvedHallId = hallIdParam as string | null;
+      let device: any = null;
+
+      // Resolve hall via device serial if provided
+      if (serialNumber) {
+        const { data: dev } = await supabase
+          .from('devices')
+          .select('id, name, hall_id, venue_id, is_active')
+          .eq('serial_number', serialNumber)
+          .maybeSingle();
+        if (!dev) return errorResponse(`Device not found for serial_number: ${serialNumber}`, 404);
+        if (!dev.is_active) return errorResponse('Device is inactive', 403);
+        device = dev;
+        resolvedHallId = dev.hall_id || resolvedHallId;
+      }
+
+      if (!resolvedHallId) {
+        return errorResponse('Device is not assigned to a hall', 404);
+      }
+
+      // Fetch hall + venue
+      const { data: hall } = await supabase
+        .from('halls')
+        .select('id, name, default_message, logo_url, venue_id, kiosk_access_code, venues(name, logo_url)')
+        .eq('id', resolvedHallId)
+        .maybeSingle();
+      if (!hall) return errorResponse('Hall not found', 404);
+
+      // Find today's event
+      const today = new Date().toISOString().split('T')[0];
+      const { data: events } = await supabase
+        .from('events')
+        .select('id, event_type, event_date, groom_name, bride_name, child_name, family_name, reception_time, ceremony_time, gifts_enabled, seller_payme_id')
+        .eq('hall_id', resolvedHallId)
+        .eq('event_date', today)
+        .order('reception_time', { ascending: true });
+
+      const activeEvent = (events && events.length > 0) ? events[0] : null;
+      const projectUrl = Deno.env.get('SUPABASE_URL') || '';
+      const baseUrl = projectUrl.includes('xadihaigjkbvphzphxxk') ? 'https://giftkal.com' : '';
+
+      return okResponse({
+        device,
+        hall: {
+          id: hall.id,
+          name: hall.name,
+          default_message: hall.default_message,
+          logo_url: hall.logo_url,
+          venue: hall.venues,
+          kiosk_url: `${baseUrl}/kiosk/${hall.id}`,
+        },
+        active_event: activeEvent ? {
+          ...activeEvent,
+          gift_url: `${baseUrl}/gift/${activeEvent.id}`,
+        } : null,
+        has_active_event: !!activeEvent,
+      });
+    }
     case 'ListDevices': {
       const venueId = url.searchParams.get('venue_id') || body.venue_id;
       if (!venueId) return errorResponse('venue_id is required', 400);
