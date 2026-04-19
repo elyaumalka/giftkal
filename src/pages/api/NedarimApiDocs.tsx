@@ -166,6 +166,75 @@ export default function NedarimApiDocs() {
           ))}
         </div>
 
+        {/* ═══ SECTION 0: WEBHOOK SIGNUP ═══ */}
+        <Section id="webhook-signup" icon={Webhook} title="שלב 0: Webhook קליטת רישום אוטומטי מנדרים" defaultOpen>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            <strong>זרימה מומלצת:</strong> כאשר לקוח ממלא טופס רישום במערכת נדרים פלוס, נדרים שולחים POST אוטומטי לכתובת הזו.
+            המערכת יוצרת בעל אירוע חדש (אם לא קיים) + אירוע פעיל, ומחזירה קישור התחברות וקישור גביית מתנות.
+          </p>
+
+          <div className="bg-muted/30 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MethodBadge method="POST" />
+              <code className="text-xs font-mono text-muted-foreground" dir="ltr">{BASE_URL}/nedarim-event-signup</code>
+            </div>
+            <p className="text-xs text-muted-foreground">Header: <code className="bg-muted px-1 rounded">X-API-Key: YOUR_API_KEY</code></p>
+          </div>
+
+          <ParamsTable params={[
+            { name: "email", type: "string", required: true, description: "אימייל בעל האירוע (משמש לכניסה למערכת)" },
+            { name: "full_name", type: "string", required: true, description: "שם מלא" },
+            { name: "phone", type: "string", required: false, description: "טלפון" },
+            { name: "event_date", type: "date", required: true, description: "תאריך האירוע (YYYY-MM-DD)" },
+            { name: "event_type", type: "string", required: false, description: "סוג אירוע", options: ["חתונה", "אירוסין", "בר מצווה", "בת מצווה", "ברית"] },
+            { name: "groom_name", type: "string", required: false, description: "שם החתן" },
+            { name: "bride_name", type: "string", required: false, description: "שם הכלה" },
+            { name: "child_name", type: "string", required: false, description: "שם הילד/ה (לבר/בת מצווה/ברית)" },
+            { name: "family_name", type: "string", required: false, description: "שם משפחה (לברית)" },
+            { name: "venue_id", type: "uuid", required: false, description: "מזהה אולם (אם רלוונטי)" },
+            { name: "hall_id", type: "uuid", required: false, description: "מזהה אולם ספציפי" },
+            { name: "custom_venue_name", type: "string", required: false, description: "שם מקום אירוע (אם לא אולם מהמערכת)" },
+            { name: "custom_venue_location", type: "string", required: false, description: "כתובת" },
+            { name: "reception_time", type: "string", required: false, description: "שעת קבלת פנים" },
+            { name: "ceremony_time", type: "string", required: false, description: "שעת חופה/טקס" },
+            { name: "seller_payme_id", type: "string", required: false, description: "מזהה Seller לסליקה (אם הוקם מראש)" },
+            { name: "nedarim_customer_id", type: "string", required: false, description: "מזהה לקוח אצל נדרים (יוחזר חזרה לסנכרון)" },
+          ]} />
+
+          <CodeBlock label="דוגמת בקשה:" code={`POST ${BASE_URL}/nedarim-event-signup
+Content-Type: application/json
+X-API-Key: YOUR_API_KEY
+
+{
+  "email": "david@example.com",
+  "full_name": "דוד כהן",
+  "phone": "0521234567",
+  "event_date": "2025-09-15",
+  "event_type": "חתונה",
+  "groom_name": "דוד",
+  "bride_name": "רחל",
+  "custom_venue_name": "אולם השמחה",
+  "reception_time": "18:30",
+  "nedarim_customer_id": "NDR-9876"
+}`} />
+
+          <CodeBlock label="תגובה:" code={`{
+  "status": "success",
+  "user": { "id": "...", "email": "david@example.com", "full_name": "דוד כהן" },
+  "event": {
+    "id": "EVENT_ID",
+    "gift_link": "https://giftkal.com/gift/EVENT_ID",
+    "login_url": "https://giftkal.com/login/event"
+  },
+  "credentials": { "email": "david@example.com", "password": "AUTO_GENERATED" },
+  "nedarim_customer_id": "NDR-9876"
+}`} />
+
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs">
+            💡 <strong>הערה:</strong> אם הלקוח כבר קיים (לפי email), המערכת תיצור רק אירוע חדש ותחזיר <code>credentials: null</code>.
+          </div>
+        </Section>
+
         {/* ═══ SECTION 1: CREATE CUSTOMER ═══ */}
         <Section id="create-customer" icon={UserPlus} title="שלב 1: הקמת לקוח (בעל אירוע)" defaultOpen>
           <p className="text-sm text-muted-foreground leading-relaxed">
