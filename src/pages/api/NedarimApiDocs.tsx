@@ -151,11 +151,13 @@ export default function NedarimApiDocs() {
         {/* Navigation */}
         <div className="flex flex-wrap gap-2">
           {[
+            { id: "webhook-signup", label: "0. Webhook רישום אוטומטי", icon: Webhook },
             { id: "create-customer", label: "1. הקמת לקוח", icon: UserPlus },
             { id: "setup-payment", label: "2. הקמת סליקה", icon: CreditCard },
             { id: "gift-flow", label: "3. שליחת מתנה", icon: Gift },
             { id: "transactions", label: "4. עסקאות וסטטוס", icon: BarChart3 },
             { id: "search-event", label: "5. חיפוש אירוע", icon: Search },
+            { id: "identify-device", label: "6. זיהוי קיוסק", icon: Monitor },
           ].map((item) => (
             <a key={item.id} href={`#${item.id}`} className="flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-muted/50 transition-colors text-sm">
               <item.icon className="w-4 h-4" />
@@ -577,6 +579,47 @@ X-API-Key: YOUR_API_KEY`} />
   }
 }`} />
           </div>
+        </Section>
+
+        {/* ═══ SECTION 6: IDENTIFY DEVICE ═══ */}
+        <Section id="identify-device" icon={Monitor} title="שלב 6: זיהוי מכשיר קיוסק (אופציונלי)">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            מאפשר למכשיר קיוסק לזהות את האולם המשויך אליו ולקבל את האירוע הפעיל היום.
+            ניתן לזהות לפי <code className="bg-muted px-1 rounded text-xs">serial_number</code> של המכשיר או לפי <code className="bg-muted px-1 rounded text-xs">hall_id</code> ישירות.
+          </p>
+
+          <div className="bg-muted/30 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MethodBadge method="POST" />
+              <code className="text-xs font-mono text-muted-foreground" dir="ltr">{publicApiUrl}?action=IdentifyDevice</code>
+            </div>
+          </div>
+
+          <ParamsTable params={[
+            { name: "serial_number", type: "string", required: false, description: "מספר סידורי של המכשיר (אם נשלח – המערכת תאתר את האולם לפיו)" },
+            { name: "hall_id", type: "uuid", required: false, description: "מזהה אולם ישיר (חלופה ל-serial_number)" },
+          ]} />
+
+          <CodeBlock label="דוגמת בקשה:" code={`POST ${publicApiUrl}?action=IdentifyDevice
+Content-Type: application/json
+X-API-Key: YOUR_API_KEY
+
+{ "serial_number": "DEV-12345" }`} />
+
+          <CodeBlock label="תגובה (כשיש אירוע פעיל היום):" code={`{
+  "responseStatus": "OK",
+  "device": { "id": "...", "name": "קיוסק כניסה", "hall_id": "..." },
+  "hall": {
+    "id": "uuid", "name": "אולם הזהב",
+    "kiosk_url": "https://giftkal.com/kiosk/HALL_ID"
+  },
+  "active_event": {
+    "id": "EVENT_ID", "event_type": "חתונה",
+    "groom_name": "דוד", "bride_name": "רחל",
+    "gift_url": "https://giftkal.com/gift/EVENT_ID"
+  },
+  "has_active_event": true
+}`} />
         </Section>
 
         {/* Footer */}
