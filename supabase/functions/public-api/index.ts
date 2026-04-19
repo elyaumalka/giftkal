@@ -850,6 +850,7 @@ const actionHandlers: Record<string, (action: string, supabase: any, url: URL, b
   ListInvoices: handleInvoices, GetInvoice: handleInvoices, CreateInvoice: handleInvoices, UpdateInvoice: handleInvoices,
   // Devices
   ListDevices: handleDevices, CreateDevice: handleDevices, UpdateDevice: handleDevices, DeleteDevice: handleDevices,
+  IdentifyDevice: handleDevices,
   // Notes
   ListNotes: handleNotes, CreateNote: handleNotes, UpdateNote: handleNotes, DeleteNote: handleNotes,
   // Tasks
