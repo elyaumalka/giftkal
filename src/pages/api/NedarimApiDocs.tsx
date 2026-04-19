@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Copy, Check, ChevronDown, ExternalLink, UserPlus, CreditCard, Gift, BarChart3, Search } from "lucide-react";
+import { Copy, Check, ChevronDown, ExternalLink, UserPlus, CreditCard, Gift, BarChart3, Search, Webhook, Monitor } from "lucide-react";
 
 const BASE_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
 
