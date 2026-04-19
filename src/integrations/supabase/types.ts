@@ -529,6 +529,7 @@ export type Database = {
           default_message: string | null
           id: string
           is_active: boolean | null
+          kiosk_access_code: string | null
           logo_url: string | null
           name: string
           updated_at: string
@@ -539,6 +540,7 @@ export type Database = {
           default_message?: string | null
           id?: string
           is_active?: boolean | null
+          kiosk_access_code?: string | null
           logo_url?: string | null
           name: string
           updated_at?: string
@@ -549,6 +551,7 @@ export type Database = {
           default_message?: string | null
           id?: string
           is_active?: boolean | null
+          kiosk_access_code?: string | null
           logo_url?: string | null
           name?: string
           updated_at?: string
@@ -988,6 +991,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          kiosk_access_code: string | null
           landing_page_config: Json | null
           logo_url: string | null
           monthly_subscription: number | null
@@ -1002,6 +1006,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          kiosk_access_code?: string | null
           landing_page_config?: Json | null
           logo_url?: string | null
           monthly_subscription?: number | null
@@ -1016,6 +1021,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          kiosk_access_code?: string | null
           landing_page_config?: Json | null
           logo_url?: string | null
           monthly_subscription?: number | null
@@ -1147,6 +1153,16 @@ export type Database = {
       is_event_public_accessible: {
         Args: { _event_id: string }
         Returns: boolean
+      }
+      lookup_by_kiosk_code: {
+        Args: { _code: string }
+        Returns: {
+          entity_id: string
+          entity_type: string
+          name: string
+          venue_id: string
+          venue_name: string
+        }[]
       }
       lookup_event_by_share_token: {
         Args: { _token: string }
