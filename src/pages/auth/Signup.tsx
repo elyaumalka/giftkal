@@ -333,26 +333,52 @@ const Signup = () => {
       }
 
       const ownerId = result?.user?.id || "00000000-0000-0000-0000-000000000000";
+      const eventId = result?.record?.id || null;
 
-      await supabase.from("leads").insert({
-        full_name: data.fullName.trim(),
-        phone: data.phone.trim(),
-        email: data.email.trim(),
-        lead_type: "couple",
-        venue_name: data.venueName || null,
-        venue_address: data.city || null,
-        status: hasPaidPlans ? "paid" : "free",
-      });
-
-      if (hasPaidPlans && totalPrice > 0) {
-        await supabase.from("billing_charges" as any).insert({
-          owner_id: ownerId,
-          owner_name: data.fullName.trim(),
-          amount: totalPrice,
-          plan_name: planNames,
-          event_name: `${data.eventType} - ${data.eventDate}`,
-          nedarim_transaction_id: txId,
+      // Always create lead record
+      try {
+        await supabase.from("leads").insert({
+          full_name: data.fullName.trim(),
+          phone: data.phone.trim(),
+          email: data.email.trim(),
+          lead_type: "couple",
+          venue_name: data.venueName || null,
+          venue_address: data.city || null,
+          status: hasPaidPlans ? "paid" : "free",
         });
+      } catch (e) {
+        console.error("Error inserting lead:", e);
+      }
+
+      // Always create billing_charges record when there are paid plans selected
+      // (even if coupon brought total to 0 — admin needs visibility of the transaction)
+      if (hasPaidPlans) {
+        const planLabel = couponApplied
+          ? `${planNames} (קופון: ${couponCode.toUpperCase().trim()} - הנחה ₪${couponDiscount})`
+          : planNames;
+        try {
+          const { error: chargeError } = await supabase.from("billing_charges" as any).insert({
+            owner_id: ownerId,
+            owner_name: data.fullName.trim(),
+            amount: totalPrice,
+            plan_name: planLabel,
+            event_id: eventId,
+            event_name: `${data.eventType} - ${data.eventDate}`,
+            nedarim_transaction_id: txId || (couponApplied ? `COUPON-${couponCode.toUpperCase().trim()}` : null),
+          });
+          if (chargeError) console.error("Error inserting billing charge:", chargeError);
+        } catch (e) {
+          console.error("Error inserting billing charge:", e);
+        }
+
+        // Mark event as payment_completed
+        if (eventId) {
+          try {
+            await supabase.from("events").update({ payment_completed: true }).eq("id", eventId);
+          } catch (e) {
+            console.error("Error updating payment_completed:", e);
+          }
+        }
       }
 
       // Increment coupon usage
