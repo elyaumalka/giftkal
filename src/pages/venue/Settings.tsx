@@ -232,6 +232,66 @@ export default function VenueSettings() {
     setUploadingGallery(false);
   };
 
+  const deleteFromStorage = async (url: string) => {
+    try {
+      const marker = '/venue-assets/';
+      const idx = url.indexOf(marker);
+      if (idx === -1) return;
+      const path = url.substring(idx + marker.length);
+      await supabase.storage.from('venue-assets').remove([path]);
+    } catch (e) {
+      console.error('Storage delete error:', e);
+    }
+  };
+
+  const handleDeleteTabletLogo = async () => {
+    if (!venue?.id || !venue.logo_url) return;
+    if (!confirm('למחוק את הלוגו?')) return;
+    await deleteFromStorage(venue.logo_url);
+    await supabase.from('venues').update({ logo_url: null }).eq('id', venue.id);
+    queryClient.invalidateQueries({ queryKey: ['venue-settings'] });
+    toast({ title: 'הלוגו נמחק' });
+  };
+
+  const handleDeleteTabletBanner = async () => {
+    if (!venue?.id || !venue.banner_url) return;
+    if (!confirm('למחוק את הבאנר?')) return;
+    await deleteFromStorage(venue.banner_url);
+    await supabase.from('venues').update({ banner_url: null }).eq('id', venue.id);
+    queryClient.invalidateQueries({ queryKey: ['venue-settings'] });
+    toast({ title: 'הבאנר נמחק' });
+  };
+
+  const handleDeleteLandingLogo = async () => {
+    if (!venue?.id || !venue.logo_url) return;
+    if (!confirm('למחוק את הלוגו?')) return;
+    await deleteFromStorage(venue.logo_url);
+    const { data: freshVenue } = await supabase
+      .from('venues').select('landing_page_config').eq('id', venue.id).single();
+    const freshConfig = (freshVenue?.landing_page_config as any) || {};
+    const { logo, ...rest } = freshConfig;
+    await supabase.from('venues')
+      .update({ logo_url: null, landing_page_config: rest })
+      .eq('id', venue.id);
+    queryClient.invalidateQueries({ queryKey: ['venue-settings'] });
+    toast({ title: 'הלוגו נמחק' });
+  };
+
+  const handleDeleteGalleryImage = async (url: string) => {
+    if (!venue?.id) return;
+    if (!confirm('למחוק את התמונה?')) return;
+    await deleteFromStorage(url);
+    const { data: freshVenue } = await supabase
+      .from('venues').select('landing_page_config').eq('id', venue.id).single();
+    const freshConfig = (freshVenue?.landing_page_config as any) || {};
+    const newGallery = (freshConfig.gallery || []).filter((u: string) => u !== url);
+    await supabase.from('venues')
+      .update({ landing_page_config: { ...freshConfig, gallery: newGallery } })
+      .eq('id', venue.id);
+    queryClient.invalidateQueries({ queryKey: ['venue-settings'] });
+    toast({ title: 'התמונה נמחקה' });
+  };
+
   const updateUserSettings = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
