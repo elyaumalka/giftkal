@@ -738,7 +738,17 @@ export default function VenueSettings() {
                     {venue?.logo_url ? "החלף לוגו אולם" : "העלאת לוגו אולם"}
                   </button>
                   {venue?.logo_url && (
-                    <img src={venue.logo_url} alt="Logo" className="w-16 h-16 object-contain rounded-lg mx-auto mt-2" />
+                    <div className="relative w-fit mx-auto mt-2">
+                      <img src={venue.logo_url} alt="Logo" className="w-16 h-16 object-contain rounded-lg" />
+                      <button
+                        type="button"
+                        onClick={handleDeleteLandingLogo}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-[#C41E3A] text-white rounded-full flex items-center justify-center hover:bg-[#C41E3A]/90 shadow"
+                        aria-label="מחק לוגו"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -753,14 +763,19 @@ export default function VenueSettings() {
                   </button>
                   {config.gallery?.length > 0 && (
                     <div className="flex gap-2 flex-wrap mt-2">
-                      {config.gallery.slice(0, 4).map((url: string, i: number) => (
-                        <img key={i} src={url} alt={`Gallery ${i}`} className="w-12 h-12 object-cover rounded-lg" />
-                      ))}
-                      {config.gallery.length > 4 && (
-                        <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center text-sm text-gray-600">
-                          +{config.gallery.length - 4}
+                      {config.gallery.map((url: string, i: number) => (
+                        <div key={i} className="relative">
+                          <img src={url} alt={`Gallery ${i}`} className="w-16 h-16 object-cover rounded-lg" />
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGalleryImage(url)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-[#C41E3A] text-white rounded-full flex items-center justify-center hover:bg-[#C41E3A]/90 shadow"
+                            aria-label="מחק תמונה"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
-                      )}
+                      ))}
                     </div>
                   )}
                 </div>
