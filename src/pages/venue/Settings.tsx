@@ -587,7 +587,17 @@ export default function VenueSettings() {
                     {venue?.logo_url ? "החלף לוגו" : "העלאת לוגו"}
                   </button>
                   {venue?.logo_url && (
-                    <img src={venue.logo_url} alt="Logo" className="w-12 h-12 object-contain rounded-lg mt-2" />
+                    <div className="relative inline-block mt-2">
+                      <img src={venue.logo_url} alt="Logo" className="w-12 h-12 object-contain rounded-lg" />
+                      <button
+                        type="button"
+                        onClick={handleDeleteTabletLogo}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-[#C41E3A] text-white rounded-full flex items-center justify-center hover:bg-[#C41E3A]/90 shadow"
+                        aria-label="מחק לוגו"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -601,7 +611,17 @@ export default function VenueSettings() {
                     {venue?.banner_url ? "החלף באנר" : "העלאת באנר"}
                   </button>
                   {venue?.banner_url && (
-                    <img src={venue.banner_url} alt="Banner" className="w-full h-12 object-cover rounded-lg mt-2" />
+                    <div className="relative mt-2">
+                      <img src={venue.banner_url} alt="Banner" className="w-full h-12 object-cover rounded-lg" />
+                      <button
+                        type="button"
+                        onClick={handleDeleteTabletBanner}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-[#C41E3A] text-white rounded-full flex items-center justify-center hover:bg-[#C41E3A]/90 shadow"
+                        aria-label="מחק באנר"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
