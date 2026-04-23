@@ -335,20 +335,7 @@ const Signup = () => {
       const ownerId = result?.user?.id || "00000000-0000-0000-0000-000000000000";
       const eventId = result?.record?.id || null;
 
-      // Always create lead record
-      try {
-        await supabase.from("leads").insert({
-          full_name: data.fullName.trim(),
-          phone: data.phone.trim(),
-          email: data.email.trim(),
-          lead_type: "couple",
-          venue_name: data.venueName || null,
-          venue_address: data.city || null,
-          status: hasPaidPlans ? "paid" : "free",
-        });
-      } catch (e) {
-        console.error("Error inserting lead:", e);
-      }
+      // Note: We do NOT create a lead here — paying users are customers, not leads.
 
       // Always create billing_charges record when there are paid plans selected
       // (even if coupon brought total to 0 — admin needs visibility of the transaction)
