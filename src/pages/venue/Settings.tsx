@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload, User, Globe, Copy, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, User, Globe, Copy, ExternalLink, Loader2, Trash2, X } from "lucide-react";
 
 export default function VenueSettings() {
   const [activeTab, setActiveTab] = useState<"user" | "landing">("user");
@@ -230,6 +230,66 @@ export default function VenueSettings() {
       toast({ title: `${newGalleryUrls.length} תמונות הועלו בהצלחה` });
     }
     setUploadingGallery(false);
+  };
+
+  const deleteFromStorage = async (url: string) => {
+    try {
+      const marker = '/venue-assets/';
+      const idx = url.indexOf(marker);
+      if (idx === -1) return;
+      const path = url.substring(idx + marker.length);
+      await supabase.storage.from('venue-assets').remove([path]);
+    } catch (e) {
+      console.error('Storage delete error:', e);
+    }
+  };
+
+  const handleDeleteTabletLogo = async () => {
+    if (!venue?.id || !venue.logo_url) return;
+    if (!confirm('למחוק את הלוגו?')) return;
+    await deleteFromStorage(venue.logo_url);
+    await supabase.from('venues').update({ logo_url: null }).eq('id', venue.id);
+    queryClient.invalidateQueries({ queryKey: ['venue-settings'] });
+    toast({ title: 'הלוגו נמחק' });
+  };
+
+  const handleDeleteTabletBanner = async () => {
+    if (!venue?.id || !venue.banner_url) return;
+    if (!confirm('למחוק את הבאנר?')) return;
+    await deleteFromStorage(venue.banner_url);
+    await supabase.from('venues').update({ banner_url: null }).eq('id', venue.id);
+    queryClient.invalidateQueries({ queryKey: ['venue-settings'] });
+    toast({ title: 'הבאנר נמחק' });
+  };
+
+  const handleDeleteLandingLogo = async () => {
+    if (!venue?.id || !venue.logo_url) return;
+    if (!confirm('למחוק את הלוגו?')) return;
+    await deleteFromStorage(venue.logo_url);
+    const { data: freshVenue } = await supabase
+      .from('venues').select('landing_page_config').eq('id', venue.id).single();
+    const freshConfig = (freshVenue?.landing_page_config as any) || {};
+    const { logo, ...rest } = freshConfig;
+    await supabase.from('venues')
+      .update({ logo_url: null, landing_page_config: rest })
+      .eq('id', venue.id);
+    queryClient.invalidateQueries({ queryKey: ['venue-settings'] });
+    toast({ title: 'הלוגו נמחק' });
+  };
+
+  const handleDeleteGalleryImage = async (url: string) => {
+    if (!venue?.id) return;
+    if (!confirm('למחוק את התמונה?')) return;
+    await deleteFromStorage(url);
+    const { data: freshVenue } = await supabase
+      .from('venues').select('landing_page_config').eq('id', venue.id).single();
+    const freshConfig = (freshVenue?.landing_page_config as any) || {};
+    const newGallery = (freshConfig.gallery || []).filter((u: string) => u !== url);
+    await supabase.from('venues')
+      .update({ landing_page_config: { ...freshConfig, gallery: newGallery } })
+      .eq('id', venue.id);
+    queryClient.invalidateQueries({ queryKey: ['venue-settings'] });
+    toast({ title: 'התמונה נמחקה' });
   };
 
   const updateUserSettings = useMutation({
@@ -527,7 +587,17 @@ export default function VenueSettings() {
                     {venue?.logo_url ? "החלף לוגו" : "העלאת לוגו"}
                   </button>
                   {venue?.logo_url && (
-                    <img src={venue.logo_url} alt="Logo" className="w-12 h-12 object-contain rounded-lg mt-2" />
+                    <div className="relative inline-block mt-2">
+                      <img src={venue.logo_url} alt="Logo" className="w-12 h-12 object-contain rounded-lg" />
+                      <button
+                        type="button"
+                        onClick={handleDeleteTabletLogo}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-[#C41E3A] text-white rounded-full flex items-center justify-center hover:bg-[#C41E3A]/90 shadow"
+                        aria-label="מחק לוגו"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -541,7 +611,17 @@ export default function VenueSettings() {
                     {venue?.banner_url ? "החלף באנר" : "העלאת באנר"}
                   </button>
                   {venue?.banner_url && (
-                    <img src={venue.banner_url} alt="Banner" className="w-full h-12 object-cover rounded-lg mt-2" />
+                    <div className="relative mt-2">
+                      <img src={venue.banner_url} alt="Banner" className="w-full h-12 object-cover rounded-lg" />
+                      <button
+                        type="button"
+                        onClick={handleDeleteTabletBanner}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-[#C41E3A] text-white rounded-full flex items-center justify-center hover:bg-[#C41E3A]/90 shadow"
+                        aria-label="מחק באנר"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -658,7 +738,17 @@ export default function VenueSettings() {
                     {venue?.logo_url ? "החלף לוגו אולם" : "העלאת לוגו אולם"}
                   </button>
                   {venue?.logo_url && (
-                    <img src={venue.logo_url} alt="Logo" className="w-16 h-16 object-contain rounded-lg mx-auto mt-2" />
+                    <div className="relative w-fit mx-auto mt-2">
+                      <img src={venue.logo_url} alt="Logo" className="w-16 h-16 object-contain rounded-lg" />
+                      <button
+                        type="button"
+                        onClick={handleDeleteLandingLogo}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-[#C41E3A] text-white rounded-full flex items-center justify-center hover:bg-[#C41E3A]/90 shadow"
+                        aria-label="מחק לוגו"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -673,14 +763,19 @@ export default function VenueSettings() {
                   </button>
                   {config.gallery?.length > 0 && (
                     <div className="flex gap-2 flex-wrap mt-2">
-                      {config.gallery.slice(0, 4).map((url: string, i: number) => (
-                        <img key={i} src={url} alt={`Gallery ${i}`} className="w-12 h-12 object-cover rounded-lg" />
-                      ))}
-                      {config.gallery.length > 4 && (
-                        <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center text-sm text-gray-600">
-                          +{config.gallery.length - 4}
+                      {config.gallery.map((url: string, i: number) => (
+                        <div key={i} className="relative">
+                          <img src={url} alt={`Gallery ${i}`} className="w-16 h-16 object-cover rounded-lg" />
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGalleryImage(url)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-[#C41E3A] text-white rounded-full flex items-center justify-center hover:bg-[#C41E3A]/90 shadow"
+                            aria-label="מחק תמונה"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
-                      )}
+                      ))}
                     </div>
                   )}
                 </div>
