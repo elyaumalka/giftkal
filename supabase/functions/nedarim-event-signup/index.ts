@@ -1,6 +1,6 @@
 // Webhook endpoint that receives event signup data from Nedarim Plus
 // Accepts Nedarim's PascalCase Hebrew payload OR our internal snake_case format
-// Auth: validates EventPassword against NEDARIM_API_VALID secret, OR X-API-Key header
+// Auth: validates EventPassword against NEDARIM_SIGNUP_PASSWORD secret, OR X-API-Key header
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
