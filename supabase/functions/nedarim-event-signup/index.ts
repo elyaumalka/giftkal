@@ -135,9 +135,9 @@ Deno.serve(async (req) => {
     // === Authentication ===
     // Accept either:
     // 1. X-API-Key header (matched against api_keys table) — our internal flow
-    // 2. EventPassword field matching NEDARIM_API_VALID secret — Nedarim's flow
+    // 2. EventPassword field matching NEDARIM_SIGNUP_PASSWORD secret — Nedarim's flow
     const apiKey = req.headers.get('x-api-key') || '';
-    const expectedPassword = Deno.env.get('NEDARIM_API_VALID') || '';
+    const expectedPassword = Deno.env.get('NEDARIM_SIGNUP_PASSWORD') || '';
 
     let authorized = false;
     if (apiKey) {
