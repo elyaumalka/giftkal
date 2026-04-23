@@ -333,7 +333,7 @@ const Signup = () => {
       }
 
       const ownerId = result?.user?.id || "00000000-0000-0000-0000-000000000000";
-      const eventId = result?.event?.id || null;
+      const eventId = result?.record?.id || null;
 
       // Always create lead record
       try {
