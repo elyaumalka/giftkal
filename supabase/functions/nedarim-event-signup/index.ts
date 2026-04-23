@@ -1,6 +1,6 @@
 // Webhook endpoint that receives event signup data from Nedarim Plus
 // Accepts Nedarim's PascalCase Hebrew payload OR our internal snake_case format
-// Auth: validates EventPassword against NEDARIM_API_VALID secret, OR X-API-Key header
+// Auth: validates EventPassword against NEDARIM_SIGNUP_PASSWORD secret, OR X-API-Key header
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -135,9 +135,9 @@ Deno.serve(async (req) => {
     // === Authentication ===
     // Accept either:
     // 1. X-API-Key header (matched against api_keys table) — our internal flow
-    // 2. EventPassword field matching NEDARIM_API_VALID secret — Nedarim's flow
+    // 2. EventPassword field matching NEDARIM_SIGNUP_PASSWORD secret — Nedarim's flow
     const apiKey = req.headers.get('x-api-key') || '';
-    const expectedPassword = Deno.env.get('NEDARIM_API_VALID') || '';
+    const expectedPassword = Deno.env.get('NEDARIM_SIGNUP_PASSWORD') || '';
 
     let authorized = false;
     if (apiKey) {
