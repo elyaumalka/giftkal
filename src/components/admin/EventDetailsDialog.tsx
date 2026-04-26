@@ -310,7 +310,48 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
     }
   };
 
-  return (
+  const handleApproveSeller = async () => {
+    setApprovingSeller(true);
+    try {
+      if (!setupData) throw new Error('אין נתוני הקמה');
+      const response = await supabase.functions.invoke('payme-create-seller', {
+        body: { eventId: event.id, ...setupData, gender: 0 },
+      });
+      if (response.error) throw new Error(response.error.message);
+      if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה');
+      await supabase.from('events').update({ payment_setup_status: 'approved' } as any).eq('id', event.id);
+      queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+      queryClient.invalidateQueries({ queryKey: ['events-list'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-approval-count'] });
+      toast({ title: "חשבון סליקה הוקם בהצלחה ב-PayMe ✅" });
+      onClose();
+    } catch (err: any) {
+      toast({ title: "שגיאה ביצירת חשבון סליקה", description: err.message, variant: "destructive" });
+    } finally {
+      setApprovingSeller(false);
+    }
+  };
+
+  const handleRejectSeller = async () => {
+    try {
+      await supabase.from('events').update({ payment_setup_status: 'rejected' } as any).eq('id', event.id);
+      queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+      queryClient.invalidateQueries({ queryKey: ['events-list'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-approval-count'] });
+      toast({ title: "הבקשה נדחתה" });
+      onClose();
+    } catch (err: any) {
+      toast({ title: "שגיאה", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const BANKS: Record<string, string> = {
+    '4': 'בנק יהב', '9': 'בנק הדואר', '10': 'בנק לאומי', '11': 'בנק דיסקונט',
+    '12': 'בנק הפועלים', '13': 'בנק אגוד', '14': 'בנק אוצר החייל', '17': 'מרכנתיל דיסקונט',
+    '20': 'בנק מזרחי טפחות', '31': 'בנק הבינלאומי', '46': 'בנק מסד', '52': 'פועלי אגודת ישראל', '54': 'בנק ירושלים',
+  };
+  const isPendingSellerApproval = event.payment_setup_status === 'pending_approval' && !event.seller_payme_id && setupData;
+
     <div className="flex flex-col max-h-[85vh]" dir="rtl">
       {/* Header - Title on RIGHT, buttons on LEFT */}
       <div className="bg-secondary text-white p-4 flex items-center justify-between">
