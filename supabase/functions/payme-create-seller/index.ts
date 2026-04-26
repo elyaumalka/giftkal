@@ -325,22 +325,43 @@ Deno.serve(async (req) => {
       // Don't fail - seller was created in PayMe
     }
 
-    // Upload seller documents if provided in payment_setup_data
+    // Upload seller documents - check both body and payment_setup_data
     try {
-      const { data: eventData } = await supabase
-        .from('events')
-        .select('payment_setup_data')
-        .eq('id', body.eventId)
-        .single();
-
-      const setupData = eventData?.payment_setup_data as any;
       const filesToUpload: Array<{ base64: string; name: string; mimeType: string; type: number }> = [];
 
-      if (setupData?.socialIdFile?.base64) {
-        filesToUpload.push({ ...setupData.socialIdFile, type: 1 });
+      // Prefer files from request body
+      if (body.socialIdFile?.base64) {
+        filesToUpload.push({
+          base64: body.socialIdFile.base64,
+          name: body.socialIdFile.name,
+          mimeType: body.socialIdFile.mimeType || 'application/pdf',
+          type: 1,
+        });
       }
-      if (setupData?.bankApprovalFile?.base64) {
-        filesToUpload.push({ ...setupData.bankApprovalFile, type: 2 });
+      if (body.bankApprovalFile?.base64) {
+        filesToUpload.push({
+          base64: body.bankApprovalFile.base64,
+          name: body.bankApprovalFile.name,
+          mimeType: body.bankApprovalFile.mimeType || 'application/pdf',
+          type: 2,
+        });
+      }
+
+      // Fallback to payment_setup_data
+      if (filesToUpload.length === 0) {
+        const { data: eventData } = await supabase
+          .from('events')
+          .select('payment_setup_data')
+          .eq('id', body.eventId)
+          .single();
+
+        const setupData = eventData?.payment_setup_data as any;
+        if (setupData?.socialIdFile?.base64) {
+          filesToUpload.push({ ...setupData.socialIdFile, type: 1 });
+        }
+        if (setupData?.bankApprovalFile?.base64) {
+          filesToUpload.push({ ...setupData.bankApprovalFile, type: 2 });
+        }
       }
 
       if (filesToUpload.length > 0) {
@@ -364,21 +385,14 @@ Deno.serve(async (req) => {
         });
 
         const uploadResult = await uploadResponse.json();
-        console.log('PayMe upload-seller-files response:', JSON.stringify(uploadResult));
+        console.log('PayMe upload-seller-files status_code:', uploadResult.status_code, 'msg:', uploadResult.status_error_details || uploadResult.status_message);
 
         if (uploadResult.status_code !== 0) {
-          console.error('Failed to upload seller files:', uploadResult);
-        }
-
-        // Clear file data from payment_setup_data to save space
-        if (setupData) {
-          delete setupData.socialIdFile;
-          delete setupData.bankApprovalFile;
-          await supabase.from('events').update({ payment_setup_data: setupData }).eq('id', body.eventId);
+          console.error('Failed to upload seller files');
         }
       }
     } catch (fileError) {
-      console.error('Error uploading seller files (non-fatal):', fileError);
+      console.error('Error uploading seller files (non-fatal):', fileError instanceof Error ? fileError.message : 'unknown');
     }
 
     return new Response(
