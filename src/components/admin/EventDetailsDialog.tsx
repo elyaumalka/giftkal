@@ -46,6 +46,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [rejectingKyc, setRejectingKyc] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [approvingSeller, setApprovingSeller] = useState(false);
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
