@@ -113,11 +113,8 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    // Log body without large base64 file contents to avoid CPU/memory issues
-    const bodyForLog = { ...body };
-    if (bodyForLog.socialIdFile) bodyForLog.socialIdFile = { name: bodyForLog.socialIdFile.name, base64: '[REDACTED]' };
-    if (bodyForLog.bankApprovalFile) bodyForLog.bankApprovalFile = { name: bodyForLog.bankApprovalFile.name, base64: '[REDACTED]' };
-    console.log('Received request body:', JSON.stringify(bodyForLog));
+    // Log only essential fields - avoid serializing base64 file contents
+    console.log('Received request for event:', body.eventId, 'merchant:', body.merchantName, 'hasSocialIdFile:', !!body.socialIdFile?.base64, 'hasBankFile:', !!body.bankApprovalFile?.base64);
 
     // Handle coupon code - bypass PayMe for testing
     if (body.couponCode === 'GIFTKAL-TEST') {
