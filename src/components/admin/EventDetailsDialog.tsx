@@ -352,6 +352,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   };
   const isPendingSellerApproval = event.payment_setup_status === 'pending_approval' && !event.seller_payme_id && setupData;
 
+  return (
     <div className="flex flex-col max-h-[85vh]" dir="rtl">
       {/* Header - Title on RIGHT, buttons on LEFT */}
       <div className="bg-secondary text-white p-4 flex items-center justify-between">
