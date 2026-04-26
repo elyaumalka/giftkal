@@ -225,7 +225,8 @@ export default function EventOwners() {
         {filteredEvents?.map((event) => (
           <div
             key={event.id}
-            className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_0.8fr_auto_auto_auto] gap-3 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+            onClick={() => setDetailsEvent(event)}
+            className="grid grid-cols-[1fr_1fr_1fr_1fr_0.8fr_1fr_0.8fr_0.8fr_auto_auto_auto] gap-3 items-center bg-white rounded-2xl px-6 py-5 shadow-sm cursor-pointer hover:shadow-md hover:bg-gray-50 transition-all"
           >
             {/* תאריך אירוע */}
             <span className="text-center font-bold">
