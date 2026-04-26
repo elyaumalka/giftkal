@@ -640,6 +640,220 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
           </div>
         </div>
 
+        {/* Pending Seller Approval Section - PayMe Setup Details */}
+        {isPendingSellerApproval && (
+          <div className="mt-6 bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-amber-900 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5" />
+                בקשת הקמת חשבון סליקה — ממתין לאישור
+              </h3>
+              <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-white">
+                ממתין לאישורך
+              </span>
+            </div>
+
+            {/* Personal Details */}
+            <div className="bg-white rounded-xl p-4 border shadow-sm">
+              <h4 className="text-sm font-bold text-secondary mb-3">פרטים אישיים</h4>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">שם פרטי</p>
+                  <p className="font-medium">{setupData.firstName || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">שם משפחה</p>
+                  <p className="font-medium">{setupData.lastName || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">תעודת זהות</p>
+                  <p className="font-medium font-mono">{setupData.socialId || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">תאריך לידה</p>
+                  <p className="font-medium">{setupData.birthdate || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">תאריך הנפקת ת.ז.</p>
+                  <p className="font-medium">{setupData.socialIdDate || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">טלפון</p>
+                  <p className="font-medium font-mono">{setupData.phone || '—'}</p>
+                </div>
+                <div className="col-span-3">
+                  <p className="text-xs text-muted-foreground">כתובת מייל</p>
+                  <p className="font-medium">{setupData.email || '—'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Business Details */}
+            <div className="bg-white rounded-xl p-4 border shadow-sm">
+              <h4 className="text-sm font-bold text-secondary mb-3">פרטי עסק</h4>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">שם העסק</p>
+                  <p className="font-medium">{setupData.merchantName || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">שם העסק (אנגלית)</p>
+                  <p className="font-medium">{setupData.merchantNameEn || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">סוג עסק</p>
+                  <p className="font-medium">
+                    {setupData.incType === 0 ? 'עוסק פטור' : setupData.incType === 1 ? 'עוסק מורשה' : setupData.incType === 2 ? 'חברה בע"מ' : setupData.incType === 3 ? 'מלכ"ר' : '—'}
+                  </p>
+                </div>
+                {setupData.incCode && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">ח.פ. / מספר עוסק</p>
+                    <p className="font-medium font-mono">{setupData.incCode}</p>
+                  </div>
+                )}
+                {setupData.siteUrl && (
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">כתובת אתר</p>
+                    <p className="font-medium text-blue-600 break-all">{setupData.siteUrl}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Address */}
+            <div className="bg-white rounded-xl p-4 border shadow-sm">
+              <h4 className="text-sm font-bold text-secondary mb-3">כתובת</h4>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">עיר</p>
+                  <p className="font-medium">{setupData.city || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">רחוב</p>
+                  <p className="font-medium">{setupData.street || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">מספר בית</p>
+                  <p className="font-medium">{setupData.streetNumber || '—'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bank Details */}
+            <div className="bg-white rounded-xl p-4 border shadow-sm">
+              <h4 className="text-sm font-bold text-secondary mb-3">פרטי חשבון בנק</h4>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">בנק</p>
+                  <p className="font-medium">{BANKS[String(setupData.bankCode)] || `בנק ${setupData.bankCode}` || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">סניף</p>
+                  <p className="font-medium font-mono">{setupData.bankBranch || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">מספר חשבון</p>
+                  <p className="font-medium font-mono">{setupData.bankAccountNumber || '—'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* KYC Files for review */}
+            <div className="bg-white rounded-xl p-4 border shadow-sm">
+              <h4 className="text-sm font-bold text-secondary mb-3">מסמכי זיהוי (KYC)</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border rounded-lg p-3">
+                  <p className="text-sm font-medium text-secondary mb-2">צילום תעודת זהות</p>
+                  {hasSocialIdFile ? (
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="w-4 h-4 text-green-500" />
+                      <span className="text-xs text-muted-foreground truncate flex-1">{setupData.socialIdFile.name}</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7"
+                        onClick={() => {
+                          const blob = new Blob(
+                            [Uint8Array.from(atob(setupData.socialIdFile.base64), c => c.charCodeAt(0))],
+                            { type: setupData.socialIdFile.mimeType }
+                          );
+                          window.open(URL.createObjectURL(blob), '_blank');
+                        }}
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        צפייה
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <AlertCircle className="w-4 h-4 text-red-400" />
+                      <span className="text-xs">לא הועלה</span>
+                    </div>
+                  )}
+                </div>
+                <div className="border rounded-lg p-3">
+                  <p className="text-sm font-medium text-secondary mb-2">אישור ניהול חשבון בנק</p>
+                  {hasBankApprovalFile ? (
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="w-4 h-4 text-green-500" />
+                      <span className="text-xs text-muted-foreground truncate flex-1">{setupData.bankApprovalFile.name}</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-7"
+                        onClick={() => {
+                          const blob = new Blob(
+                            [Uint8Array.from(atob(setupData.bankApprovalFile.base64), c => c.charCodeAt(0))],
+                            { type: setupData.bankApprovalFile.mimeType }
+                          );
+                          window.open(URL.createObjectURL(blob), '_blank');
+                        }}
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        צפייה
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <AlertCircle className="w-4 h-4 text-red-400" />
+                      <span className="text-xs">לא הועלה</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Approve / Reject Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={handleApproveSeller}
+                disabled={approvingSeller}
+                className="flex-1 rounded-full bg-green-600 hover:bg-green-700 text-white gap-2 h-11"
+              >
+                {approvingSeller ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" />שולח ל-PayMe ויוצר חשבון...</>
+                ) : (
+                  <><Send className="w-4 h-4" />אשר והקם חשבון סליקה ב-PayMe</>
+                )}
+              </Button>
+              <Button
+                variant="destructive"
+                className="rounded-full gap-2 h-11"
+                disabled={approvingSeller}
+                onClick={() => {
+                  if (confirm('האם לדחות את הבקשה? בעל האירוע יצטרך להזין את הפרטים מחדש.')) {
+                    handleRejectSeller();
+                  }
+                }}
+              >
+                <X className="w-4 h-4" />
+                דחה בקשה
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* KYC Documents Section */}
         {event.seller_payme_id && (
           <div className="mt-6 bg-muted rounded-2xl p-4 space-y-4">
