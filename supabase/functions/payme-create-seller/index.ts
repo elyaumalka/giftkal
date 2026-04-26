@@ -205,9 +205,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (event.owner_id !== user.id) {
+    const { data: adminRole } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    const isAdmin = Boolean(adminRole);
+
+    if (event.owner_id !== user.id && !isAdmin) {
+      console.log(`Unauthorized seller creation attempt. user=${user.id}, eventOwner=${event.owner_id}, event=${body.eventId}`);
       return new Response(
-        JSON.stringify({ error: 'You do not own this event' }),
+        JSON.stringify({ error: 'אין הרשאה לאשר חשבון סליקה לאירוע הזה' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
