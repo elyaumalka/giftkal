@@ -283,7 +283,8 @@ export default function EventOwners() {
                       variant="ghost"
                       className="h-6 w-6 p-0 text-green-600 hover:bg-green-50"
                       disabled={approvingId === event.id}
-                      onClick={async () => {
+                      onClick={async (e) => {
+                        e.stopPropagation();
                         setApprovingId(event.id);
                         try {
                           const setupData = event.payment_setup_data as any;
@@ -295,6 +296,7 @@ export default function EventOwners() {
                           if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה');
                           await supabase.from('events').update({ payment_setup_status: 'approved' } as any).eq('id', event.id);
                           queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+                          queryClient.invalidateQueries({ queryKey: ['pending-approval-count'] });
                           toast({ title: "חשבון סליקה הוקם בהצלחה ✅" });
                         } catch (err: any) {
                           toast({ title: "שגיאה", description: err.message, variant: "destructive" });
@@ -309,9 +311,11 @@ export default function EventOwners() {
                       size="sm"
                       variant="ghost"
                       className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
-                      onClick={async () => {
+                      onClick={async (e) => {
+                        e.stopPropagation();
                         await supabase.from('events').update({ payment_setup_status: 'rejected' } as any).eq('id', event.id);
                         queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+                        queryClient.invalidateQueries({ queryKey: ['pending-approval-count'] });
                         toast({ title: "הבקשה נדחתה" });
                       }}
                     >
@@ -328,7 +332,7 @@ export default function EventOwners() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => copyEmail(event.ownerEmail)}
+              onClick={(e) => { e.stopPropagation(); copyEmail(event.ownerEmail); }}
               className="text-muted-foreground hover:text-foreground w-28"
             >
               העתקת כתובת מייל
@@ -338,22 +342,23 @@ export default function EventOwners() {
             <Dialog>
               <DialogTrigger asChild>
                 <button
-                  onClick={() => setSelectedEvent(event)}
+                  onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
                   className="w-10 h-10 rounded-full border-2 border-[#1a2942] flex items-center justify-center hover:bg-[#1a2942] hover:text-white transition-colors"
                 >
                   <Eye className="w-5 h-5" />
                 </button>
               </DialogTrigger>
               <DialogContent className="max-w-6xl p-0 overflow-hidden" hideCloseButton>
-                <EventTransactionsPopup 
-                  event={event} 
-                  transactions={eventDetails || []} 
+                <EventTransactionsPopup
+                  event={event}
+                  transactions={eventDetails || []}
                 />
               </DialogContent>
             </Dialog>
 
             {/* פרטים - Document icon */}
             <button
+              onClick={(e) => { e.stopPropagation(); setDetailsEvent(event); }}
               className="w-10 h-10 rounded-full border-2 border-[#1a2942] flex items-center justify-center hover:bg-[#1a2942] hover:text-white transition-colors"
             >
               <FileText className="w-5 h-5" />
@@ -367,6 +372,18 @@ export default function EventOwners() {
           </div>
         )}
       </div>
+
+      {/* Customer Details Dialog */}
+      <Dialog open={!!detailsEvent} onOpenChange={(open) => !open && setDetailsEvent(null)}>
+        <DialogContent className="max-w-6xl p-0 overflow-hidden" hideCloseButton>
+          {detailsEvent && (
+            <EventDetailsDialog
+              event={detailsEvent}
+              onClose={() => setDetailsEvent(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
