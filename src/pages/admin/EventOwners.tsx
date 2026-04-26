@@ -11,6 +11,7 @@ import {
 import { Search, Eye, FileText, Copy, Filter, MessageCircle, CheckCircle2, CreditCard, Loader2, ShieldCheck, XCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { EventDetailsDialog } from "@/components/admin/EventDetailsDialog";
 import {
   Select,
   SelectContent,
@@ -22,6 +23,7 @@ import {
 export default function EventOwners() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [detailsEvent, setDetailsEvent] = useState<any>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [filterDateFrom, setFilterDateFrom] = useState("");
