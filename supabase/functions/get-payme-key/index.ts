@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const paymeClientKey = Deno.env.get('PAYME_CLIENT_KEY');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get event's HF API key
@@ -45,16 +46,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!event.hf_api_key) {
+    if (!event.seller_payme_id) {
       return new Response(
         JSON.stringify({ error: 'Payment not configured for this event' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const clientKey = event.hf_api_key || paymeClientKey;
+
+    if (!clientKey) {
+      return new Response(
+        JSON.stringify({ error: 'Payment key is not configured' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ 
-        clientKey: event.hf_api_key,
+        clientKey,
         testMode: false,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
