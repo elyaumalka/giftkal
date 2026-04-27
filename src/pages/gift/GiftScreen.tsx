@@ -208,8 +208,44 @@ export default function GiftScreen() {
     setStep("processing");
     const imageUrl = await saveBlessingAsImage();
     setBlessingImageUrl(imageUrl);
-    if (event?.seller_payme_id && paymeApiKey) { setStep("card-payment"); }
-    else { toast({ title: "שגיאה", description: "מערכת התשלום לא זמינה כרגע", variant: "destructive" }); setStep("blessing"); }
+
+    if (!event?.seller_payme_id) {
+      toast({ title: "שגיאה", description: "מערכת התשלום לא זמינה כרגע", variant: "destructive" });
+      setStep("blessing");
+      return;
+    }
+
+    if (paymeApiKey) {
+      setStep("card-payment");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('payme-generate-link', {
+        body: {
+          eventId,
+          amount: finalAmount,
+          payerName,
+          payerEmail: payerEmail || undefined,
+          payerPhone: payerPhone || undefined,
+          relationship: relationship || undefined,
+          blessing: blessing || undefined,
+          blessingImageUrl: imageUrl || undefined,
+          blessingVideoUrl: blessingVideoUrl || undefined,
+          installments: selectedInstallments,
+        },
+      });
+
+      if (error) throw new Error(error.message || 'שגיאה ביצירת קישור תשלום');
+      if (!data?.success || !data?.saleUrl) throw new Error(data?.error || 'שגיאה ביצירת קישור תשלום');
+
+      window.location.href = data.saleUrl;
+    } catch (err: any) {
+      const message = err?.message || "מערכת התשלום לא זמינה כרגע";
+      setPaymentError(message);
+      toast({ title: "שגיאה", description: message, variant: "destructive" });
+      setStep("blessing");
+    }
   };
 
   const handleTokenize = (token: string) => { setStep("processing"); chargeToken.mutate(token); };
