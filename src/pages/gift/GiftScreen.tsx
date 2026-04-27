@@ -83,6 +83,7 @@ export default function GiftScreen() {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [paymeApiKey, setPaymeApiKey] = useState<string | null>(null);
   const [paymeTestMode, setPaymeTestMode] = useState(true);
+  const [paymeSaleUrl, setPaymeSaleUrl] = useState<string | null>(null);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -239,7 +240,9 @@ export default function GiftScreen() {
       if (error) throw new Error(error.message || 'שגיאה ביצירת קישור תשלום');
       if (!data?.success || !data?.saleUrl) throw new Error(data?.error || 'שגיאה ביצירת קישור תשלום');
 
-      window.location.href = data.saleUrl;
+      // Embed PayMe checkout in an iframe instead of redirecting
+      setPaymeSaleUrl(data.saleUrl);
+      setStep("card-payment");
     } catch (err: any) {
       const message = err?.message || "מערכת התשלום לא זמינה כרגע";
       setPaymentError(message);
