@@ -255,6 +255,19 @@ export default function EventWelcome() {
     enabled: !!eventId,
   });
 
+  // Check PayMe seller approval status
+  const { data: paymeStatus, isLoading: isLoadingPayme } = useQuery({
+    queryKey: ["payme-status", eventId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-payme-key', {
+        body: { eventId },
+      });
+      if (error) return { sellerApproved: false };
+      return data as { sellerApproved?: boolean; clientKey?: string | null };
+    },
+    enabled: !!eventId && !!event?.seller_payme_id,
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#051839]">
@@ -283,6 +296,32 @@ export default function EventWelcome() {
       </div>
     );
   }
+
+  // Wait for PayMe approval check
+  if (isLoadingPayme) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#051839]">
+        <Loader2 className="w-10 h-10 animate-spin text-[#C4A35A]" />
+      </div>
+    );
+  }
+
+  // Block entire gift flow if seller is not yet approved by PayMe
+  if (paymeStatus && paymeStatus.sellerApproved === false) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839] px-6" dir="rtl">
+        <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">⏳</span></div>
+        <h1 className="text-2xl font-bold text-white text-center">שירות המתנות יופעל בקרוב</h1>
+        <p className="text-white/60 text-center max-w-sm leading-relaxed">
+          חשבון הסליקה של בעל האירוע נמצא בתהליך אישור סופי מול חברת הסליקה.
+          <br />
+          ברגע שהאישור יושלם, ניתן יהיה להעניק מתנה באשראי.
+        </p>
+        <p className="text-white/40 text-xs text-center mt-2">נסו שוב בעוד מספר שעות</p>
+      </div>
+    );
+  }
+
 
   // Block gifts more than 3 days after event
   const eventDate = new Date(event.event_date + 'T00:00:00');
