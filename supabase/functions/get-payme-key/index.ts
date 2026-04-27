@@ -11,10 +11,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get eventId from query params or body
     const url = new URL(req.url);
     let eventId = url.searchParams.get('eventId');
-    
+
     if (!eventId && req.method === 'POST') {
       const body = await req.json();
       eventId = body.eventId;
@@ -32,7 +31,6 @@ Deno.serve(async (req) => {
     const paymeClientKey = Deno.env.get('PAYME_CLIENT_KEY');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get event's HF API key
     const { data: event, error } = await supabase
       .from('events')
       .select('hf_api_key, seller_payme_id')
@@ -53,17 +51,61 @@ Deno.serve(async (req) => {
       );
     }
 
-    const clientKey = event.hf_api_key || paymeClientKey;
+    let clientKey = event.hf_api_key;
+
+    // If event has no hf_api_key (Hosted Fields key), fetch it from PayMe using seller_payme_id
+    // The hf_api_key is the seller's `uuid` returned by get-sellers/create-seller.
+    // It is NOT the same as PAYME_CLIENT_KEY (which is the master/secret key for server-side calls).
+    if (!clientKey && paymeClientKey && !event.seller_payme_id.startsWith('TEST-')) {
+      console.log(`Fetching hf_api_key from PayMe for seller: ${event.seller_payme_id}`);
+
+      try {
+        const paymeResponse = await fetch('https://live.payme.io/api/get-sellers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payme_client_key: paymeClientKey,
+            seller_payme_id: event.seller_payme_id,
+          }),
+        });
+
+        const paymeResult = await paymeResponse.json();
+
+        if (paymeResult.status_code === 0 && paymeResult.items?.length > 0) {
+          const seller = paymeResult.items.find(
+            (s: { seller_payme_id: string }) => s.seller_payme_id === event.seller_payme_id
+          );
+
+          if (seller?.uuid) {
+            clientKey = seller.uuid;
+            // Persist for future calls
+            await supabase
+              .from('events')
+              .update({ hf_api_key: clientKey })
+              .eq('id', eventId);
+            console.log(`Saved hf_api_key for event ${eventId}`);
+          } else {
+            console.error('Seller found but no uuid returned:', JSON.stringify(seller));
+          }
+        } else {
+          console.error('PayMe get-sellers error:', JSON.stringify(paymeResult));
+        }
+      } catch (fetchErr) {
+        console.error('Failed to fetch seller from PayMe:', fetchErr);
+      }
+    }
 
     if (!clientKey) {
       return new Response(
-        JSON.stringify({ error: 'Payment key is not configured' }),
+        JSON.stringify({
+          error: 'Hosted Fields key is not configured for this seller. Please contact support.',
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         clientKey,
         testMode: false,
       }),
