@@ -84,6 +84,8 @@ export default function GiftScreen() {
   const [paymeApiKey, setPaymeApiKey] = useState<string | null>(null);
   const [paymeTestMode, setPaymeTestMode] = useState(true);
   const [paymeSaleUrl, setPaymeSaleUrl] = useState<string | null>(null);
+  const [sellerApproved, setSellerApproved] = useState<boolean | null>(null);
+  const [paymeLoading, setPaymeLoading] = useState(true);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
