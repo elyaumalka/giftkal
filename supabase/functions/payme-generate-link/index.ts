@@ -96,7 +96,10 @@ Deno.serve(async (req) => {
     
     // Build return URLs - use the app's gift page with query params
     // We need to figure out the app URL from the request origin or use a fallback
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.replace(/\/[^/]*$/, '') || '';
+    const requestOrigin = req.headers.get('origin') || req.headers.get('referer')?.replace(/\/[^/]*$/, '');
+    const origin = requestOrigin && /^https:\/\//.test(requestOrigin)
+      ? requestOrigin
+      : 'https://giftkal.com';
     const successUrl = `${origin}/gift/${eventId}/send?payment_status=success&transaction_id=${transaction.id}`;
     const failureUrl = `${origin}/gift/${eventId}/send?payment_status=failed&transaction_id=${transaction.id}`;
 

@@ -98,9 +98,11 @@ Deno.serve(async (req) => {
     if (!clientKey) {
       return new Response(
         JSON.stringify({
-          error: 'Hosted Fields key is not configured for this seller. Please contact support.',
+          clientKey: null,
+          testMode: false,
+          fallbackToRedirect: true,
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
