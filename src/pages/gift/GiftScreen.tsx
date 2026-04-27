@@ -657,7 +657,7 @@ export default function GiftScreen() {
           )}
 
           {/* Step: Card Payment */}
-          {step === "card-payment" && paymeApiKey && (
+          {step === "card-payment" && (paymeApiKey || paymeSaleUrl) && (
             <div className="p-6 space-y-5 animate-fade-in">
               <div className="text-center">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#051839] to-[#1a3a6c] flex items-center justify-center mx-auto mb-3 shadow-lg border border-white/10">
@@ -670,11 +670,23 @@ export default function GiftScreen() {
                 </div>
               </div>
 
-              <PayMeIframe apiKey={paymeApiKey} testMode={paymeTestMode} amount={finalAmount} payerName={payerName}
-                payerEmail={payerEmail} payerPhone={payerPhone} productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
-                onTokenize={handleTokenize} onError={handlePaymentError} disabled={chargeToken.isPending} />
+              {paymeApiKey ? (
+                <PayMeIframe apiKey={paymeApiKey} testMode={paymeTestMode} amount={finalAmount} payerName={payerName}
+                  payerEmail={payerEmail} payerPhone={payerPhone} productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
+                  onTokenize={handleTokenize} onError={handlePaymentError} disabled={chargeToken.isPending} />
+              ) : paymeSaleUrl ? (
+                <div className="rounded-xl overflow-hidden border border-white/10 bg-white">
+                  <iframe
+                    src={paymeSaleUrl}
+                    title="PayMe Checkout"
+                    className="w-full"
+                    style={{ height: '650px', border: 'none' }}
+                    allow="payment"
+                  />
+                </div>
+              ) : null}
 
-              <button onClick={() => setStep("blessing")} disabled={chargeToken.isPending}
+              <button onClick={() => { setStep("blessing"); setPaymeSaleUrl(null); }} disabled={chargeToken.isPending}
                 className="w-full h-12 rounded-xl border border-white/15 text-white/60 font-medium hover:bg-white/5 transition-colors disabled:opacity-50">
                 חזרה
               </button>
