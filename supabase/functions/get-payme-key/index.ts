@@ -52,12 +52,18 @@ Deno.serve(async (req) => {
     }
 
     let clientKey = event.hf_api_key;
+    let sellerApproved = false;
+    const isTestSeller = event.seller_payme_id.startsWith('TEST-');
+
+    if (isTestSeller) {
+      sellerApproved = true;
+    }
 
     // If event has no hf_api_key (Hosted Fields key), fetch it from PayMe using seller_payme_id
     // The hf_api_key is the seller's `uuid` returned by get-sellers/create-seller.
     // It is NOT the same as PAYME_CLIENT_KEY (which is the master/secret key for server-side calls).
-    if (!clientKey && paymeClientKey && !event.seller_payme_id.startsWith('TEST-')) {
-      console.log(`Fetching hf_api_key from PayMe for seller: ${event.seller_payme_id}`);
+    if (paymeClientKey && !isTestSeller) {
+      console.log(`Fetching seller status from PayMe for seller: ${event.seller_payme_id}`);
 
       try {
         const paymeResponse = await fetch('https://live.payme.io/api/get-sellers', {
@@ -76,7 +82,9 @@ Deno.serve(async (req) => {
             (s: { seller_payme_id: string }) => s.seller_payme_id === event.seller_payme_id
           );
 
-          if (seller?.uuid) {
+          sellerApproved = !!seller?.seller_approved;
+
+          if (!clientKey && seller?.uuid) {
             clientKey = seller.uuid;
             // Persist for future calls
             await supabase
@@ -84,8 +92,6 @@ Deno.serve(async (req) => {
               .update({ hf_api_key: clientKey })
               .eq('id', eventId);
             console.log(`Saved hf_api_key for event ${eventId}`);
-          } else {
-            console.error('Seller found but no uuid returned:', JSON.stringify(seller));
           }
         } else {
           console.error('PayMe get-sellers error:', JSON.stringify(paymeResult));
@@ -95,11 +101,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // If seller is not approved by PayMe, block payments entirely
+    if (!sellerApproved) {
+      return new Response(
+        JSON.stringify({
+          clientKey: null,
+          testMode: false,
+          sellerApproved: false,
+          blocked: true,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!clientKey) {
       return new Response(
         JSON.stringify({
           clientKey: null,
           testMode: false,
+          sellerApproved: true,
           fallbackToRedirect: true,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -110,6 +130,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         clientKey,
         testMode: false,
+        sellerApproved: true,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
