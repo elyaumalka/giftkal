@@ -102,12 +102,26 @@ export default function GiftScreen() {
   useEffect(() => {
     if (!eventId) return;
     const fetchPaymeKey = async () => {
+      setPaymeLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke('get-payme-key', {
           body: { eventId },
         });
-        if (!error && data?.clientKey) { setPaymeApiKey(data.clientKey); setPaymeTestMode(data.testMode ?? true); }
-      } catch (e) { console.error('Failed to fetch PayMe key:', e); }
+        if (!error && data) {
+          setSellerApproved(data.sellerApproved ?? false);
+          if (data.clientKey) {
+            setPaymeApiKey(data.clientKey);
+            setPaymeTestMode(data.testMode ?? true);
+          }
+        } else {
+          setSellerApproved(false);
+        }
+      } catch (e) {
+        console.error('Failed to fetch PayMe key:', e);
+        setSellerApproved(false);
+      } finally {
+        setPaymeLoading(false);
+      }
     };
     fetchPaymeKey();
   }, [eventId]);
