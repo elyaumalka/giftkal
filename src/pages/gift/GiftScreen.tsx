@@ -84,6 +84,8 @@ export default function GiftScreen() {
   const [paymeApiKey, setPaymeApiKey] = useState<string | null>(null);
   const [paymeTestMode, setPaymeTestMode] = useState(true);
   const [paymeSaleUrl, setPaymeSaleUrl] = useState<string | null>(null);
+  const [sellerApproved, setSellerApproved] = useState<boolean | null>(null);
+  const [paymeLoading, setPaymeLoading] = useState(true);
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -100,12 +102,26 @@ export default function GiftScreen() {
   useEffect(() => {
     if (!eventId) return;
     const fetchPaymeKey = async () => {
+      setPaymeLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke('get-payme-key', {
           body: { eventId },
         });
-        if (!error && data?.clientKey) { setPaymeApiKey(data.clientKey); setPaymeTestMode(data.testMode ?? true); }
-      } catch (e) { console.error('Failed to fetch PayMe key:', e); }
+        if (!error && data) {
+          setSellerApproved(data.sellerApproved ?? false);
+          if (data.clientKey) {
+            setPaymeApiKey(data.clientKey);
+            setPaymeTestMode(data.testMode ?? true);
+          }
+        } else {
+          setSellerApproved(false);
+        }
+      } catch (e) {
+        console.error('Failed to fetch PayMe key:', e);
+        setSellerApproved(false);
+      } finally {
+        setPaymeLoading(false);
+      }
     };
     fetchPaymeKey();
   }, [eventId]);
@@ -281,6 +297,31 @@ export default function GiftScreen() {
         <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">🔒</span></div>
         <h1 className="text-2xl font-bold text-white">שירות המתנות אינו פעיל</h1>
         <p className="text-white/50 text-center max-w-sm">שירות המתנות באשראי לא הופעל עדיין לאירוע זה</p>
+      </div>
+    );
+  }
+
+  // Wait for PayMe seller approval check
+  if (paymeLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#051839]">
+        <Loader2 className="w-10 h-10 animate-spin text-[#C4A35A]" />
+      </div>
+    );
+  }
+
+  // Block gifts if seller is not yet approved by PayMe
+  if (sellerApproved === false) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839] px-6" dir="rtl">
+        <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">⏳</span></div>
+        <h1 className="text-2xl font-bold text-white text-center">שירות המתנות יופעל בקרוב</h1>
+        <p className="text-white/60 text-center max-w-sm leading-relaxed">
+          חשבון הסליקה של בעל האירוע נמצא בתהליך אישור סופי מול חברת הסליקה.
+          <br />
+          ברגע שהאישור יושלם, ניתן יהיה להעניק מתנה באשראי.
+        </p>
+        <p className="text-white/40 text-xs text-center mt-2">נסו שוב בעוד מספר שעות</p>
       </div>
     );
   }
