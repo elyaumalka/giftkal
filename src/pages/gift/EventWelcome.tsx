@@ -255,6 +255,19 @@ export default function EventWelcome() {
     enabled: !!eventId,
   });
 
+  // Check PayMe seller approval status
+  const { data: paymeStatus, isLoading: isLoadingPayme } = useQuery({
+    queryKey: ["payme-status", eventId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-payme-key', {
+        body: { eventId },
+      });
+      if (error) return { sellerApproved: false };
+      return data as { sellerApproved?: boolean; clientKey?: string | null };
+    },
+    enabled: !!eventId && !!event?.seller_payme_id,
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#051839]">
