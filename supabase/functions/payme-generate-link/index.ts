@@ -14,6 +14,7 @@ interface GenerateLinkRequest {
   relationship?: string;
   blessing?: string;
   blessingImageUrl?: string;
+  blessingVideoUrl?: string;
   installments?: number;
 }
 
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
     const body: GenerateLinkRequest = await req.json();
     const {
       eventId, amount, payerName, payerEmail, payerPhone,
-      relationship, blessing, blessingImageUrl, installments = 1,
+      relationship, blessing, blessingImageUrl, blessingVideoUrl, installments = 1,
     } = body;
 
     if (!eventId || !amount || !payerName) {
@@ -75,6 +76,7 @@ Deno.serve(async (req) => {
         relationship: relationship || null,
         blessing_text: blessing || null,
         receipt_url: blessingImageUrl || null,
+        blessing_video_url: blessingVideoUrl || null,
         payment_status: 'pending',
       })
       .select()
@@ -89,8 +91,7 @@ Deno.serve(async (req) => {
     }
 
     // Build PayMe generate-sale request (redirect mode, no buyer_key)
-    const paymeEnv = 'sandbox'; // Change to 'ng' for production
-    const paymeBaseUrl = `https://${paymeEnv}.payme.io`;
+    const paymeBaseUrl = 'https://live.payme.io';
     const callbackUrl = `${supabaseUrl}/functions/v1/payme-webhook`;
     
     // Build return URLs - use the app's gift page with query params
