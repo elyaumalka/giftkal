@@ -126,16 +126,24 @@ export default function GiftScreen() {
     fetchPaymeKey();
   }, [eventId]);
 
-  const { data: event, isLoading } = useQuery({
+  const { data: event, isLoading } = useQuery<any>({
     queryKey: ["event-public", eventId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("public_events")
-        .select(`*, venues (name, address, logo_url, banner_url, phone, email)`)
+        .select("*")
         .eq("id", eventId)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      if (data?.venue_id) {
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("name, address, logo_url, banner_url, phone, email")
+          .eq("id", data.venue_id)
+          .maybeSingle();
+        return { ...data, venues: venue };
+      }
+      return { ...data, venues: null };
     },
     enabled: !!eventId,
   });
