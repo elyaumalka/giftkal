@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
             (s: { seller_payme_id: string }) => s.seller_payme_id === event.seller_payme_id
           );
 
-          sellerApproved = !!seller?.seller_approved;
+          sellerApproved = sellerApproved || !!seller?.seller_approved;
 
           if (!clientKey && seller?.uuid) {
             clientKey = seller.uuid;
