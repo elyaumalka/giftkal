@@ -32,15 +32,24 @@ const GiftSearch = () => {
       const threeDaysAgo = new Date(today);
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
       
-      const { data } = await supabase
-        .from("public_events")
-        .select("id, groom_name, bride_name, child_name, family_name, event_date, event_type, seller_payme_id, venues(name)")
-        .gte("event_date", threeDaysAgo.toISOString().split("T")[0])
-        .not("seller_payme_id", "is", null)
-        .order("event_date", { ascending: true })
-        .limit(50);
-      setEvents(data || []);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from("public_events")
+          .select("id, groom_name, bride_name, child_name, family_name, event_date, event_type, seller_payme_id, custom_venue_name")
+          .gte("event_date", threeDaysAgo.toISOString().split("T")[0])
+          .not("seller_payme_id", "is", null)
+          .order("event_date", { ascending: true })
+          .limit(50);
+        if (error) {
+          console.error("Failed to fetch events:", error);
+          toast({ title: "שגיאה בטעינת אירועים", description: "נסו שוב מאוחר יותר", variant: "destructive" });
+        }
+        setEvents(data || []);
+      } catch (err) {
+        console.error("Unexpected error:", err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchEvents();
   }, []);
@@ -168,10 +177,10 @@ const GiftSearch = () => {
                           <Calendar className="w-4 h-4 flex-shrink-0" />
                           <span>{new Date(event.event_date).toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}</span>
                         </div>
-                        {(event.venues as any)?.name && (
+                        {event.custom_venue_name && (
                           <div className="flex items-center gap-2 text-white/50 text-sm">
                             <MapPin className="w-4 h-4 flex-shrink-0" />
-                            <span>{(event.venues as any).name}</span>
+                            <span>{event.custom_venue_name}</span>
                           </div>
                         )}
                       </div>
