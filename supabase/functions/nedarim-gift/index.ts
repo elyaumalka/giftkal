@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     const body = await readRequestBody(req);
     console.log('[nedarim-gift] Received:', JSON.stringify(body));
 
-    const action = body.action || url.searchParams.get('action') || (url.searchParams.get('id') ? 'info' : 'create');
+    const action = body.action || url.searchParams.get('action') || (url.searchParams.get('id') ? 'info' : req.method === 'GET' ? 'list' : 'create');
 
     // ─── ACTION: INFO (public, no API key needed) ───
     if (action === 'info') {
