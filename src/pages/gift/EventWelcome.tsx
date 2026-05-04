@@ -246,9 +246,20 @@ export default function EventWelcome() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("public_events")
-        .select(`*, venues (id, name, address, logo_url, banner_url, phone, email)`)
+        .select("*")
         .eq("id", eventId)
         .maybeSingle();
+      if (error) throw error;
+      // If venue_id exists, fetch venue details separately
+      if (data?.venue_id) {
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("id, name, address, logo_url, banner_url, phone, email")
+          .eq("id", data.venue_id)
+          .maybeSingle();
+        return { ...data, venues: venue };
+      }
+      return { ...data, venues: null };
       if (error) throw error;
       return data;
     },
