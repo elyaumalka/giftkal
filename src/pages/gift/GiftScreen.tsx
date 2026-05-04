@@ -152,8 +152,6 @@ export default function GiftScreen() {
   const saveBlessingAsImage = async (): Promise<string | null> => {
     if (!blessingCardRef.current) return null;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { console.log('[GiftScreen] Skipping blessing image upload for anonymous guest'); return null; }
       const canvas = await html2canvas(blessingCardRef.current, { scale: 2, backgroundColor: null, useCORS: true });
       const blob = await new Promise<Blob | null>((resolve) => { canvas.toBlob((b) => resolve(b), "image/png", 0.95); });
       if (!blob) return null;
