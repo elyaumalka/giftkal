@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     // Get event and verify ownership
     const { data: event } = await supabase
       .from('events')
-      .select('id, owner_id, seller_payme_id')
+      .select('id, owner_id, seller_payme_id, payment_setup_status')
       .eq('id', eventId)
       .single()
 
@@ -62,6 +62,16 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'No seller configured for this event' }), {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    if (event.payment_setup_status === 'approved') {
+      return new Response(JSON.stringify({
+        status: 'approved',
+        sellerPaymeId: event.seller_payme_id,
+        approved: true,
+        active: true,
+        missingFields: [],
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     // Test seller bypass
