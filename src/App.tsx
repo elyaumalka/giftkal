@@ -70,6 +70,7 @@ import VenueLanding from "./pages/landing/VenueLanding";
 // Kiosk
 import KioskPage from "./pages/kiosk/KioskPage";
 import KioskLauncher from "./pages/kiosk/KioskLauncher";
+import KioskEntry from "./pages/kiosk/KioskEntry";
 
 // API Docs
 import YemotApiDocs from "./pages/api/YemotApiDocs";
