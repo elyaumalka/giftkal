@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
     const { data: event, error } = await supabase
       .from('events')
-      .select('hf_api_key, seller_payme_id')
+      .select('hf_api_key, seller_payme_id, payment_setup_status')
       .eq('id', eventId)
       .single();
 
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     }
 
     let clientKey = event.hf_api_key;
-    let sellerApproved = false;
+    let sellerApproved = event.payment_setup_status === 'approved';
     const isTestSeller = event.seller_payme_id.startsWith('TEST-');
 
     if (isTestSeller) {
