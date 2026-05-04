@@ -23,6 +23,16 @@ async function validateApiKey(supabase: any, apiKey: string): Promise<boolean> {
   return !!keyData;
 }
 
+async function readRequestBody(req: Request): Promise<Record<string, any>> {
+  const contentType = req.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) return {};
+
+  const text = await req.text();
+  if (!text.trim()) return {};
+
+  return JSON.parse(text);
+}
+
 /**
  * Public endpoint for Nedarim Plus form.
  * 
@@ -40,14 +50,15 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const body = await req.json();
+    const url = new URL(req.url);
+    const body = await readRequestBody(req);
     console.log('[nedarim-gift] Received:', JSON.stringify(body));
 
-    const action = body.action || 'create';
+    const action = body.action || url.searchParams.get('action') || (url.searchParams.get('id') ? 'info' : req.method === 'GET' ? 'list' : 'create');
 
     // ─── ACTION: INFO (public, no API key needed) ───
     if (action === 'info') {
-      const eventId = body.event_id || body.id;
+      const eventId = body.event_id || body.id || url.searchParams.get('event_id') || url.searchParams.get('id');
       if (!eventId) {
         return new Response(
           JSON.stringify({ success: false, error: 'Missing required field: event_id', error_code: 'MISSING_FIELD' }),
@@ -131,7 +142,12 @@ Deno.serve(async (req) => {
 
     // ─── ACTION: LIST (public, no API key needed) ───
     if (action === 'list') {
-      const { date_from, date_to, event_type, search } = body;
+      const date_from = body.date_from || url.searchParams.get('date_from');
+      const date_to = body.date_to || url.searchParams.get('date_to');
+      const event_type = body.event_type || url.searchParams.get('event_type');
+      const search = body.search || url.searchParams.get('search');
+      const limit = Math.min(Number(body.limit || url.searchParams.get('limit') || 500), 1000);
+      const offset = Math.max(Number(body.offset || url.searchParams.get('offset') || 0), 0);
 
       let query = supabase
         .from('events')
@@ -142,7 +158,7 @@ Deno.serve(async (req) => {
       if (date_to) query = query.lte('event_date', date_to);
       if (event_type) query = query.eq('event_type', event_type);
 
-      const { data: events, error: listErr } = await query.limit(100);
+      const { data: events, error: listErr } = await query.range(offset, offset + limit - 1);
 
       if (listErr) {
         return new Response(
