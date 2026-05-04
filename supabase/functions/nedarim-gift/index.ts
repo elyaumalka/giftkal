@@ -43,7 +43,145 @@ Deno.serve(async (req) => {
     const body = await req.json();
     console.log('[nedarim-gift] Received:', JSON.stringify(body));
 
-    // Validate API key - from header or body
+    const action = body.action || 'create';
+
+    // ─── ACTION: INFO (public, no API key needed) ───
+    if (action === 'info') {
+      const eventId = body.event_id || body.id;
+      if (!eventId) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing required field: event_id', error_code: 'MISSING_FIELD' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: event, error: eventErr } = await supabase
+        .from('events')
+        .select('id, event_type, event_date, groom_name, bride_name, child_name, family_name, groom_parents, bride_parents, groom_grandparents, bride_grandparents, custom_venue_name, custom_venue_location, reception_time, ceremony_time, invitation_text, gifts_enabled, rsvp_enabled, invitations_enabled, seller_payme_id, venue_id, hall_id')
+        .eq('id', eventId)
+        .single();
+
+      if (eventErr || !event) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Event not found', error_code: 'NOT_FOUND', event_id: eventId }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Build display name
+      let display_name = '';
+      if (event.groom_name && event.bride_name) {
+        display_name = `${event.groom_name} & ${event.bride_name}`;
+      } else if (event.child_name) {
+        display_name = event.child_name;
+      } else if (event.family_name) {
+        display_name = `משפחת ${event.family_name}`;
+      }
+
+      // Fetch venue name if venue_id exists
+      let venue_name = event.custom_venue_name || null;
+      let venue_location = event.custom_venue_location || null;
+      if (event.venue_id && !venue_name) {
+        const { data: venue } = await supabase.from('venues').select('name, address').eq('id', event.venue_id).maybeSingle();
+        if (venue) {
+          venue_name = venue.name;
+          venue_location = venue_location || venue.address;
+        }
+      }
+
+      // Fetch hall name if hall_id exists
+      let hall_name = null;
+      if (event.hall_id) {
+        const { data: hall } = await supabase.from('halls').select('name').eq('id', event.hall_id).maybeSingle();
+        if (hall) hall_name = hall.name;
+      }
+
+      const projectUrl = supabaseUrl.includes('xadihaigjkbvphzphxxk') ? 'https://giftkal.com' : supabaseUrl;
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          event: {
+            id: event.id,
+            event_type: event.event_type,
+            event_date: event.event_date,
+            display_name,
+            groom_name: event.groom_name,
+            bride_name: event.bride_name,
+            child_name: event.child_name,
+            family_name: event.family_name,
+            groom_parents: event.groom_parents,
+            bride_parents: event.bride_parents,
+            groom_grandparents: event.groom_grandparents,
+            bride_grandparents: event.bride_grandparents,
+            venue_name,
+            venue_location,
+            hall_name,
+            reception_time: event.reception_time,
+            ceremony_time: event.ceremony_time,
+            invitation_text: event.invitation_text,
+            gifts_enabled: event.gifts_enabled,
+            has_payment: !!event.seller_payme_id,
+            gift_url: `${projectUrl}/gift/${event.id}`,
+          },
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ─── ACTION: LIST (public, no API key needed) ───
+    if (action === 'list') {
+      const { date_from, date_to, event_type, search } = body;
+
+      let query = supabase
+        .from('events')
+        .select('id, event_type, event_date, groom_name, bride_name, child_name, family_name, custom_venue_name, custom_venue_location, venue_id, gifts_enabled, seller_payme_id')
+        .order('event_date', { ascending: true });
+
+      if (date_from) query = query.gte('event_date', date_from);
+      if (date_to) query = query.lte('event_date', date_to);
+      if (event_type) query = query.eq('event_type', event_type);
+
+      const { data: events, error: listErr } = await query.limit(100);
+
+      if (listErr) {
+        return new Response(
+          JSON.stringify({ success: false, error: listErr.message, error_code: 'DB_ERROR' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const results = (events || []).map((e: any) => {
+        let display_name = '';
+        if (e.groom_name && e.bride_name) display_name = `${e.groom_name} & ${e.bride_name}`;
+        else if (e.child_name) display_name = e.child_name;
+        else if (e.family_name) display_name = `משפחת ${e.family_name}`;
+
+        return {
+          id: e.id,
+          event_type: e.event_type,
+          event_date: e.event_date,
+          display_name,
+          venue_name: e.custom_venue_name || null,
+          gifts_enabled: e.gifts_enabled,
+          has_payment: !!e.seller_payme_id,
+        };
+      });
+
+      // Filter by search term if provided
+      let filtered = results;
+      if (search) {
+        const s = search.toLowerCase();
+        filtered = results.filter((e: any) => e.display_name.toLowerCase().includes(s));
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, events: filtered, count: filtered.length }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ─── All other actions require API key ───
     const apiKey = req.headers.get('x-api-key') || body.api_key;
     const isValid = await validateApiKey(supabase, apiKey);
     if (!isValid) {
@@ -52,8 +190,6 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const action = body.action || 'create';
 
     // ─── ACTION: STATUS ───
     if (action === 'status') {
