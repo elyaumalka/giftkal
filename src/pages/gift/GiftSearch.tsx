@@ -177,10 +177,10 @@ const GiftSearch = () => {
                           <Calendar className="w-4 h-4 flex-shrink-0" />
                           <span>{new Date(event.event_date).toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}</span>
                         </div>
-                        {(event.venues as any)?.name && (
+                        {event.custom_venue_name && (
                           <div className="flex items-center gap-2 text-white/50 text-sm">
                             <MapPin className="w-4 h-4 flex-shrink-0" />
-                            <span>{(event.venues as any).name}</span>
+                            <span>{event.custom_venue_name}</span>
                           </div>
                         )}
                       </div>
