@@ -241,7 +241,7 @@ export default function EventWelcome() {
     return () => clearTimeout(t);
   }, []);
 
-  const { data: event, isLoading } = useQuery({
+  const { data: event, isLoading } = useQuery<any>({
     queryKey: ["event-welcome", eventId],
     queryFn: async () => {
       const { data, error } = await supabase
