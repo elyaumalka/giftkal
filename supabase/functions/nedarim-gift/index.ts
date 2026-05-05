@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
     }
 
     // Generate PayMe sale
-    const paymeBaseUrl = 'https://ng.payme.io';
+    const paymeBaseUrl = 'https://live.payme.io';
     const callbackUrl = `${supabaseUrl}/functions/v1/payme-webhook`;
 
     const productName = `מתנה ל${event.groom_name || ''} & ${event.bride_name || ''}`;
