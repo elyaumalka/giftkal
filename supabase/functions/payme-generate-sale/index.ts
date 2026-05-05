@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
     }
 
     // PayMe environment - sandbox for testing
-    const paymeBaseUrl = 'https://ng.payme.io';
+    const paymeBaseUrl = 'https://live.payme.io';
     
     // Get callback URL - the webhook that PayMe will call after payment
     const callbackUrl = `${supabaseUrl}/functions/v1/payme-webhook`;
