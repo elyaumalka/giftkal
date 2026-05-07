@@ -234,7 +234,7 @@ export default function NedarimBillingDialog({
         Mail: email,
         PaymentType: "Ragil",
         Amount: String(amount),
-        Tashlumim: "1",
+        Tashlumim: installments,
         Day: "",
         Currency: "1",
         Groupe: "GiftKal",
