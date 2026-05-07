@@ -329,6 +329,23 @@ export default function NedarimBillingDialog({
                 </div>
               )}
 
+              {/* Installments */}
+              <div className="space-y-2">
+                <Label>מספר תשלומים</Label>
+                <Select value={installments} onValueChange={setInstallments}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n === 1 ? "תשלום אחד" : `${n} תשלומים`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Nedarim Plus iframe */}
               <div className="relative">
                 {!iframeLoaded && (
