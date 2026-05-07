@@ -336,7 +336,7 @@ export default function GiftScreen() {
   const eventDateCheck = new Date(event.event_date + 'T00:00:00');
   const nowCheck = new Date();
   const threeDaysAfterCheck = new Date(eventDateCheck);
-  threeDaysAfterCheck.setDate(threeDaysAfterCheck.getDate() + 3);
+  threeDaysAfterCheck.setDate(threeDaysAfterCheck.getDate() + 365);
   if (nowCheck > threeDaysAfterCheck) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839]" dir="rtl">
