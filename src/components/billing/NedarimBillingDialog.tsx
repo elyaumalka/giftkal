@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, CheckCircle2, Copy } from "lucide-react";
@@ -75,6 +76,7 @@ export default function NedarimBillingDialog({
   const [idNumber, setIdNumber] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(fixedAmount ? String(fixedAmount) : "1");
   const [customAmount, setCustomAmount] = useState("");
+  const [installments, setInstallments] = useState("1");
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeHeight, setIframeHeight] = useState(0);
   const [processing, setProcessing] = useState(false);
@@ -232,7 +234,7 @@ export default function NedarimBillingDialog({
         Mail: email,
         PaymentType: "Ragil",
         Amount: String(amount),
-        Tashlumim: "1",
+        Tashlumim: installments,
         Day: "",
         Currency: "1",
         Groupe: "GiftKal",
@@ -326,6 +328,23 @@ export default function NedarimBillingDialog({
                   )}
                 </div>
               )}
+
+              {/* Installments */}
+              <div className="space-y-2">
+                <Label>מספר תשלומים</Label>
+                <Select value={installments} onValueChange={setInstallments}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n === 1 ? "תשלום אחד" : `${n} תשלומים`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               {/* Nedarim Plus iframe */}
               <div className="relative">
