@@ -334,21 +334,8 @@ export default function EventWelcome() {
   }
 
 
-  // Block gifts more than 3 days after event
-  const eventDate = new Date(event.event_date + 'T00:00:00');
-  const now = new Date();
-  const threeDaysAfter = new Date(eventDate);
-  threeDaysAfter.setDate(threeDaysAfter.getDate() + 3);
-  
-  if (now > threeDaysAfter) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#051839]" dir="rtl">
-        <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center"><span className="text-4xl">⏰</span></div>
-        <h1 className="text-2xl font-bold text-white">הזמן להענקת מתנות הסתיים</h1>
-        <p className="text-white/50 text-center max-w-sm">ניתן להעניק מתנות עד 3 ימים לאחר האירוע</p>
-      </div>
-    );
-  }
+  // Web: no date restriction — gifts are always allowed via the website.
+  // (Kiosk keeps its own same-day restriction in KioskPage.)
 
   const venue = event.venues as any;
   const venueId = venue?.id;
