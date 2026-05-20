@@ -20,14 +20,18 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'no PAYME_CLIENT_KEY' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
+  const endpoint: string = body.endpoint || 'get-sellers';
+  const payload: Record<string, unknown> = {
+    payme_client_key: paymeClientKey,
+    ...(sellerId ? { seller_payme_id: sellerId } : {}),
+    ...(body.extra || {}),
+  };
+
   try {
-    const res = await fetch('https://live.payme.io/api/get-sellers', {
+    const res = await fetch(`https://live.payme.io/api/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        payme_client_key: paymeClientKey,
-        ...(sellerId ? { seller_payme_id: sellerId } : {}),
-      }),
+      body: JSON.stringify(payload),
     });
     const text = await res.text();
     let json: unknown = null;
