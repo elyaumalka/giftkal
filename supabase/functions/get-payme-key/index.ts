@@ -76,22 +76,25 @@ Deno.serve(async (req) => {
         });
 
         const paymeResult = await paymeResponse.json();
+        console.log('PayMe get-sellers raw response:', JSON.stringify(paymeResult));
 
         if (paymeResult.status_code === 0 && paymeResult.items?.length > 0) {
           const seller = paymeResult.items.find(
             (s: { seller_payme_id: string }) => s.seller_payme_id === event.seller_payme_id
           );
+          console.log('Matched seller object:', JSON.stringify(seller));
 
           sellerApproved = sellerApproved || !!seller?.seller_approved;
 
-          if (!clientKey && seller?.uuid) {
-            clientKey = seller.uuid;
-            // Persist for future calls
+          // Try multiple possible field names for the front-end uuid key
+          const uuid = seller?.uuid || seller?.seller_uuid || seller?.hf_api_key || seller?.client_key;
+          if (!clientKey && uuid) {
+            clientKey = uuid;
             await supabase
               .from('events')
               .update({ hf_api_key: clientKey })
               .eq('id', eventId);
-            console.log(`Saved hf_api_key for event ${eventId}`);
+            console.log(`Saved hf_api_key=${clientKey} for event ${eventId}`);
           }
         } else {
           console.error('PayMe get-sellers error:', JSON.stringify(paymeResult));
