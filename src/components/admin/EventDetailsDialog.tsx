@@ -47,6 +47,25 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [approvingSeller, setApprovingSeller] = useState(false);
+  const [hfApiKeyInput, setHfApiKeyInput] = useState(event.hf_api_key || "");
+  const [savingHfKey, setSavingHfKey] = useState(false);
+
+  const saveHfApiKey = async () => {
+    setSavingHfKey(true);
+    try {
+      const { error } = await supabase
+        .from("events")
+        .update({ hf_api_key: hfApiKeyInput.trim() || null })
+        .eq("id", event.id);
+      if (error) throw error;
+      toast({ title: "מפתח Hosted Fields נשמר בהצלחה ✅" });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    } catch (err: any) {
+      toast({ title: "שגיאה בשמירה", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingHfKey(false);
+    }
+  };
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
@@ -849,6 +868,31 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
               >
                 <X className="w-4 h-4" />
                 דחה בקשה
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* PayMe Hosted Fields API Key (uuid) */}
+        {event.seller_payme_id && (
+          <div className="mt-6 bg-muted rounded-2xl p-4 space-y-3">
+            <h3 className="text-lg font-semibold text-secondary">מפתח PayMe Hosted Fields</h3>
+            <p className="text-xs text-muted-foreground">
+              ה-uuid המתקבל בתגובת PayMe (Public Key). נדרש לטעינת iframe חיצוני (נדרים פלוס וכו'). אם חסר — קבל אותו מ-PayMe והכנס כאן.
+            </p>
+            <div className="text-xs text-muted-foreground">
+              <span className="font-medium">Seller ID:</span> <code className="ltr">{event.seller_payme_id}</code>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={hfApiKeyInput}
+                onChange={(e) => setHfApiKeyInput(e.target.value)}
+                placeholder="הדבק כאן את ה-uuid של PayMe"
+                className="ltr text-left"
+                dir="ltr"
+              />
+              <Button onClick={saveHfApiKey} disabled={savingHfKey || hfApiKeyInput === (event.hf_api_key || "")}>
+                {savingHfKey ? <Loader2 className="w-4 h-4 animate-spin" /> : "שמור"}
               </Button>
             </div>
           </div>
