@@ -575,12 +575,12 @@ export default function PaymeSetup() {
                   </div>
                   <div>
                     <Label htmlFor="socialIdDate">תאריך הנפקת ת.ז. *</Label>
-                    <Input id="socialIdDate" value={formData.socialIdDate || ''} onChange={(e) => {
+                    <Input id="socialIdDate" dir="ltr" inputMode="numeric" value={formData.socialIdDate || ''} onChange={(e) => {
                       let val = e.target.value.replace(/\D/g, '');
                       if (val.length >= 2) val = val.slice(0, 2) + '/' + val.slice(2);
                       if (val.length >= 5) val = val.slice(0, 5) + '/' + val.slice(5, 9);
                       handleChange('socialIdDate', val);
-                    }} placeholder="DD/MM/YYYY" maxLength={10} className={errors.socialIdDate ? 'border-red-500' : ''} />
+                    }} placeholder="DD/MM/YYYY" maxLength={10} className={`text-left ${errors.socialIdDate ? 'border-red-500' : ''}`} />
                     {errors.socialIdDate && <p className="text-red-500 text-sm mt-1">{errors.socialIdDate}</p>}
                   </div>
                 </div>
