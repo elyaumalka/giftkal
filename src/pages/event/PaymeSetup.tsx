@@ -51,8 +51,16 @@ const formSchema = z.object({
   firstName: z.string().trim().min(2, 'שם פרטי חייב להכיל לפחות 2 תווים').max(50),
   lastName: z.string().trim().min(2, 'שם משפחה חייב להכיל לפחות 2 תווים').max(50),
   socialId: z.string().regex(/^\d{9}$/, 'תעודת זהות חייבת להכיל 9 ספרות'),
-  socialIdDate: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'תאריך הנפקה בפורמט DD/MM/YYYY'),
-  birthdate: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'תאריך בפורמט DD/MM/YYYY'),
+  socialIdDate: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'תאריך הנפקה בפורמט DD/MM/YYYY').refine((v) => {
+    const [d, m, y] = v.split('/').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1950 && y <= new Date().getFullYear() && dt.getMonth() === m - 1 && dt.getDate() === d;
+  }, 'תאריך הנפקת ת.ז. לא תקין'),
+  birthdate: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'תאריך בפורמט DD/MM/YYYY').refine((v) => {
+    const [d, m, y] = v.split('/').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= new Date().getFullYear() - 16 && dt.getMonth() === m - 1 && dt.getDate() === d;
+  }, 'תאריך לידה לא תקין'),
   email: z.string().email('כתובת מייל לא תקינה').max(100),
   phone: z.string().regex(/^0\d{9}$/, 'מספר טלפון לא תקין (10 ספרות)'),
   bankCode: z.number().min(1, 'יש לבחור בנק'),
