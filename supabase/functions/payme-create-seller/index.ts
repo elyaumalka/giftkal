@@ -298,6 +298,7 @@ Deno.serve(async (req) => {
 
     const paymeResult = await paymeResponse.json();
     console.log('PayMe create-seller response:', JSON.stringify(paymeResult));
+    console.log('PayMe create-seller TOP-LEVEL KEYS:', Object.keys(paymeResult).join(', '));
 
     if (paymeResult.status_code !== 0) {
       return new Response(
@@ -310,11 +311,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update event with seller ID and HF API key (uuid from response)
+    // Update event with seller ID and HF API key (uuid from response).
+    // PayMe might return the front-end public key under various names — try all of them.
+    const hfKey =
+      paymeResult.uuid ||
+      paymeResult.seller_uuid ||
+      paymeResult.payme_public_key ||
+      paymeResult.public_key ||
+      paymeResult.hf_api_key ||
+      paymeResult.client_key ||
+      paymeResult.seller_public_key ||
+      null;
+    console.log('Extracted hf_api_key candidate:', hfKey);
+
     const updateData: Record<string, string> = { seller_payme_id: paymeResult.seller_payme_id };
-    if (paymeResult.uuid) {
-      updateData.hf_api_key = paymeResult.uuid;
+    if (hfKey) {
+      updateData.hf_api_key = hfKey;
     }
+
     const { error: updateError } = await supabase
       .from('events')
       .update(updateData)
