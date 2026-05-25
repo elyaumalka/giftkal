@@ -47,6 +47,25 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [approvingSeller, setApprovingSeller] = useState(false);
+  const [hfApiKeyInput, setHfApiKeyInput] = useState(event.hf_api_key || "");
+  const [savingHfKey, setSavingHfKey] = useState(false);
+
+  const saveHfApiKey = async () => {
+    setSavingHfKey(true);
+    try {
+      const { error } = await supabase
+        .from("events")
+        .update({ hf_api_key: hfApiKeyInput.trim() || null })
+        .eq("id", event.id);
+      if (error) throw error;
+      toast({ title: "מפתח Hosted Fields נשמר בהצלחה ✅" });
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    } catch (err: any) {
+      toast({ title: "שגיאה בשמירה", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingHfKey(false);
+    }
+  };
   
   // Fetch owner profile
   const { data: ownerProfile } = useQuery({
