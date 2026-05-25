@@ -873,9 +873,39 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
           </div>
         )}
 
+        {/* PayMe Hosted Fields API Key (uuid) */}
+        {event.seller_payme_id && (
+          <div className="mt-6 bg-muted rounded-2xl p-4 space-y-3">
+            <h3 className="text-lg font-semibold text-secondary">מפתח PayMe Hosted Fields</h3>
+            <p className="text-xs text-muted-foreground">
+              ה-uuid המתקבל בתגובת PayMe (Public Key). נדרש לטעינת iframe חיצוני (נדרים פלוס וכו'). אם חסר — קבל אותו מ-PayMe והכנס כאן.
+            </p>
+            <div className="text-xs text-muted-foreground">
+              <span className="font-medium">Seller ID:</span> <code className="ltr">{event.seller_payme_id}</code>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={hfApiKeyInput}
+                onChange={(e) => setHfApiKeyInput(e.target.value)}
+                placeholder="הדבק כאן את ה-uuid של PayMe"
+                className="ltr text-left"
+                dir="ltr"
+              />
+              <Button onClick={saveHfApiKey} disabled={savingHfKey || hfApiKeyInput === (event.hf_api_key || "")}>
+                {savingHfKey ? <Loader2 className="w-4 h-4 animate-spin" /> : "שמור"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* KYC Documents Section */}
         {event.seller_payme_id && (
           <div className="mt-6 bg-muted rounded-2xl p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-secondary flex items-center gap-2">
+                <FileCheck className="w-5 h-5" />
+                מסמכי סליקה (KYC)
+              </h3>
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-secondary flex items-center gap-2">
                 <FileCheck className="w-5 h-5" />
