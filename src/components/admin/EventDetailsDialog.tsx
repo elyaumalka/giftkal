@@ -906,11 +906,6 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                 <FileCheck className="w-5 h-5" />
                 מסמכי סליקה (KYC)
               </h3>
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-secondary flex items-center gap-2">
-                <FileCheck className="w-5 h-5" />
-                מסמכי סליקה (KYC)
-              </h3>
               {kycStatus === 'approved' ? (
                 <span className="inline-block px-4 py-1.5 rounded-full text-xs font-medium bg-green-500 text-white">
                   הושלמו בהצלחה ✅
