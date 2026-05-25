@@ -588,12 +588,12 @@ export default function PaymeSetup() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="birthdate">תאריך לידה *</Label>
-                    <Input id="birthdate" value={formData.birthdate || ''} onChange={(e) => {
+                    <Input id="birthdate" dir="ltr" inputMode="numeric" value={formData.birthdate || ''} onChange={(e) => {
                       let val = e.target.value.replace(/\D/g, '');
                       if (val.length >= 2) val = val.slice(0, 2) + '/' + val.slice(2);
                       if (val.length >= 5) val = val.slice(0, 5) + '/' + val.slice(5, 9);
                       handleChange('birthdate', val);
-                    }} placeholder="DD/MM/YYYY" maxLength={10} className={errors.birthdate ? 'border-red-500' : ''} />
+                    }} placeholder="DD/MM/YYYY" maxLength={10} className={`text-left ${errors.birthdate ? 'border-red-500' : ''}`} />
                     {errors.birthdate && <p className="text-red-500 text-sm mt-1">{errors.birthdate}</p>}
                   </div>
                 </div>
