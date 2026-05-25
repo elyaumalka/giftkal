@@ -1,0 +1,1 @@
+UPDATE public.events SET hf_api_key = 'd18f5855-4736-488f-b2fd-4af4637dcbd6' WHERE id = '1503e5a2-2664-4d2d-b3de-1f784763ea34';
