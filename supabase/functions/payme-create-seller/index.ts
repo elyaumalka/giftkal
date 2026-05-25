@@ -258,6 +258,8 @@ Deno.serve(async (req) => {
       seller_last_name: body.lastName.trim(),
       seller_social_id: body.socialId,
       seller_social_id_date: body.socialIdDate || '',
+      seller_social_id_issued: body.socialIdDate || '',
+
       seller_birthdate: body.birthdate,
       seller_gender: body.gender || 0,
       seller_email: body.email.trim().toLowerCase(),
