@@ -315,14 +315,25 @@ Deno.serve(async (req) => {
 
     // Update event with seller ID and HF API key (uuid from response).
     // PayMe might return the front-end public key under various names — try all of them.
+    // PayMe may return uuid as either a string OR an object: {uuid, description, is_active}
+    const extractUuid = (val: unknown): string | null => {
+      if (!val) return null;
+      if (typeof val === 'string') return val;
+      if (typeof val === 'object' && val !== null && 'uuid' in val) {
+        const inner = (val as { uuid: unknown }).uuid;
+        return typeof inner === 'string' ? inner : null;
+      }
+      return null;
+    };
+
     const hfKey =
-      paymeResult.uuid ||
-      paymeResult.seller_uuid ||
-      paymeResult.payme_public_key ||
-      paymeResult.public_key ||
-      paymeResult.hf_api_key ||
-      paymeResult.client_key ||
-      paymeResult.seller_public_key ||
+      extractUuid(paymeResult.uuid) ||
+      extractUuid(paymeResult.seller_uuid) ||
+      extractUuid(paymeResult.payme_public_key) ||
+      extractUuid(paymeResult.public_key) ||
+      extractUuid(paymeResult.hf_api_key) ||
+      extractUuid(paymeResult.client_key) ||
+      extractUuid(paymeResult.seller_public_key) ||
       null;
     console.log('Extracted hf_api_key candidate:', hfKey);
 
