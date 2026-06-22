@@ -289,15 +289,23 @@ export default function EventOwners() {
                         try {
                           const setupData = event.payment_setup_data as any;
                           if (!setupData) throw new Error('אין נתוני הקמה');
+                          // Infer gender from event side when the form didn't capture it:
+                          // bride-only events → female (1), groom or generic → male (0).
+                          const inferredGender = (!event.groom_name && event.bride_name) ? 1 : 0;
                           const response = await supabase.functions.invoke('payme-create-seller', {
-                            body: { eventId: event.id, ...setupData, gender: 0 },
+                            body: { eventId: event.id, ...setupData, gender: setupData.gender ?? inferredGender },
                           });
                           if (response.error) throw new Error(response.error.message);
                           if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה');
-                          await supabase.from('events').update({ payment_setup_status: 'approved' } as any).eq('id', event.id);
+                          // Do NOT mark 'approved' here — the create-seller function sets status to
+                          // 'created'. Real 'approved' only happens when PayMe sends the
+                          // `seller-approve` webhook after their KYC team reviews (~2 business days).
                           queryClient.invalidateQueries({ queryKey: ['event-owners'] });
                           queryClient.invalidateQueries({ queryKey: ['pending-approval-count'] });
-                          toast({ title: "חשבון סליקה הוקם בהצלחה ✅" });
+                          toast({
+                            title: "חשבון סליקה נוצר ב-PayMe ✅",
+                            description: "ממתין לאישור KYC של PayMe (עד 2 ימי עסקים). תקבל עדכון אוטומטי.",
+                          });
                         } catch (err: any) {
                           toast({ title: "שגיאה", description: err.message, variant: "destructive" });
                         } finally {

@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
       seller_social_id_issued: body.socialIdDate || '',
 
       seller_birthdate: body.birthdate,
-      seller_gender: body.gender || 0,
+      seller_gender: body.gender ?? 0,
       seller_email: body.email.trim().toLowerCase(),
       seller_phone: formattedPhone,
       seller_contact_email: (body.contactEmail || body.email).trim().toLowerCase(),
@@ -285,8 +285,14 @@ Deno.serve(async (req) => {
       seller_address_country: 'IL',
       seller_retail_type: 1, // Online
       seller_person_business_type: 10010, // Events
-      market_fee: '1.40', // Platform fee percentage
+      // Per PayMe support: both `seller_inc` and `businessType` are accepted; send both
+      // defensively so PayMe picks the one it expects.
+      businessType: 1,
+      // PayMe required field — the seller's national ID number.
+      businessNumber: body.socialId,
       language: 'he',
+      // Note: market_fee removed intentionally. giftkal's platform commission is taken
+      // via wallet→wallet generate-transfer after each sale, NOT auto-deducted by PayMe.
     };
 
     console.log('Creating seller with PayMe:', paymeBaseUrl);
@@ -313,31 +319,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update event with seller ID and HF API key (uuid from response).
-    // PayMe might return the front-end public key under various names — try all of them.
-    // PayMe may return uuid as either a string OR an object: {uuid, description, is_active}
-    const extractUuid = (val: unknown): string | null => {
-      if (!val) return null;
-      if (typeof val === 'string') return val;
-      if (typeof val === 'object' && val !== null && 'uuid' in val) {
-        const inner = (val as { uuid: unknown }).uuid;
-        return typeof inner === 'string' ? inner : null;
-      }
-      return null;
+    // Per PayMe support, the create-seller response shape is:
+    //   { seller_payme_id: "...", seller_public_key: { uuid: "86e0b...", ... } }
+    // The Hosted Fields client key is seller_public_key.uuid.
+    const hfKey: string | null = paymeResult?.seller_public_key?.uuid ?? null;
+    console.log('Extracted hf_api_key:', hfKey);
+
+    // PayMe acknowledged the seller and assigned an ID, but KYC review is still pending.
+    // Actual approval arrives later via the `seller-approve` webhook, which flips status
+    // to 'approved'. Until then we use 'created' so admins know the seller exists in PayMe
+    // but isn't usable yet.
+    const updateData: Record<string, string> = {
+      seller_payme_id: paymeResult.seller_payme_id,
+      payment_setup_status: 'created',
     };
-
-    const hfKey =
-      extractUuid(paymeResult.uuid) ||
-      extractUuid(paymeResult.seller_uuid) ||
-      extractUuid(paymeResult.payme_public_key) ||
-      extractUuid(paymeResult.public_key) ||
-      extractUuid(paymeResult.hf_api_key) ||
-      extractUuid(paymeResult.client_key) ||
-      extractUuid(paymeResult.seller_public_key) ||
-      null;
-    console.log('Extracted hf_api_key candidate:', hfKey);
-
-    const updateData: Record<string, string> = { seller_payme_id: paymeResult.seller_payme_id };
     if (hfKey) {
       updateData.hf_api_key = hfKey;
     }

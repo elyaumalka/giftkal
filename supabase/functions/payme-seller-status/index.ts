@@ -64,15 +64,11 @@ Deno.serve(async (req) => {
       })
     }
 
-    if (event.payment_setup_status === 'approved') {
-      return new Response(JSON.stringify({
-        status: 'approved',
-        sellerPaymeId: event.seller_payme_id,
-        approved: true,
-        active: true,
-        missingFields: [],
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
+    // NOTE: we intentionally do NOT short-circuit on local status='approved'.
+    // PayMe may revoke or suspend a seller after they were approved (KYC mismatch,
+    // suspicious activity, etc.) and the only way to know is to query PayMe live.
+    // The previous cache here masked those changes and produced false "approved"
+    // statuses long after PayMe had rejected the seller.
 
     // Test seller bypass
     if (event.seller_payme_id.startsWith('TEST-')) {
@@ -147,6 +143,21 @@ Deno.serve(async (req) => {
       status = 'missing_info'
     } else {
       status = 'pending'
+    }
+
+    // Sync local DB if PayMe's truth differs from what we have locally.
+    // This catches both directions: approval that arrived without our webhook firing,
+    // and revocations PayMe made after a previous approval.
+    if (event.payment_setup_status !== status) {
+      const { error: syncErr } = await supabase
+        .from('events')
+        .update({ payment_setup_status: status })
+        .eq('id', eventId)
+      if (syncErr) {
+        console.error('Failed to sync local payment_setup_status:', syncErr.message)
+      } else {
+        console.log(`Synced event ${eventId} status: ${event.payment_setup_status} → ${status}`)
+      }
     }
 
     return new Response(JSON.stringify({
