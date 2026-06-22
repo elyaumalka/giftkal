@@ -12,6 +12,7 @@ import html2canvas from "html2canvas";
 import logo from "@/assets/logo.png";
 import PayMeIframe from "@/components/payment/PayMeIframe";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { computeBreakdown, formatILS, type FeeMode } from "@/lib/fees";
 
 const RELATIONSHIP_OPTIONS = [
   "אח/אחות",
@@ -75,6 +76,13 @@ export default function GiftScreen() {
   const [selectedSide, setSelectedSide] = useState("");
   const [blessing, setBlessing] = useState("");
   const [selectedInstallments, setSelectedInstallments] = useState(1);
+  /**
+   * Gross-up mode:
+   *   - "gift"  → the input amount is what the couple receives. We add fees on top.
+   *   - "total" → the input amount is what's charged on the card. Couple receives less.
+   * UX: default "gift" (most guests think in terms of "how much should they get").
+   */
+  const [feeMode, setFeeMode] = useState<FeeMode>("gift");
   const [selectedDesign, setSelectedDesign] = useState(BLESSING_DESIGNS[0]);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [blessingImageUrl, setBlessingImageUrl] = useState<string | null>(null);
@@ -190,11 +198,39 @@ export default function GiftScreen() {
     setUploadingVideo(false);
   };
 
+  /**
+   * Whatever the guest typed. Interpreted as either the gift-to-couple amount or the
+   * total-to-charge depending on `feeMode`.
+   */
+  const rawInputAmount = selectedAmount ?? Number(customAmount);
+
+  /**
+   * Authoritative fee math used by both the displayed breakdown and the actual
+   * PayMe charge. The card is debited `breakdown.totalCharge`; the couple
+   * eventually receives `breakdown.giftAmount`.
+   */
+  const breakdown = computeBreakdown(rawInputAmount || 0, feeMode, selectedInstallments);
+
   const chargeToken = useMutation({
     mutationFn: async (token: string) => {
-      const amount = selectedAmount || Number(customAmount);
       const response = await supabase.functions.invoke('payme-charge-token', {
-        body: { token, eventId, amount, payerName, payerEmail: payerEmail || undefined, payerPhone: payerPhone || undefined, relationship: relationship || undefined, blessing: blessing || undefined, blessingImageUrl: blessingImageUrl || undefined, blessingVideoUrl: blessingVideoUrl || undefined, installments: selectedInstallments },
+        body: {
+          token,
+          eventId,
+          // What the card is actually charged. PayMe must see the gross-up total.
+          amount: breakdown.totalCharge,
+          // For our own records: what the couple receives, and the fee math.
+          giftAmount: breakdown.giftAmount,
+          feeAmount: breakdown.feeAmount,
+          payerName,
+          payerEmail: payerEmail || undefined,
+          payerPhone: payerPhone || undefined,
+          relationship: relationship || undefined,
+          blessing: blessing || undefined,
+          blessingImageUrl: blessingImageUrl || undefined,
+          blessingVideoUrl: blessingVideoUrl || undefined,
+          installments: selectedInstallments,
+        },
       });
       if (response.error) throw new Error(response.error.message || 'שגיאה בביצוע התשלום');
       if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה בביצוע התשלום');
@@ -207,7 +243,8 @@ export default function GiftScreen() {
   // Remove createTransaction without PayMe - all gifts MUST go through PayMe
   // No more fake/test transactions without real payment
 
-  const finalAmount = selectedAmount || Number(customAmount);
+  // Legacy alias retained for places that still read `finalAmount` directly.
+  const finalAmount = rawInputAmount;
 
   const validateEmail = (email: string): boolean => { if (!email) return true; return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); };
   const validatePhone = (phone: string): boolean => { if (!phone) return true; return /^[\d\-\+\(\)\s]{7,15}$/.test(phone); };
@@ -247,7 +284,10 @@ export default function GiftScreen() {
       const { data, error } = await supabase.functions.invoke('payme-generate-link', {
         body: {
           eventId,
-          amount: finalAmount,
+          // Charge the gross-up total. Couple gets `giftAmount` after wallet sweep.
+          amount: breakdown.totalCharge,
+          giftAmount: breakdown.giftAmount,
+          feeAmount: breakdown.feeAmount,
           payerName,
           payerEmail: payerEmail || undefined,
           payerPhone: payerPhone || undefined,
@@ -464,6 +504,53 @@ export default function GiftScreen() {
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#C4A35A] font-bold text-xl">₪</span>
               </div>
 
+              {/* Fee mode toggle: gift-to-couple vs total-on-card */}
+              <div className="flex items-center justify-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setFeeMode("gift")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full border transition-all",
+                    feeMode === "gift"
+                      ? "bg-[#C4A35A]/15 border-[#C4A35A]/60 text-[#E8D5A3]"
+                      : "bg-white/5 border-white/10 text-white/40 hover:text-white/70",
+                  )}
+                >
+                  הסכום שייכנס לזוג
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFeeMode("total")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full border transition-all",
+                    feeMode === "total"
+                      ? "bg-[#C4A35A]/15 border-[#C4A35A]/60 text-[#E8D5A3]"
+                      : "bg-white/5 border-white/10 text-white/40 hover:text-white/70",
+                  )}
+                >
+                  הסכום שיחויב מהכרטיס
+                </button>
+              </div>
+
+              {/* Gross-up breakdown — only when we have a real input */}
+              {rawInputAmount > 0 && (
+                <div className="bg-white/5 border border-[#C4A35A]/20 rounded-xl p-4 space-y-2 text-sm">
+                  <div className="flex justify-between text-white/70">
+                    <span>הזוג מקבל</span>
+                    <span className="font-bold text-white">{formatILS(breakdown.giftAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-white/50">
+                    <span>עמלת סליקה{selectedInstallments > 1 ? " (כולל תשלומים)" : ""}</span>
+                    <span>{formatILS(breakdown.feeAmount)}</span>
+                  </div>
+                  <div className="h-px bg-white/10" />
+                  <div className="flex justify-between text-base">
+                    <span className="text-white/80 font-medium">סה"כ לחיוב בכרטיס</span>
+                    <span className="font-bold text-[#C4A35A]">{formatILS(breakdown.totalCharge)}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex-1" />
 
               <button
@@ -487,8 +574,9 @@ export default function GiftScreen() {
                 </div>
                 <h2 className="text-2xl font-bold text-white">פרטי השולח</h2>
                 <div className="inline-block bg-[#C4A35A]/10 px-4 py-1.5 rounded-full mt-2 border border-[#C4A35A]/20">
-                  <span className="text-white/50 text-sm">סכום: </span>
-                  <span className="font-bold text-[#C4A35A] text-lg">₪{finalAmount}</span>
+                  <span className="text-white/50 text-sm">מתנה לזוג: </span>
+                  <span className="font-bold text-[#C4A35A] text-lg">{formatILS(breakdown.giftAmount)}</span>
+                  <span className="text-white/40 text-xs"> · לחיוב {formatILS(breakdown.totalCharge)}</span>
                 </div>
               </div>
 
@@ -569,7 +657,7 @@ export default function GiftScreen() {
                   </div>
                   {selectedInstallments > 1 && (
                     <p className="text-sm text-white/40 mt-2 text-center">
-                      {selectedInstallments} תשלומים של ₪{Math.ceil(finalAmount / selectedInstallments).toLocaleString()}
+                      {selectedInstallments} תשלומים של {formatILS(breakdown.totalCharge / selectedInstallments)}
                     </p>
                   )}
                 </div>
@@ -685,7 +773,7 @@ export default function GiftScreen() {
                 <button onClick={handleProceedToPayment}
                   className="flex-1 h-12 rounded-xl font-bold text-white disabled:opacity-50"
                   style={{ background: "linear-gradient(135deg, #C41E3A 0%, #E8344E 50%, #C41E3A 100%)" }}>
-                  {`שלם ₪${finalAmount}`}
+                  {`שלם ${formatILS(breakdown.totalCharge)}`}
                 </button>
               </div>
             </div>
@@ -700,13 +788,14 @@ export default function GiftScreen() {
                 </div>
                 <h2 className="text-2xl font-bold text-white">תשלום מאובטח</h2>
                 <div className="inline-block bg-[#C4A35A]/10 px-4 py-1.5 rounded-full mt-2 border border-[#C4A35A]/20">
-                  <span className="text-white/50 text-sm">סכום: </span>
-                  <span className="font-bold text-[#C4A35A] text-lg">₪{finalAmount}</span>
+                  <span className="text-white/50 text-sm">לחיוב בכרטיס: </span>
+                  <span className="font-bold text-[#C4A35A] text-lg">{formatILS(breakdown.totalCharge)}</span>
+                  <span className="text-white/40 text-xs"> · {formatILS(breakdown.giftAmount)} לזוג</span>
                 </div>
               </div>
 
               {paymeApiKey ? (
-                <PayMeIframe apiKey={paymeApiKey} testMode={paymeTestMode} amount={finalAmount} payerName={payerName}
+                <PayMeIframe apiKey={paymeApiKey} testMode={paymeTestMode} amount={breakdown.totalCharge} payerName={payerName}
                   payerEmail={payerEmail} payerPhone={payerPhone} productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
                   onTokenize={handleTokenize} onError={handlePaymentError} disabled={chargeToken.isPending} />
               ) : paymeSaleUrl ? (
@@ -776,7 +865,7 @@ export default function GiftScreen() {
 
               <div className="bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-[#C4A35A]/20 w-full">
                 <p className="text-sm text-white/40">סכום המתנה</p>
-                <p className="text-3xl font-bold text-[#C4A35A] mt-1">₪{finalAmount || searchParams.get('amount') || ''}</p>
+                <p className="text-3xl font-bold text-[#C4A35A] mt-1">{breakdown.giftAmount > 0 ? formatILS(breakdown.giftAmount) : `₪${searchParams.get('amount') || ''}`}</p>
                 <p className="text-white/30 text-xs mt-1">כולל עמלת סליקה ₪2.30</p>
               </div>
 

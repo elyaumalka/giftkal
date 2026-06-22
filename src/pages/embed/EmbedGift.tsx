@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PayMeHostedFields from "@/components/payment/PayMeHostedFields";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { computeBreakdown, formatILS } from "@/lib/fees";
 
 /**
  * Embeddable gift payment page for external partners (e.g. Nedarim).
@@ -119,13 +120,19 @@ export default function EmbedGift() {
     return "מתנה";
   })();
 
+  // The `amount` from the URL is treated as the gift amount. The card is charged
+  // amount + fees (gross-up) so the couple receives the full gift.
+  const embedBreakdown = computeBreakdown(amount, "gift", 1);
+
   const handleTokenize = async (token: string) => {
     try {
       const { data, error: fnErr } = await supabase.functions.invoke("payme-charge-token", {
         body: {
           token,
           eventId,
-          amount,
+          amount: embedBreakdown.totalCharge,
+          giftAmount: embedBreakdown.giftAmount,
+          feeAmount: embedBreakdown.feeAmount,
           payerName,
           payerEmail: payerEmail || undefined,
           payerPhone: payerPhone || undefined,
@@ -167,7 +174,8 @@ export default function EmbedGift() {
             giftkal
           </div>
           <h1 className="text-xl font-bold text-[#051839]">{productLabel}</h1>
-          <p className="text-3xl font-bold text-[#C4A35A] mt-2">₪{amount.toLocaleString()}</p>
+          <p className="text-3xl font-bold text-[#C4A35A] mt-2">{formatILS(embedBreakdown.giftAmount)}</p>
+          <p className="text-xs text-gray-500 mt-1">לחיוב בכרטיס: {formatILS(embedBreakdown.totalCharge)}</p>
           <p className="text-sm text-gray-600 mt-1">משלם: {payerName}</p>
         </div>
 
@@ -200,7 +208,7 @@ export default function EmbedGift() {
             <PayMeHostedFields
               apiKey={clientKey}
               testMode={testMode}
-              amount={amount}
+              amount={embedBreakdown.totalCharge}
               payerName={payerName}
               payerEmail={payerEmail}
               payerPhone={payerPhone}
