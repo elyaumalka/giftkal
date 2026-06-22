@@ -62,7 +62,13 @@ const formSchema = z.object({
     return m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= new Date().getFullYear() - 16 && dt.getMonth() === m - 1 && dt.getDate() === d;
   }, 'תאריך לידה לא תקין'),
   email: z.string().email('כתובת מייל לא תקינה').max(100),
-  phone: z.string().regex(/^0\d{9}$/, 'מספר טלפון לא תקין (10 ספרות)'),
+  phone: z
+    .string()
+    .transform((v) => v.replace(/[\s-]/g, ''))
+    .refine(
+      (v) => /^0\d{9}$/.test(v) || /^\+972\d{9}$/.test(v),
+      'מספר טלפון לא תקין (לדוגמה 0501234567 או +972501234567)',
+    ),
   bankCode: z.number().min(1, 'יש לבחור בנק'),
   bankBranch: z.string().regex(/^\d{1,4}$/, 'מספר סניף לא תקין'),
   bankAccountNumber: z.string().regex(/^\d{4,12}$/, 'מספר חשבון לא תקין'),
