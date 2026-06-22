@@ -1,122 +1,269 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import md5 from 'https://esm.sh/js-md5@0.8.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Map every PayMe notify_type to what we do with it.
+// Confirmed list from PayMe docs (SaleCallbacksNotifyTypes + CompanyCallbacksNotifyTypes):
+const PAYME_SALE_EVENTS = new Set([
+  'sale-create',
+  'sale-authorized',
+  'sale-paid',
+  'sale-failure',
+  'sale-il-direct-debit-update',
+  'sale-chargeback',
+  'sale-chargeback-refund',
+  'refund',
+  'sale-complete',
+  'charge-complete',
+])
+const PAYME_SELLER_EVENTS = new Set([
+  'seller-create',
+  'seller-update',
+  'seller-approve',
+])
+const PAYME_PAYOUT_EVENTS = new Set([
+  'withdrawal-complete',
+])
+
+type Payload = Record<string, string | number | undefined | null>
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
+
+/**
+ * Verify the MD5 signature PayMe attaches to webhook payloads.
+ * Per PayMe support:
+ *   signature = MD5(merchant_key + merchant_password + transaction_local_guid + sale_local_id)
+ *
+ * merchant_key      → our PAYME_CLIENT_KEY env var
+ * merchant_password → our PAYME_CLIENT_SECRET env var
+ * transaction_local_guid / sale_local_id → fields from the webhook payload itself
+ *
+ * Returns true if the signature matches OR if we don't have enough info to verify
+ * (e.g. seller events that may not carry a sale_local_id). False only when we have
+ * a non-matching signature.
+ */
+function verifyPaymeSignature(
+  payload: Payload,
+  merchantKey: string,
+  merchantPassword: string,
+): { ok: boolean; reason: string } {
+  const received = (payload.payme_signature ?? payload.signature) as string | undefined
+  if (!received) {
+    return { ok: true, reason: 'no_signature_in_payload' }
+  }
+
+  // PayMe field names vary slightly between event families — try the common ones.
+  const txGuid = (payload.transaction_id
+    ?? payload.tran_id
+    ?? payload.transaction_local_guid
+    ?? '') as string
+  const saleLocalId = (payload.sale_local_id
+    ?? payload.payme_sale_id
+    ?? payload.tran_payme_code
+    ?? '') as string
+
+  if (!txGuid && !saleLocalId) {
+    return { ok: true, reason: 'no_signature_inputs' }
+  }
+
+  const expected = md5(merchantKey + merchantPassword + txGuid + saleLocalId)
+  if (expected.toLowerCase() === String(received).toLowerCase()) {
+    return { ok: true, reason: 'match' }
+  }
+  return { ok: false, reason: 'mismatch' }
+}
+
+async function handleSellerApprove(supabase: SupabaseClient, payload: Payload) {
+  const sellerPaymeId = payload.seller_payme_id as string | undefined
+  if (!sellerPaymeId) {
+    return json({ error: 'Missing seller_payme_id' }, 400)
+  }
+
+  const { data: events, error: findErr } = await supabase
+    .from('events')
+    .update({ payment_setup_status: 'approved' })
+    .eq('seller_payme_id', sellerPaymeId)
+    .select('id')
+
+  if (findErr) {
+    console.error('seller-approve: failed to update event', findErr.message)
+    return json({ error: 'Update failed' }, 500)
+  }
+
+  console.log(`seller-approve: ${sellerPaymeId} → approved (${events?.length ?? 0} event(s) updated)`)
+  return json({ ok: true, updated: events?.length ?? 0 })
+}
+
+async function handleWithdrawalComplete(_: SupabaseClient, payload: Payload) {
+  // Phase C will record this into a `payouts` table. For now we just log so we
+  // have an audit trail without losing data, and so PayMe stops retrying.
+  console.log('withdrawal-complete:', {
+    seller_payme_id: payload.seller_payme_id,
+    tran_payme_code: payload.tran_payme_code,
+    tran_total: payload.tran_total,
+    tran_currency: payload.tran_currency,
+    tran_created: payload.tran_created,
+  })
+  return json({ ok: true })
+}
+
+async function handleSellerLifecycle(_: SupabaseClient, payload: Payload, type: string) {
+  // seller-create / seller-update — informational only. We already track sellers via
+  // our own create-seller flow, so no DB action is needed here. Log for audit.
+  console.log(`${type}:`, {
+    seller_payme_id: payload.seller_payme_id,
+  })
+  return json({ ok: true })
+}
+
+async function handleSaleEvent(supabase: SupabaseClient, payload: Payload, type: string | undefined) {
+  const transactionId = payload.transaction_id as string | undefined
+  const paymeSaleId = payload.payme_sale_id as string | undefined
+
+  if (!transactionId && !paymeSaleId) {
+    console.error('Sale event missing both transaction_id and payme_sale_id', type)
+    return json({ error: 'Missing transaction identifier' }, 400)
+  }
+
+  let query = supabase.from('transactions').select('*')
+  if (transactionId) query = query.eq('id', transactionId)
+  else if (paymeSaleId) query = query.eq('payme_sale_id', paymeSaleId)
+
+  const { data: transaction, error: findErr } = await query.single()
+  if (findErr || !transaction) {
+    console.error('Transaction not found for sale webhook:', findErr?.message ?? 'no row')
+    return json({ error: 'Transaction not found' }, 404)
+  }
+
+  // Map notify_type → our payment_status. We prefer the explicit event over the
+  // raw sale_status/payme_status flags so we behave consistently with PayMe's lifecycle.
+  let paymentStatus = transaction.payment_status
+  switch (type) {
+    case 'sale-paid':
+    case 'sale-complete':
+    case 'charge-complete':
+      paymentStatus = 'completed'
+      break
+    case 'sale-authorized':
+      paymentStatus = 'authorized'
+      break
+    case 'sale-failure':
+      paymentStatus = 'failed'
+      break
+    case 'refund':
+    case 'sale-chargeback-refund':
+      paymentStatus = 'refunded'
+      break
+    case 'sale-chargeback':
+      paymentStatus = 'chargeback'
+      break
+    default:
+      // Fallback to the older heuristics for callbacks that don't carry notify_type.
+      if (payload.sale_status === 'completed' || (payload.status_code === 0 && payload.payme_status === 'success')) {
+        paymentStatus = 'completed'
+      } else if (payload.payme_status === 'error' || payload.payme_status === 'failed' || payload.sale_status === 'failed') {
+        paymentStatus = 'failed'
+      } else if (payload.sale_status === 'refunded') {
+        paymentStatus = 'refunded'
+      }
+  }
+
+  const { error: updateErr } = await supabase
+    .from('transactions')
+    .update({
+      payme_transaction_id: payload.payme_transaction_id ?? transaction.payme_transaction_id,
+      payme_sale_id: paymeSaleId ?? transaction.payme_sale_id,
+      payment_status: paymentStatus,
+    })
+    .eq('id', transaction.id)
+
+  if (updateErr) {
+    console.error('Failed to update transaction:', updateErr.message)
+    return json({ error: 'Failed to update transaction' }, 500)
+  }
+
+  console.log(`${type ?? 'sale-event'}: tx=${transaction.id} → ${paymentStatus}`)
+  return json({ success: true, transactionId: transaction.id, status: paymentStatus })
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const merchantKey = Deno.env.get('PAYME_CLIENT_KEY') ?? ''
+    const merchantPassword = Deno.env.get('PAYME_CLIENT_SECRET') ?? ''
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // PayMe sends callback data as form-urlencoded OR JSON
-    const contentType = req.headers.get('content-type') || '';
-    let callbackData: Record<string, string | number | undefined>;
-
+    // PayMe sends callbacks as JSON or form-urlencoded depending on event family.
+    const contentType = req.headers.get('content-type') ?? ''
+    let payload: Payload
     if (contentType.includes('application/x-www-form-urlencoded')) {
-      const text = await req.text();
-      console.log('PayMe webhook received (form-urlencoded):', text);
-      const params = new URLSearchParams(text);
-      callbackData = Object.fromEntries(params.entries());
+      const text = await req.text()
+      payload = Object.fromEntries(new URLSearchParams(text).entries()) as Payload
+      console.log('PayMe webhook (form):', text.slice(0, 800))
     } else {
-      callbackData = await req.json();
-      console.log('PayMe webhook received (JSON):', JSON.stringify(callbackData));
+      payload = await req.json() as Payload
+      console.log('PayMe webhook (JSON):', JSON.stringify(payload).slice(0, 800))
     }
 
-    // Extract relevant fields from PayMe callback
-    const {
-      payme_sale_id,
-      payme_transaction_id,
-      transaction_id, // Our transaction ID
-      payme_status,
-      sale_status,
-      status_code,
-    } = callbackData as Record<string, string | number | undefined>;
+    const notifyType = payload.notify_type as string | undefined
 
-    if (!transaction_id && !payme_sale_id) {
-      console.error('No transaction identifier in callback');
-      return new Response(
-        JSON.stringify({ error: 'Missing transaction identifier' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Signature verification. We log mismatches but DO NOT reject yet — until we've
+    // confirmed the exact field list with one live webhook of each type, blocking on
+    // a wrong formula would lose real events. After we see this is green for a week
+    // in production, flip the `if (!ok)` branch to `return json({error}, 401)`.
+    if (merchantKey && merchantPassword) {
+      const sig = verifyPaymeSignature(payload, merchantKey, merchantPassword)
+      if (!sig.ok) {
+        console.warn('PayMe signature mismatch', {
+          notify_type: notifyType,
+          reason: sig.reason,
+        })
+      } else if (sig.reason === 'match') {
+        console.log('PayMe signature verified', { notify_type: notifyType })
+      }
     }
 
-    // Find the transaction
-    let query = supabase.from('transactions').select('*');
-    
-    if (transaction_id) {
-      query = query.eq('id', transaction_id);
-    } else if (payme_sale_id) {
-      query = query.eq('payme_sale_id', payme_sale_id);
+    // Route by notify_type. Unknown event types are accepted with a log so PayMe
+    // doesn't retry storm us; we'll add handlers later if needed.
+    if (notifyType === 'seller-approve') {
+      return await handleSellerApprove(supabase, payload)
+    }
+    if (notifyType && PAYME_SELLER_EVENTS.has(notifyType)) {
+      return await handleSellerLifecycle(supabase, payload, notifyType)
+    }
+    if (notifyType && PAYME_PAYOUT_EVENTS.has(notifyType)) {
+      return await handleWithdrawalComplete(supabase, payload)
+    }
+    if (notifyType && PAYME_SALE_EVENTS.has(notifyType)) {
+      return await handleSaleEvent(supabase, payload, notifyType)
     }
 
-    const { data: transaction, error: findError } = await query.single();
-
-    if (findError || !transaction) {
-      console.error('Transaction not found:', findError);
-      return new Response(
-        JSON.stringify({ error: 'Transaction not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // No notify_type — old-style callback from /api/generate-sale.
+    // Treat as a sale event.
+    if (!notifyType) {
+      return await handleSaleEvent(supabase, payload, undefined)
     }
 
-    // Determine payment status based on PayMe response
-    // PayMe sends: payme_status (success/error), sale_status (completed/failed/refunded), status_code (0=success)
-    let paymentStatus = 'pending';
-    
-    // Check for success - PayMe sends sale_status=completed when payment succeeds
-    if (sale_status === 'completed' || (status_code === 0 && payme_status === 'success')) {
-      paymentStatus = 'completed';
-    } else if (payme_status === 'error' || payme_status === 'failed' || sale_status === 'failed') {
-      paymentStatus = 'failed';
-    } else if (sale_status === 'refunded') {
-      paymentStatus = 'refunded';
-    }
-
-    console.log(`Updating transaction ${transaction.id} to status: ${paymentStatus}`);
-
-    // Update transaction with PayMe response
-    const { error: updateError } = await supabase
-      .from('transactions')
-      .update({
-        payme_transaction_id: payme_transaction_id || null,
-        payme_sale_id: payme_sale_id || transaction.payme_sale_id,
-        payment_status: paymentStatus,
-      })
-      .eq('id', transaction.id);
-
-    if (updateError) {
-      console.error('Failed to update transaction:', updateError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to update transaction' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`Transaction ${transaction.id} updated successfully`);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        transactionId: transaction.id,
-        status: paymentStatus 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.log('Unhandled PayMe notify_type:', notifyType)
+    return json({ ok: true, ignored: notifyType })
 
   } catch (error: unknown) {
-    console.error('Error in payme-webhook:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error('Error in payme-webhook:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return json({ error: message }, 500)
   }
-});
+})
