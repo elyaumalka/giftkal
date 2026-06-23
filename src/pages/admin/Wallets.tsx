@@ -1,0 +1,466 @@
+/**
+ * Admin Wallets dashboard — cross-event treasury view.
+ *
+ * Aggregates every event's wallet state into one place so the admin can
+ * answer at a glance:
+ *   - How much commission was collected platform-wide?
+ *   - How much of it have we already swept to giftkal's master wallet?
+ *   - How much is still sitting in event-owner wallets waiting to be swept?
+ *   - How much have we paid out to event-owner bank accounts?
+ *
+ * Three tabs surface the underlying rows:
+ *   - Events       — per-event balances with the same auto-fill / "needs sweep"
+ *                    visual cues used in the per-event dialog.
+ *   - Sweeps       — every platform_commission_transfers row, status pill,
+ *                    most recent first.
+ *   - Bank payouts — every payouts row.
+ */
+
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Wallet,
+  TrendingUp,
+  ArrowDownToLine,
+  Search,
+  Loader2,
+  Building2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { formatILS } from "@/lib/fees";
+
+type TabKey = "events" | "sweeps" | "payouts";
+
+interface EventRow {
+  event_id: string;
+  event_label: string;
+  event_date: string | null;
+  seller_payme_id: string | null;
+  payment_setup_status: string | null;
+  collected: number;
+  swept: number;
+  pending: number;
+  gifts: number;
+}
+
+export default function Wallets() {
+  const [tab, setTab] = useState<TabKey>("events");
+  const [search, setSearch] = useState("");
+
+  // Pull everything we need in three parallel queries. None of these tables is
+  // huge (one row per event/transaction/transfer/payout) so we don't bother
+  // with pagination yet; if it grows past a few thousand rows we'll add a
+  // server-side aggregation RPC.
+  const { data: rows = { events: [], transfers: [], payouts: [] }, isLoading } = useQuery({
+    queryKey: ["wallets-dashboard"],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const [evRes, txRes, trRes, poRes] = await Promise.all([
+        supabase
+          .from("events")
+          .select("id, event_date, groom_name, bride_name, child_name, family_name, seller_payme_id, payment_setup_status")
+          .order("event_date", { ascending: false }),
+        supabase
+          .from("transactions")
+          .select("event_id, amount, gift_amount, fee_amount, payment_status")
+          .eq("payment_status", "completed"),
+        (supabase.from as any)("platform_commission_transfers")
+          .select("id, event_id, amount, status, submitted_at, completed_at")
+          .order("submitted_at", { ascending: false }),
+        (supabase.from as any)("payouts")
+          .select("id, event_id, amount, status, submitted_at, completed_at, seller_payme_id")
+          .order("submitted_at", { ascending: false }),
+      ]);
+
+      const events = (evRes.data ?? []) as any[];
+      const completedTx = (txRes.data ?? []) as any[];
+      const transfers = (trRes.data ?? []) as any[];
+      const payouts = (poRes.data ?? []) as any[];
+
+      // Roll up per-event aggregates.
+      const collectedByEvent = new Map<string, { collected: number; gifts: number }>();
+      for (const t of completedTx) {
+        const cur = collectedByEvent.get(t.event_id) ?? { collected: 0, gifts: 0 };
+        cur.collected += Number(t.fee_amount) || 0;
+        cur.gifts += Number(t.gift_amount) || Number(t.amount) || 0;
+        collectedByEvent.set(t.event_id, cur);
+      }
+      const sweptByEvent = new Map<string, number>();
+      for (const t of transfers) {
+        if (t.status === "failed" || t.status === "cancelled") continue;
+        sweptByEvent.set(t.event_id, (sweptByEvent.get(t.event_id) ?? 0) + (Number(t.amount) || 0));
+      }
+
+      const eventRows: EventRow[] = events.map((e) => {
+        const agg = collectedByEvent.get(e.id) ?? { collected: 0, gifts: 0 };
+        const swept = sweptByEvent.get(e.id) ?? 0;
+        return {
+          event_id: e.id,
+          event_label:
+            e.groom_name && e.bride_name
+              ? `${e.groom_name} & ${e.bride_name}`
+              : e.child_name
+              ? e.child_name
+              : e.family_name
+              ? `משפחת ${e.family_name}`
+              : e.id.slice(0, 8),
+          event_date: e.event_date,
+          seller_payme_id: e.seller_payme_id,
+          payment_setup_status: e.payment_setup_status,
+          collected: agg.collected,
+          swept,
+          pending: Math.max(0, +(agg.collected - swept).toFixed(2)),
+          gifts: agg.gifts,
+        };
+      });
+
+      return { events: eventRows, transfers, payouts };
+    },
+  });
+
+  // Platform-wide totals for the hero tiles.
+  const totals = useMemo(() => {
+    let collected = 0;
+    let swept = 0;
+    let pending = 0;
+    let gifts = 0;
+    for (const e of rows.events) {
+      collected += e.collected;
+      swept += e.swept;
+      pending += e.pending;
+      gifts += e.gifts;
+    }
+    const paidOut = rows.payouts
+      .filter((p) => p.status === "completed")
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    return { collected, swept, pending, gifts, paidOut };
+  }, [rows]);
+
+  // Per-tab filtering on the search box.
+  const filteredEvents = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows.events;
+    return rows.events.filter(
+      (e) =>
+        e.event_label.toLowerCase().includes(q) ||
+        (e.seller_payme_id ?? "").toLowerCase().includes(q),
+    );
+  }, [rows.events, search]);
+
+  const eventLabelById = useMemo(() => {
+    const m = new Map<string, string>();
+    rows.events.forEach((e) => m.set(e.event_id, e.event_label));
+    return m;
+  }, [rows.events]);
+
+  return (
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <Wallet className="w-7 h-7 text-[#1a2942]" />
+        <h1 className="text-2xl font-bold text-[#1a2942]">דשבורד ארנקים</h1>
+      </div>
+
+      {/* Top stat tiles */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <StatTile
+          label="עמלות שנגבו"
+          value={formatILS(totals.collected)}
+          subtitle="סה״כ פלטפורמה"
+          accent="bg-emerald-50 border-emerald-200"
+        />
+        <StatTile
+          label="הועברו ל-giftkal"
+          value={formatILS(totals.swept)}
+          subtitle="ארנק מאסטר"
+          accent="bg-blue-50 border-blue-200"
+        />
+        <StatTile
+          label="זמין לסחיטה"
+          value={formatILS(totals.pending)}
+          subtitle="ממתין להעברה"
+          accent="bg-amber-50 border-amber-400 border-2"
+          alert={totals.pending > 0}
+        />
+        <StatTile
+          label="מתנות שניתנו"
+          value={formatILS(totals.gifts)}
+          subtitle="לזוגות"
+          accent="bg-purple-50 border-purple-200"
+        />
+        <StatTile
+          label="שולם לזוגות"
+          value={formatILS(totals.paidOut)}
+          subtitle="לחשבונות בנק"
+          accent="bg-slate-50 border-slate-200"
+        />
+      </div>
+
+      {/* Tab switcher */}
+      <div className="flex items-center gap-2 mb-4">
+        <TabButton active={tab === "events"} onClick={() => setTab("events")} icon={<Building2 className="w-4 h-4" />}>
+          לפי אירוע ({rows.events.length})
+        </TabButton>
+        <TabButton active={tab === "sweeps"} onClick={() => setTab("sweeps")} icon={<TrendingUp className="w-4 h-4" />}>
+          העברות לעמלה ({rows.transfers.length})
+        </TabButton>
+        <TabButton active={tab === "payouts"} onClick={() => setTab("payouts")} icon={<ArrowDownToLine className="w-4 h-4" />}>
+          משיכות לבנק ({rows.payouts.length})
+        </TabButton>
+
+        <div className="relative ml-auto w-64">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="חיפוש..."
+            className="pr-9"
+          />
+        </div>
+      </div>
+
+      {/* Tab body */}
+      <div className="bg-white rounded-2xl shadow-sm border border-border overflow-hidden">
+        {isLoading ? (
+          <div className="p-12 flex items-center justify-center text-muted-foreground">
+            <Loader2 className="w-5 h-5 animate-spin mr-2" /> טוען נתונים...
+          </div>
+        ) : tab === "events" ? (
+          <EventsTable rows={filteredEvents} />
+        ) : tab === "sweeps" ? (
+          <SweepsTable rows={rows.transfers} eventLabel={eventLabelById} />
+        ) : (
+          <PayoutsTable rows={rows.payouts} eventLabel={eventLabelById} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Sub-components
+// ──────────────────────────────────────────────────────────────────────────
+
+function StatTile({
+  label,
+  value,
+  subtitle,
+  accent,
+  alert,
+}: {
+  label: string;
+  value: string;
+  subtitle?: string;
+  accent: string;
+  alert?: boolean;
+}) {
+  return (
+    <div className={cn("rounded-xl border p-4", accent)}>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={cn("text-2xl font-bold mt-1", alert && "text-amber-700")}>{value}</div>
+      {subtitle && <div className="text-[10px] text-muted-foreground mt-1">{subtitle}</div>}
+    </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "px-4 py-2 rounded-full font-medium flex items-center gap-2 transition-colors text-sm",
+        active ? "bg-[#1a2942] text-white" : "bg-white text-foreground border hover:bg-gray-50",
+      )}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function EventsTable({ rows }: { rows: EventRow[] }) {
+  if (rows.length === 0) {
+    return <div className="p-12 text-center text-muted-foreground">אין אירועים לתצוגה.</div>;
+  }
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/40">
+        <tr>
+          <Th>אירוע</Th>
+          <Th>תאריך</Th>
+          <Th>סטטוס סולק</Th>
+          <Th align="right">סה״כ מתנות</Th>
+          <Th align="right">עמלות נגבו</Th>
+          <Th align="right">הועברו</Th>
+          <Th align="right">זמין להעברה</Th>
+        </tr>
+      </thead>
+      <tbody className="divide-y">
+        {rows.map((r) => (
+          <tr key={r.event_id} className={cn("hover:bg-muted/30", r.pending > 0 && "bg-amber-50/40")}>
+            <Td>{r.event_label}</Td>
+            <Td muted>{r.event_date ?? "—"}</Td>
+            <Td><SellerStatusBadge status={r.payment_setup_status} /></Td>
+            <Td align="right">{formatILS(r.gifts)}</Td>
+            <Td align="right">{formatILS(r.collected)}</Td>
+            <Td align="right" muted>{formatILS(r.swept)}</Td>
+            <Td align="right" className={cn(r.pending > 0 && "font-bold text-amber-700")}>{formatILS(r.pending)}</Td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function SweepsTable({ rows, eventLabel }: { rows: any[]; eventLabel: Map<string, string> }) {
+  if (rows.length === 0) {
+    return <div className="p-12 text-center text-muted-foreground">עדיין לא בוצעו העברות עמלה.</div>;
+  }
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/40">
+        <tr>
+          <Th>נשלח</Th>
+          <Th>אירוע</Th>
+          <Th align="right">סכום</Th>
+          <Th>סטטוס</Th>
+          <Th>הושלם</Th>
+        </tr>
+      </thead>
+      <tbody className="divide-y">
+        {rows.map((r) => (
+          <tr key={r.id} className="hover:bg-muted/30">
+            <Td muted>{formatRowDate(r.submitted_at)}</Td>
+            <Td>{eventLabel.get(r.event_id) ?? r.event_id.slice(0, 8)}</Td>
+            <Td align="right">{formatILS(Number(r.amount) || 0)}</Td>
+            <Td><StatusPill value={r.status} /></Td>
+            <Td muted>{r.completed_at ? formatRowDate(r.completed_at) : "—"}</Td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function PayoutsTable({ rows, eventLabel }: { rows: any[]; eventLabel: Map<string, string> }) {
+  if (rows.length === 0) {
+    return <div className="p-12 text-center text-muted-foreground">עדיין לא בוצעו משיכות לבנק.</div>;
+  }
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/40">
+        <tr>
+          <Th>נשלח</Th>
+          <Th>אירוע</Th>
+          <Th>seller_payme_id</Th>
+          <Th align="right">סכום</Th>
+          <Th>סטטוס</Th>
+          <Th>הושלם</Th>
+        </tr>
+      </thead>
+      <tbody className="divide-y">
+        {rows.map((r) => (
+          <tr key={r.id} className="hover:bg-muted/30">
+            <Td muted>{formatRowDate(r.submitted_at)}</Td>
+            <Td>{eventLabel.get(r.event_id) ?? r.event_id.slice(0, 8)}</Td>
+            <Td muted className="font-mono text-xs">{r.seller_payme_id}</Td>
+            <Td align="right">{r.amount ? formatILS(Number(r.amount)) : "יתרה מלאה"}</Td>
+            <Td><StatusPill value={r.status} /></Td>
+            <Td muted>{r.completed_at ? formatRowDate(r.completed_at) : "—"}</Td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function Th({ children, align = "right" }: { children: React.ReactNode; align?: "right" | "left" }) {
+  return <th className={cn("py-3 px-4 font-medium text-muted-foreground text-xs", align === "right" ? "text-right" : "text-left")}>{children}</th>;
+}
+
+function Td({
+  children,
+  align = "right",
+  muted,
+  className,
+}: {
+  children: React.ReactNode;
+  align?: "right" | "left";
+  muted?: boolean;
+  className?: string;
+}) {
+  return (
+    <td
+      className={cn(
+        "py-3 px-4",
+        align === "right" ? "text-right" : "text-left",
+        muted && "text-muted-foreground",
+        className,
+      )}
+    >
+      {children}
+    </td>
+  );
+}
+
+function StatusPill({ value }: { value: string }) {
+  const map: Record<string, string> = {
+    submitted: "bg-amber-100 text-amber-800 border-amber-200",
+    completed: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    failed: "bg-red-100 text-red-800 border-red-200",
+    cancelled: "bg-gray-100 text-gray-700 border-gray-200",
+  };
+  return (
+    <Badge variant="outline" className={cn("font-mono text-[10px]", map[value] ?? "bg-gray-100 text-gray-700")}>
+      {value}
+    </Badge>
+  );
+}
+
+function SellerStatusBadge({ status }: { status: string | null }) {
+  if (!status) return <span className="text-muted-foreground text-xs">—</span>;
+  const map: Record<string, string> = {
+    approved: "bg-emerald-100 text-emerald-700",
+    created: "bg-blue-100 text-blue-700",
+    pending_approval: "bg-amber-100 text-amber-700",
+    rejected: "bg-red-100 text-red-700",
+  };
+  const label: Record<string, string> = {
+    approved: "מאושר",
+    created: "נוצר ב-PayMe",
+    pending_approval: "ממתין",
+    rejected: "נדחה",
+  };
+  return (
+    <Badge variant="secondary" className={cn("text-[10px]", map[status])}>
+      {label[status] ?? status}
+    </Badge>
+  );
+}
+
+function formatRowDate(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("he-IL", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}

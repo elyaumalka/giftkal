@@ -37,6 +37,7 @@ import SeedData from "./pages/admin/SeedData";
 import AdminHallsDevices from "./pages/admin/HallsDevices";
 import AdminBilling from "./pages/admin/Billing";
 import AdminCoupons from "./pages/admin/Coupons";
+import AdminWallets from "./pages/admin/Wallets";
 
 // Venue
 import { VenueLayout } from "./components/layout/VenueLayout";
@@ -125,6 +126,7 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="customers" element={<Customers />} />
             <Route path="transactions" element={<Transactions />} />
+            <Route path="wallets" element={<AdminWallets />} />
             <Route path="event-owners" element={<EventOwners />} />
             <Route path="leads" element={<Leads />} />
             <Route path="support" element={<Support />} />

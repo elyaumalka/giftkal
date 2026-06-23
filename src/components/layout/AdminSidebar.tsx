@@ -21,6 +21,7 @@ const menuItems = [
   { title: "דשבורד", icon: DashboardIcon, path: "/admin" },
   { title: "לקוחות", icon: CustomersIcon, path: "/admin/customers" },
   { title: "עסקאות", icon: TransactionsIcon, path: "/admin/transactions" },
+  { title: "ארנקים", icon: TransactionsIcon, path: "/admin/wallets" },
   { title: "בעלי אירועים", icon: EventOwnersIcon, path: "/admin/event-owners" },
   { title: "לידים", icon: LeadsIcon, path: "/admin/leads" },
   { title: "הגדרות", icon: SettingsIcon, path: "/admin/settings" },
