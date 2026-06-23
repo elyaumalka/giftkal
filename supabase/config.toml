@@ -33,4 +33,10 @@ verify_jwt = false
 [functions.nedarim-event-signup]
 verify_jwt = false
 
+[functions.payme-generate-transfer]
+verify_jwt = false
+
+[functions.payme-withdraw-balance]
+verify_jwt = false
+
 

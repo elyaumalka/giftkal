@@ -103,17 +103,56 @@ async function handleSellerApprove(supabase: SupabaseClient, payload: Payload) {
   return json({ ok: true, updated: events?.length ?? 0 })
 }
 
-async function handleWithdrawalComplete(_: SupabaseClient, payload: Payload) {
-  // Phase C will record this into a `payouts` table. For now we just log so we
-  // have an audit trail without losing data, and so PayMe stops retrying.
+async function handleWithdrawalComplete(supabase: SupabaseClient, payload: Payload) {
+  const sellerPaymeId = payload.seller_payme_id as string | undefined
+  const paymePayoutCode = (payload.tran_payme_code ?? payload.payme_payout_code) as string | undefined
+  const tranTotal = payload.tran_total as number | string | undefined
+
   console.log('withdrawal-complete:', {
-    seller_payme_id: payload.seller_payme_id,
-    tran_payme_code: payload.tran_payme_code,
-    tran_total: payload.tran_total,
-    tran_currency: payload.tran_currency,
-    tran_created: payload.tran_created,
+    seller_payme_id: sellerPaymeId,
+    payme_payout_code: paymePayoutCode,
+    amount: tranTotal,
   })
-  return json({ ok: true })
+
+  if (!sellerPaymeId) {
+    return json({ error: 'Missing seller_payme_id' }, 400)
+  }
+
+  // Find the most recent 'submitted' payout for this seller and flip it to
+  // 'completed'. We match on seller_payme_id + 'submitted' status because PayMe
+  // doesn't echo our payouts.id back — but we only ever have one outstanding
+  // withdrawal per seller at a time per our admin UX.
+  const { data: matched, error: findErr } = await supabase
+    .from('payouts')
+    .select('id')
+    .eq('seller_payme_id', sellerPaymeId)
+    .eq('status', 'submitted')
+    .order('submitted_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (findErr) {
+    console.error('Failed to look up payout:', findErr.message)
+    return json({ ok: true, note: 'no payout row matched (logged only)' })
+  }
+
+  if (matched) {
+    const { error: updErr } = await supabase
+      .from('payouts')
+      .update({
+        status: 'completed',
+        amount: typeof tranTotal === 'string' ? Number(tranTotal) : tranTotal ?? null,
+        payme_payout_code: paymePayoutCode ?? null,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', matched.id)
+    if (updErr) console.error('Failed to mark payout completed:', updErr.message)
+    else console.log(`Marked payout ${matched.id} → completed`)
+  } else {
+    console.log('No submitted payout row matched; webhook recorded in logs only.')
+  }
+
+  return json({ ok: true, payoutId: matched?.id ?? null })
 }
 
 async function handleSellerLifecycle(_: SupabaseClient, payload: Payload, type: string) {
