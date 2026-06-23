@@ -55,6 +55,70 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [sweepingCommission, setSweepingCommission] = useState(false);
   const [withdrawingBalance, setWithdrawingBalance] = useState(false);
 
+  /**
+   * Pull the wallet totals for this event:
+   *   - sum of fee_amount on completed transactions = total commission collected
+   *   - sum of amount on completed/submitted transfers = commission swept so far
+   *   - pending = collected - swept
+   * Also surface recent transfers + payouts as a short log.
+   */
+  const { data: walletData, isLoading: walletLoading } = useQuery({
+    queryKey: ['event-wallet', event.id],
+    enabled: Boolean(event.seller_payme_id && event.payment_setup_status === 'approved'),
+    queryFn: async () => {
+      const [txRes, transfersRes, payoutsRes] = await Promise.all([
+        supabase
+          .from('transactions')
+          .select('amount, gift_amount, fee_amount, payment_status')
+          .eq('event_id', event.id)
+          .eq('payment_status', 'completed'),
+        supabase
+          .from('platform_commission_transfers')
+          .select('id, amount, status, submitted_at, completed_at')
+          .eq('event_id', event.id)
+          .order('submitted_at', { ascending: false }),
+        supabase
+          .from('payouts')
+          .select('id, amount, status, submitted_at, completed_at')
+          .eq('event_id', event.id)
+          .order('submitted_at', { ascending: false }),
+      ]);
+
+      const completedTx = txRes.data ?? [];
+      const transfers = transfersRes.data ?? [];
+      const payouts = payoutsRes.data ?? [];
+
+      // Defensive: rows pre-dating gross-up have fee_amount = NULL.
+      const collected = completedTx.reduce(
+        (sum, t: any) => sum + (Number(t.fee_amount) || 0),
+        0,
+      );
+      // Only count transfers that aren't cancelled/failed toward "swept so far".
+      const swept = transfers
+        .filter((t: any) => t.status === 'completed' || t.status === 'submitted')
+        .reduce((sum, t: any) => sum + (Number(t.amount) || 0), 0);
+      const pending = Math.max(0, +(collected - swept).toFixed(2));
+
+      const grossGifts = completedTx.reduce(
+        (sum, t: any) => sum + (Number(t.gift_amount) || Number(t.amount) || 0),
+        0,
+      );
+      const grossCharged = completedTx.reduce(
+        (sum, t: any) => sum + (Number(t.amount) || 0),
+        0,
+      );
+
+      return { collected, swept, pending, grossGifts, grossCharged, transfers, payouts };
+    },
+  });
+
+  // Auto-fill the sweep amount with the pending commission whenever the wallet
+  // data refreshes — unless the admin has already typed something custom.
+  if (walletData && !sweepAmount && walletData.pending > 0) {
+    // Defer to next tick to avoid React warning about setState during render.
+    queueMicrotask(() => setSweepAmount(String(walletData.pending)));
+  }
+
   const sweepCommission = async () => {
     const amount = Number(sweepAmount);
     if (!amount || amount <= 0) {
@@ -72,6 +136,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       setSweepAmount("");
       setSweepNote("");
       queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+      queryClient.invalidateQueries({ queryKey: ['event-wallet', event.id] });
     } catch (err: any) {
       toast({ title: "שגיאה בהעברה", description: err.message, variant: "destructive" });
     } finally {
@@ -93,6 +158,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
         description: data?.message || "הכסף יועבר תוך ימי עסקים",
       });
       queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+      queryClient.invalidateQueries({ queryKey: ['event-wallet', event.id] });
     } catch (err: any) {
       toast({ title: "שגיאה במשיכה", description: err.message, variant: "destructive" });
     } finally {
@@ -957,11 +1023,37 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
               <h3 className="text-lg font-semibold text-amber-900">פעולות ארנק PayMe</h3>
             </div>
 
+            {/* Wallet status summary */}
+            {walletLoading ? (
+              <div className="text-xs text-amber-800/70 flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" /> טוען נתוני ארנק...
+              </div>
+            ) : walletData ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="bg-white/70 rounded-lg p-2">
+                  <div className="text-amber-800/60">סה"כ עמלות שנגבו</div>
+                  <div className="font-bold text-amber-900 text-base">{formatILS(walletData.collected)}</div>
+                </div>
+                <div className="bg-white/70 rounded-lg p-2">
+                  <div className="text-amber-800/60">הועבר ל-giftkal</div>
+                  <div className="font-bold text-amber-900 text-base">{formatILS(walletData.swept)}</div>
+                </div>
+                <div className="bg-white/70 rounded-lg p-2 border-2 border-amber-500">
+                  <div className="text-amber-800/60">זמין להעברה</div>
+                  <div className="font-bold text-amber-900 text-base">{formatILS(walletData.pending)}</div>
+                </div>
+                <div className="bg-white/70 rounded-lg p-2">
+                  <div className="text-amber-800/60">סה"כ מתנות שניתנו</div>
+                  <div className="font-bold text-amber-900 text-base">{formatILS(walletData.grossGifts)}</div>
+                </div>
+              </div>
+            ) : null}
+
             {/* Sweep commission: move giftkal's cut from event-owner wallet → master wallet */}
             <div className="bg-white/70 rounded-xl p-3 space-y-2">
               <div className="text-sm font-medium text-amber-900">העברת עמלת giftkal</div>
               <p className="text-xs text-amber-800/70">
-                העברה wallet → wallet מארנק בעל האירוע אל ארנק giftkal. שווה לסכום הכולל של העמלות שנגבו עד כה.
+                העברה wallet → wallet מארנק בעל האירוע אל ארנק giftkal. הסכום ממולא אוטומטית לפי העמלות שנותרו להעברה.
               </p>
               <div className="flex gap-2">
                 <Input
@@ -1002,6 +1094,37 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                 {withdrawingBalance ? <Loader2 className="w-4 h-4 animate-spin" /> : "העבר את היתרה לבנק"}
               </Button>
             </div>
+
+            {/* Recent history — last 5 of each */}
+            {walletData && (walletData.transfers.length > 0 || walletData.payouts.length > 0) && (
+              <details className="bg-white/50 rounded-xl p-3">
+                <summary className="text-sm font-medium text-amber-900 cursor-pointer select-none">
+                  היסטוריה ({walletData.transfers.length + walletData.payouts.length})
+                </summary>
+                <div className="mt-3 space-y-2 text-xs">
+                  {walletData.transfers.slice(0, 5).map((t: any) => (
+                    <div key={t.id} className="flex justify-between items-center bg-white/70 rounded px-2 py-1">
+                      <span className="text-amber-900">העברה ל-giftkal · {formatILS(Number(t.amount) || 0)}</span>
+                      <span className={
+                        t.status === 'completed' ? 'text-green-700' :
+                        t.status === 'failed' ? 'text-red-700' :
+                        'text-amber-700'
+                      }>{t.status}</span>
+                    </div>
+                  ))}
+                  {walletData.payouts.slice(0, 5).map((p: any) => (
+                    <div key={p.id} className="flex justify-between items-center bg-white/70 rounded px-2 py-1">
+                      <span className="text-amber-900">משיכה לבנק · {p.amount ? formatILS(Number(p.amount)) : 'יתרה מלאה'}</span>
+                      <span className={
+                        p.status === 'completed' ? 'text-green-700' :
+                        p.status === 'failed' ? 'text-red-700' :
+                        'text-amber-700'
+                      }>{p.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
         )}
 

@@ -7,7 +7,12 @@ const corsHeaders = {
 
 interface GenerateLinkRequest {
   eventId: string;
+  /** What the card is debited (gross-up total). */
   amount: number;
+  /** What the couple receives (gift intent). Falls back to amount for old clients. */
+  giftAmount?: number;
+  /** Fee surcharge collected on top of the gift amount. */
+  feeAmount?: number;
   payerName: string;
   payerEmail?: string;
   payerPhone?: string;
@@ -30,9 +35,15 @@ Deno.serve(async (req) => {
 
     const body: GenerateLinkRequest = await req.json();
     const {
-      eventId, amount, payerName, payerEmail, payerPhone,
+      eventId, amount, giftAmount, feeAmount, payerName, payerEmail, payerPhone,
       relationship, blessing, blessingImageUrl, blessingVideoUrl, installments = 1,
     } = body;
+
+    // Gross-up bookkeeping (same logic as payme-charge-token).
+    const giftPart = typeof giftAmount === 'number' && giftAmount > 0 ? giftAmount : amount;
+    const feePart = typeof feeAmount === 'number' && feeAmount >= 0
+      ? feeAmount
+      : Math.max(0, amount - giftPart);
 
     if (!eventId || !amount || !payerName) {
       return new Response(
@@ -72,6 +83,8 @@ Deno.serve(async (req) => {
         payer_email: payerEmail || null,
         payer_phone: payerPhone || null,
         amount,
+        gift_amount: giftPart,
+        fee_amount: feePart,
         installments,
         relationship: relationship || null,
         blessing_text: blessing || null,

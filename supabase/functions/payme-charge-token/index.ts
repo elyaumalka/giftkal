@@ -8,7 +8,13 @@ const corsHeaders = {
 interface ChargeTokenRequest {
   token: string;
   eventId: string;
+  /** What the card is debited (gross-up total). */
   amount: number;
+  /** What the couple receives (gift intent). Falls back to `amount` if missing
+   *  for backward compatibility with old clients. */
+  giftAmount?: number;
+  /** Fee surcharge collected on top of the gift amount. Defaults to 0. */
+  feeAmount?: number;
   payerName: string;
   payerEmail?: string;
   payerPhone?: string;
@@ -32,19 +38,28 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body: ChargeTokenRequest = await req.json();
 
-    const { 
-      token, 
-      eventId, 
-      amount, 
-      payerName, 
-      payerEmail, 
-      payerPhone, 
-      relationship, 
-      blessing, 
+    const {
+      token,
+      eventId,
+      amount,
+      giftAmount,
+      feeAmount,
+      payerName,
+      payerEmail,
+      payerPhone,
+      relationship,
+      blessing,
       blessingImageUrl,
       blessingVideoUrl,
       installments = 1,
     } = body;
+
+    // Gross-up bookkeeping. Backward-compatible: if the client didn't send the
+    // breakdown, treat the whole charge as the gift (zero fee).
+    const giftPart = typeof giftAmount === 'number' && giftAmount > 0 ? giftAmount : amount;
+    const feePart = typeof feeAmount === 'number' && feeAmount >= 0
+      ? feeAmount
+      : Math.max(0, amount - giftPart);
 
     if (!token || !eventId || !amount || !payerName) {
       return new Response(
@@ -84,6 +99,8 @@ Deno.serve(async (req) => {
         payer_email: payerEmail || null,
         payer_phone: payerPhone || null,
         amount: amount,
+        gift_amount: giftPart,
+        fee_amount: feePart,
         installments: installments,
         relationship: relationship || null,
         blessing_text: blessing || null,

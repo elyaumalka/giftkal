@@ -260,20 +260,27 @@ Deno.serve(async (req) => {
 
     const notifyType = payload.notify_type as string | undefined
 
-    // Signature verification. We log mismatches but DO NOT reject yet — until we've
-    // confirmed the exact field list with one live webhook of each type, blocking on
-    // a wrong formula would lose real events. After we see this is green for a week
-    // in production, flip the `if (!ok)` branch to `return json({error}, 401)`.
+    // Signature verification: hard-reject mismatches when both env secrets are
+    // present AND PayMe sent a signature. We still let through events that don't
+    // carry a signature (some seller-* event types may not — verified() returns
+    // ok:true with reason='no_signature_in_payload' for those).
     if (merchantKey && merchantPassword) {
       const sig = verifyPaymeSignature(payload, merchantKey, merchantPassword)
       if (!sig.ok) {
-        console.warn('PayMe signature mismatch', {
+        console.warn('PayMe signature mismatch — rejecting', {
           notify_type: notifyType,
           reason: sig.reason,
         })
-      } else if (sig.reason === 'match') {
+        return json({ error: 'Invalid signature' }, 401)
+      }
+      if (sig.reason === 'match') {
         console.log('PayMe signature verified', { notify_type: notifyType })
       }
+    } else {
+      console.warn('PayMe webhook: missing merchant credentials — signature NOT verified', {
+        hasKey: Boolean(merchantKey),
+        hasPassword: Boolean(merchantPassword),
+      })
     }
 
     // Route by notify_type. Unknown event types are accepted with a log so PayMe
