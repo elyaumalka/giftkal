@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import md5 from 'https://esm.sh/js-md5@0.8.3'
+import { dispatchPartnerWebhooks } from '../_shared/partner-webhooks.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -100,6 +101,20 @@ async function handleSellerApprove(supabase: SupabaseClient, payload: Payload) {
   }
 
   console.log(`seller-approve: ${sellerPaymeId} → approved (${events?.length ?? 0} event(s) updated)`)
+
+  // Notify any partner that created this event.
+  for (const ev of events ?? []) {
+    await dispatchPartnerWebhooks(supabase, {
+      eventType: 'seller-approve',
+      eventId: ev.id,
+      payload: {
+        event_id: ev.id,
+        seller_payme_id: sellerPaymeId,
+        status: 'approved',
+      },
+    })
+  }
+
   return json({ ok: true, updated: events?.length ?? 0 })
 }
 
@@ -231,6 +246,24 @@ async function handleSaleEvent(supabase: SupabaseClient, payload: Payload, type:
   }
 
   console.log(`${type ?? 'sale-event'}: tx=${transaction.id} → ${paymentStatus}`)
+
+  // Notify the originating partner (if any) about the new payment state.
+  if (paymentStatus !== transaction.payment_status) {
+    await dispatchPartnerWebhooks(supabase, {
+      eventType: type ?? 'sale-event',
+      eventId: transaction.event_id,
+      payload: {
+        transaction_id: transaction.id,
+        event_id: transaction.event_id,
+        payment_status: paymentStatus,
+        amount: transaction.amount,
+        gift_amount: transaction.gift_amount,
+        fee_amount: transaction.fee_amount,
+        payer_name: transaction.payer_name,
+      },
+    })
+  }
+
   return json({ success: true, transactionId: transaction.id, status: paymentStatus })
 }
 

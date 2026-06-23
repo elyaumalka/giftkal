@@ -1077,6 +1077,64 @@ export default function SystemApiDocs() {
             </div>
           </div>
 
+          {/* Partner API mode */}
+          <div className="mb-8 p-6 bg-amber-50 border-2 border-amber-200 rounded-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <Building2 className="w-5 h-5 text-amber-700" />
+              <h2 className="text-lg font-bold text-amber-900">מצב Partner — שותפים B2B</h2>
+            </div>
+            <p className="text-sm text-amber-900 leading-relaxed mb-4">
+              מערכת חיצונית (ספק אישורי-הגעה, סוכנות מקצועית וכו') יכולה להשתמש ב-giftkal דרך מפתח API משויך-לשותף.
+              ההבדלים מ-מפתח אדמין רגיל:
+            </p>
+            <ul className="text-sm text-amber-900 space-y-1.5 list-disc list-inside mb-4">
+              <li><strong>Scoping אוטומטי:</strong> השותף רואה רק את האירועים והמשתמשים שיצר בעצמו דרך ה-API.</li>
+              <li><strong>תיוג ביצירה:</strong> <code>CreateEvent</code> ו-<code>CreateEventOwner</code> מתייגים אוטומטית את ה-<code>created_by_partner_id</code>.</li>
+              <li><strong>Webhooks חוזרים:</strong> אירועי sale-paid / seller-approve / withdrawal-complete נשלחים ל-URL של השותף עם חתימת HMAC-SHA256.</li>
+              <li><strong>בידוד מלא:</strong> שני שותפים שונים לא יכולים לראות אחד את האירועים של השני.</li>
+            </ul>
+            <p className="text-xs text-amber-800/80">
+              ניהול שותפים: מנהל מערכת → הגדרות → טאב <strong>שותפים</strong> → "+", שם, webhook URL, רשימת אירועים. הסוד HMAC מוצג פעם אחת בלבד.
+            </p>
+          </div>
+
+          {/* Webhook contract */}
+          <div className="mb-8 p-6 bg-card rounded-2xl border border-border">
+            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              Webhooks — מה השותף מקבל ב-URL שלו
+            </h2>
+            <p className="text-sm text-muted-foreground mb-3">
+              ל-URL של השותף נשלחת POST עם הכותרות הבאות:
+            </p>
+            <div className="bg-[#1e1e2e] rounded-lg px-4 py-3 font-mono text-xs text-emerald-400 mb-4" dir="ltr">
+              {`X-Giftkal-Event: sale-paid
+X-Giftkal-Signature: HMAC_SHA256_HEX
+Content-Type: application/json`}
+            </div>
+            <p className="text-sm text-muted-foreground mb-2">
+              גוף הבקשה:
+            </p>
+            <div className="bg-[#1e1e2e] rounded-lg px-4 py-3 font-mono text-xs text-emerald-400" dir="ltr">
+              {`{
+  "event_type": "sale-paid",
+  "delivered_at": "2026-06-11T10:30:00Z",
+  "data": {
+    "transaction_id": "uuid",
+    "event_id": "uuid",
+    "payment_status": "completed",
+    "amount": 204,
+    "gift_amount": 200,
+    "fee_amount": 4,
+    "payer_name": "ישראל ישראלי"
+  }
+}`}
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              <strong>אימות חתימה:</strong> השותף מחשב <code>HMAC_SHA256(webhook_secret, raw_body)</code> בעצמו ומשווה ל-<code>X-Giftkal-Signature</code>. אם לא תואם — לדחות.
+            </p>
+          </div>
+
           {/* Error Reference */}
           <div className="mb-8 p-5 bg-destructive/5 rounded-xl border border-destructive/20">
             <h3 className="text-sm font-bold text-destructive mb-3">מבנה שגיאות</h3>

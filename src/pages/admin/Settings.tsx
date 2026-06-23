@@ -36,6 +36,9 @@ import {
   Upload,
   X,
   FileText,
+  Building2,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
@@ -55,7 +58,17 @@ export default function Settings() {
   // API key state
   const [newApiName, setNewApiName] = useState("");
   const [newApiKey, setNewApiKey] = useState("");
+  const [newApiKeyPartner, setNewApiKeyPartner] = useState<string>("");
   const [isAddApiKeyOpen, setIsAddApiKeyOpen] = useState(false);
+
+  // Partner management state
+  const [isAddPartnerOpen, setIsAddPartnerOpen] = useState(false);
+  const [newPartnerName, setNewPartnerName] = useState("");
+  const [newPartnerEmail, setNewPartnerEmail] = useState("");
+  const [newPartnerWebhookUrl, setNewPartnerWebhookUrl] = useState("");
+  const [newPartnerEvents, setNewPartnerEvents] = useState<string>("sale-paid,seller-approve");
+  const [revealedSecret, setRevealedSecret] = useState<{ id: string; secret: string } | null>(null);
+  const [copiedSecret, setCopiedSecret] = useState(false);
 
   // Edit user state
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
@@ -167,13 +180,15 @@ export default function Settings() {
       const { error } = await supabase.from("api_keys").insert({
         name: newApiName,
         key_hash: keyHash,
-      });
+        partner_id: newApiKeyPartner || null,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["api-keys"] });
       setNewApiName("");
       setNewApiKey("");
+      setNewApiKeyPartner("");
       setIsAddApiKeyOpen(false);
       toast({ title: "מפתח API נוסף בהצלחה" });
     },
@@ -193,6 +208,70 @@ export default function Settings() {
     },
     onError: (error: any) => {
       toast({ title: "שגיאה במחיקת מפתח", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // ─── Partners (Phase D) ──────────────────────────────────────────────────
+  const { data: partners } = useQuery({
+    queryKey: ["partners"],
+    queryFn: async () => {
+      const { data } = await (supabase.from as any)("partners")
+        .select("*")
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+  });
+
+  const addPartner = useMutation({
+    mutationFn: async () => {
+      // Generate a 32-byte HMAC secret so the partner can verify webhook payloads.
+      const secretBytes = crypto.getRandomValues(new Uint8Array(32));
+      const secret = Array.from(secretBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+      const events = newPartnerEvents
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const { data, error } = await (supabase.from as any)("partners")
+        .insert({
+          name: newPartnerName,
+          contact_email: newPartnerEmail || null,
+          webhook_url: newPartnerWebhookUrl || null,
+          webhook_secret: secret,
+          webhook_events: events,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return { id: data.id, secret };
+    },
+    onSuccess: ({ id, secret }) => {
+      queryClient.invalidateQueries({ queryKey: ["partners"] });
+      setNewPartnerName("");
+      setNewPartnerEmail("");
+      setNewPartnerWebhookUrl("");
+      setNewPartnerEvents("sale-paid,seller-approve");
+      setIsAddPartnerOpen(false);
+      // Show the HMAC secret once so the admin can hand it to the partner.
+      setRevealedSecret({ id, secret });
+      toast({ title: "שותף נוסף ✅", description: "הצג ושמור את הסוד של ה-webhook עכשיו" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה ביצירת שותף", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deletePartner = useMutation({
+    mutationFn: async (partnerId: string) => {
+      const { error } = await (supabase.from as any)("partners").delete().eq("id", partnerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["partners"] });
+      queryClient.invalidateQueries({ queryKey: ["api-keys"] });
+      toast({ title: "השותף נמחק" });
+    },
+    onError: (error: any) => {
+      toast({ title: "שגיאה במחיקת שותף", description: error.message, variant: "destructive" });
     },
   });
 
@@ -341,6 +420,17 @@ export default function Settings() {
             API
           </button>
           <button
+            onClick={() => setActiveTab("partners")}
+            className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
+              activeTab === "partners"
+                ? "bg-[#1a2942] text-white"
+                : "bg-white text-foreground hover:bg-gray-100"
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            שותפים
+          </button>
+          <button
             onClick={() => setActiveTab("general")}
             className={`px-6 py-2 rounded-full font-medium transition-colors flex items-center gap-2 ${
               activeTab === "general"
@@ -436,9 +526,26 @@ export default function Settings() {
                 <Input variant="form" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} className="text-center" />
               </div>
             </div>
-            <Button 
-              onClick={() => addApiKey.mutate()} 
-              disabled={!newApiName || !newApiKey || addApiKey.isPending} 
+            <div>
+              <Label className="text-muted-foreground text-sm mb-2 block text-center">שיוך לשותף (אופציונלי)</Label>
+              <Select value={newApiKeyPartner || "none"} onValueChange={(v) => setNewApiKeyPartner(v === "none" ? "" : v)}>
+                <SelectTrigger className="bg-[#f5f5f5] border-0 rounded-xl text-center">
+                  <SelectValue placeholder="ללא שיוך — מפתח אדמין כללי" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">ללא שיוך — מפתח אדמין כללי (רואה הכל)</SelectItem>
+                  {partners?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                מפתח משויך לשותף רואה רק את האירועים והמשתמשים שהשותף יצר בעצמו.
+              </p>
+            </div>
+            <Button
+              onClick={() => addApiKey.mutate()}
+              disabled={!newApiName || !newApiKey || addApiKey.isPending}
               className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white rounded-full py-6 text-lg font-medium flex items-center justify-center gap-2"
             >
               <span>←</span>
@@ -707,6 +814,166 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* Partners Tab */}
+      {activeTab === "partners" && (
+        <div className="space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              שותף = מערכת חיצונית (למשל ספק אישורי הגעה) שיוצרת אצלך אירועים דרך ה-API.
+              לכל שותף — webhook URL מאובטח (HMAC-SHA256), מפתחות API ייעודיים, וגישה רק לאירועים שהוא יצר.
+            </p>
+            <button
+              onClick={() => setIsAddPartnerOpen(true)}
+              className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors flex-shrink-0"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-[1fr_2fr_1.5fr_1fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
+            <span>שם השותף</span>
+            <span>Webhook URL</span>
+            <span>אירועים</span>
+            <span>סטטוס</span>
+            <span className="w-10"></span>
+          </div>
+
+          <div className="space-y-3">
+            {partners?.map((p) => (
+              <div
+                key={p.id}
+                className="grid grid-cols-[1fr_2fr_1.5fr_1fr_auto] gap-4 items-center bg-white rounded-2xl px-6 py-5 shadow-sm"
+              >
+                <div className="text-center">
+                  <div className="font-bold">{p.name}</div>
+                  {p.contact_email && (
+                    <div className="text-xs text-muted-foreground">{p.contact_email}</div>
+                  )}
+                </div>
+                <span className="text-center font-mono text-xs break-all">
+                  {p.webhook_url || <span className="text-muted-foreground">—</span>}
+                </span>
+                <span className="text-center text-xs">
+                  {(p.webhook_events ?? []).join(", ") || <span className="text-muted-foreground">—</span>}
+                </span>
+                <span className="text-center">
+                  {p.is_active ? (
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">פעיל</span>
+                  ) : (
+                    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">מושבת</span>
+                  )}
+                </span>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent dir="rtl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>מחיקת שותף</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        מחיקת "{p.name}" תמחק גם את כל המפתחות שלו ותוריד לו את האפשרות לגשת. אירועים שכבר יצר נשארים אצלך.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex-row-reverse gap-2">
+                      <AlertDialogCancel>ביטול</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deletePartner.mutate(p.id)}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        מחק שותף
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ))}
+            {!partners?.length && (
+              <div className="text-center py-12 text-muted-foreground bg-white rounded-2xl">
+                אין שותפים. לחץ על + כדי להוסיף את הראשון.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Partner Dialog */}
+      <Dialog open={isAddPartnerOpen} onOpenChange={setIsAddPartnerOpen}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" hideCloseButton>
+          <div className="bg-[#1a2942] text-white p-4 flex items-center justify-between">
+            <button onClick={() => setIsAddPartnerOpen(false)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold">הוספת שותף חדש</h2>
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div className="bg-white p-6 space-y-4">
+            <div>
+              <Label className="text-muted-foreground text-sm mb-2 block">שם השותף *</Label>
+              <Input value={newPartnerName} onChange={(e) => setNewPartnerName(e.target.value)} placeholder="חברת XYZ אישורי הגעה" />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-sm mb-2 block">אימייל איש קשר</Label>
+              <Input value={newPartnerEmail} onChange={(e) => setNewPartnerEmail(e.target.value)} placeholder="contact@partner.com" />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-sm mb-2 block">Webhook URL (אופציונלי)</Label>
+              <Input value={newPartnerWebhookUrl} onChange={(e) => setNewPartnerWebhookUrl(e.target.value)} placeholder="https://partner.com/webhooks/giftkal" className="ltr text-left" dir="ltr" />
+              <p className="text-xs text-muted-foreground mt-1">
+                URL שיקבל הודעות. נחתום על ה-payload עם HMAC-SHA256 בכותרת <code>X-Giftkal-Signature</code>.
+              </p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-sm mb-2 block">אירועים לקבלה (מופרדים בפסיק)</Label>
+              <Input value={newPartnerEvents} onChange={(e) => setNewPartnerEvents(e.target.value)} placeholder="sale-paid,seller-approve" className="ltr text-left" dir="ltr" />
+              <p className="text-xs text-muted-foreground mt-1">
+                ערכים נפוצים: <code>sale-paid</code>, <code>sale-failure</code>, <code>refund</code>, <code>seller-approve</code>, <code>withdrawal-complete</code>
+              </p>
+            </div>
+            <Button
+              onClick={() => addPartner.mutate()}
+              disabled={!newPartnerName || addPartner.isPending}
+              className="w-full bg-[#1a2942] hover:bg-[#243a56] text-white"
+            >
+              {addPartner.isPending ? "יוצר..." : "צור שותף + secret"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reveal Webhook Secret Modal — shown ONCE after partner creation */}
+      <AlertDialog open={!!revealedSecret} onOpenChange={(open) => !open && setRevealedSecret(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>סוד ה-Webhook נוצר</AlertDialogTitle>
+            <AlertDialogDescription>
+              העתק את הסוד עכשיו והעבר לשותף בערוץ מאובטח. הסוד <strong>לא יוצג שוב</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {revealedSecret && (
+            <div className="bg-gray-100 rounded-lg p-4 my-4">
+              <div className="font-mono text-xs break-all">{revealedSecret.secret}</div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 gap-2"
+                onClick={() => {
+                  navigator.clipboard.writeText(revealedSecret.secret);
+                  setCopiedSecret(true);
+                  setTimeout(() => setCopiedSecret(false), 2000);
+                }}
+              >
+                {copiedSecret ? <><Check className="w-3 h-3" /> הועתק</> : <><Copy className="w-3 h-3" /> העתק</>}
+              </Button>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setRevealedSecret(null)}>שמרתי את הסוד</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

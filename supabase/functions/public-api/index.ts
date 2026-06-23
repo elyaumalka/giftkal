@@ -5,8 +5,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 }
 
-async function validateApiKey(supabase: any, apiKey: string): Promise<boolean> {
-  if (!apiKey) return false;
+/**
+ * Resolved API-key context. partnerId === null means an internal/admin key
+ * (sees everything, current behavior). partnerId !== null means a scoped
+ * partner key — every read is filtered to `created_by_partner_id = partnerId`
+ * and every write tags new rows with the same partner id.
+ */
+interface ApiKeyContext {
+  keyId: string;
+  partnerId: string | null;
+}
+
+async function validateApiKey(supabase: any, apiKey: string): Promise<ApiKeyContext | null> {
+  if (!apiKey) return null;
   const encoder = new TextEncoder();
   const data = encoder.encode(apiKey);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -15,12 +26,31 @@ async function validateApiKey(supabase: any, apiKey: string): Promise<boolean> {
 
   const { data: keyData } = await supabase
     .from('api_keys')
-    .select('id, is_active')
+    .select('id, is_active, partner_id')
     .eq('key_hash', keyHash)
     .eq('is_active', true)
     .maybeSingle();
 
-  return !!keyData;
+  if (!keyData) return null;
+
+  // Best-effort: update last_used_at without blocking the request.
+  supabase
+    .from('api_keys')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('id', keyData.id)
+    .then(() => {});
+
+  return { keyId: keyData.id, partnerId: keyData.partner_id ?? null };
+}
+
+/**
+ * Apply partner scoping to a Supabase query. No-op for admin keys (partnerId=null).
+ * Use on every "list/get" query that returns events or profiles so a partner
+ * can never see rows they didn't create.
+ */
+function applyPartnerScope(query: any, ctx: ApiKeyContext) {
+  if (ctx.partnerId === null) return query;
+  return query.eq('created_by_partner_id', ctx.partnerId);
 }
 
 function errorResponse(message: string, status: number) {
@@ -38,13 +68,16 @@ function okResponse(result: any) {
 
 // ===== Handler modules =====
 
-async function handleEvents(action: string, supabase: any, url: URL, body: any) {
+async function handleEvents(action: string, supabase: any, url: URL, body: any, ctx: ApiKeyContext) {
   switch (action) {
     case 'GetEvent': {
       const eventId = url.searchParams.get('event_id') || body.event_id;
       if (!eventId) return errorResponse('event_id is required', 400);
-      const { data, error } = await supabase.from('events').select('*').eq('id', eventId).single();
+      let q = supabase.from('events').select('*').eq('id', eventId);
+      q = applyPartnerScope(q, ctx);
+      const { data, error } = await q.maybeSingle();
       if (error) return errorResponse(error.message, 404);
+      if (!data) return errorResponse('Event not found or not accessible to this API key', 404);
       return okResponse({ event: data });
     }
     case 'ListEvents': {
@@ -53,6 +86,7 @@ async function handleEvents(action: string, supabase: any, url: URL, body: any) 
       let query = supabase.from('events').select('*');
       if (venueId) query = query.eq('venue_id', venueId);
       if (ownerId) query = query.eq('owner_id', ownerId);
+      query = applyPartnerScope(query, ctx);
       query = query.order('event_date', { ascending: false });
       const { data, error } = await query;
       if (error) return errorResponse(error.message, 500);
@@ -61,16 +95,26 @@ async function handleEvents(action: string, supabase: any, url: URL, body: any) 
     case 'UpdateEvent': {
       const { event_id, ...updates } = body;
       if (!event_id) return errorResponse('event_id is required', 400);
-      const { data, error } = await supabase.from('events').update(updates).eq('id', event_id).select().single();
+      // Guard against partners updating other partners' events.
+      let q = supabase.from('events').update(updates).eq('id', event_id);
+      q = applyPartnerScope(q, ctx);
+      const { data, error } = await q.select().maybeSingle();
       if (error) return errorResponse(error.message, 400);
+      if (!data) return errorResponse('Event not found or not accessible to this API key', 404);
       return okResponse({ event: data });
     }
     case 'CreateEvent': {
       const { owner_id, event_date, event_type, groom_name, bride_name, child_name, family_name, venue_id, hall_id, custom_venue_name, custom_venue_location, reception_time, ceremony_time } = body;
       if (!owner_id || !event_date) return errorResponse('owner_id and event_date are required', 400);
-      // Verify owner exists
-      const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', owner_id).maybeSingle();
+      // Verify owner exists. For partner keys, the owner must belong to the
+      // same partner — otherwise a partner could create events under another
+      // partner's users.
+      let ownerQuery = supabase.from('profiles').select('id, created_by_partner_id').eq('user_id', owner_id);
+      const { data: profile } = await ownerQuery.maybeSingle();
       if (!profile) return errorResponse('Owner not found. Use CreateEventOwner for new users.', 404);
+      if (ctx.partnerId && profile.created_by_partner_id !== ctx.partnerId) {
+        return errorResponse('Owner belongs to a different partner', 403);
+      }
       const { data, error } = await supabase.from('events').insert({
         owner_id, event_date, event_type: event_type || 'חתונה',
         groom_name: groom_name || null, bride_name: bride_name || null,
@@ -78,6 +122,7 @@ async function handleEvents(action: string, supabase: any, url: URL, body: any) 
         venue_id: venue_id || null, hall_id: hall_id || null,
         custom_venue_name: custom_venue_name || null, custom_venue_location: custom_venue_location || null,
         reception_time: reception_time || null, ceremony_time: ceremony_time || null,
+        created_by_partner_id: ctx.partnerId,
       }).select().single();
       if (error) return errorResponse(error.message, 400);
       return okResponse({ event: data });
@@ -86,7 +131,7 @@ async function handleEvents(action: string, supabase: any, url: URL, body: any) 
   return null;
 }
 
-async function handleGuests(action: string, supabase: any, url: URL, body: any) {
+async function handleGuests(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'ListGuests': {
       const eventId = url.searchParams.get('event_id') || body.event_id;
@@ -176,7 +221,7 @@ async function handleGuests(action: string, supabase: any, url: URL, body: any) 
   return null;
 }
 
-async function handleTransactions(action: string, supabase: any, url: URL, body: any) {
+async function handleTransactions(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'GetTransactions': {
       const eventId = url.searchParams.get('event_id') || body.event_id;
@@ -211,7 +256,7 @@ async function handleTransactions(action: string, supabase: any, url: URL, body:
   return null;
 }
 
-async function handleVenues(action: string, supabase: any, url: URL, body: any) {
+async function handleVenues(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'GetVenue': {
       const venueId = url.searchParams.get('venue_id') || body.venue_id;
@@ -256,7 +301,7 @@ async function handleVenues(action: string, supabase: any, url: URL, body: any) 
   return null;
 }
 
-async function handleLeads(action: string, supabase: any, url: URL, body: any) {
+async function handleLeads(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'ListLeads': {
       const status = url.searchParams.get('status') || body.status;
@@ -305,18 +350,23 @@ async function handleLeads(action: string, supabase: any, url: URL, body: any) {
   return null;
 }
 
-async function handleUsers(action: string, supabase: any, url: URL, body: any) {
+async function handleUsers(action: string, supabase: any, url: URL, body: any, ctx: ApiKeyContext) {
   switch (action) {
     case 'ListProfiles': {
-      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      let q = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      q = applyPartnerScope(q, ctx);
+      const { data, error } = await q;
       if (error) return errorResponse(error.message, 500);
       return okResponse({ profiles: data, count: data?.length || 0 });
     }
     case 'GetProfile': {
       const userId = url.searchParams.get('user_id') || body.user_id;
       if (!userId) return errorResponse('user_id is required', 400);
-      const { data, error } = await supabase.from('profiles').select('*').eq('user_id', userId).single();
+      let q = supabase.from('profiles').select('*').eq('user_id', userId);
+      q = applyPartnerScope(q, ctx);
+      const { data, error } = await q.maybeSingle();
       if (error) return errorResponse(error.message, 404);
+      if (!data) return errorResponse('Profile not found or not accessible', 404);
       return okResponse({ profile: data });
     }
     case 'CreateEventOwner': {
@@ -332,8 +382,11 @@ async function handleUsers(action: string, supabase: any, url: URL, body: any) {
       const userId = newUser.user.id;
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Update profile
-      await supabase.from('profiles').update({ full_name, phone: phone || null }).eq('user_id', userId);
+      // Update profile — tag with partner so they can find this user later.
+      await supabase
+        .from('profiles')
+        .update({ full_name, phone: phone || null, created_by_partner_id: ctx.partnerId })
+        .eq('user_id', userId);
 
       // Assign role
       await supabase.from('user_roles').insert({ user_id: userId, role: 'event_owner' });
@@ -344,6 +397,7 @@ async function handleUsers(action: string, supabase: any, url: URL, body: any) {
           owner_id: userId, venue_id: event.venue_id || null,
           event_type: event.event_type || 'חתונה', event_date: event.event_date,
           groom_name: event.groom_name || null, bride_name: event.bride_name || null,
+          created_by_partner_id: ctx.partnerId,
         }).select().single();
         createdEvent = eventData;
       }
@@ -406,7 +460,7 @@ async function handleUsers(action: string, supabase: any, url: URL, body: any) {
   return null;
 }
 
-async function handleDocuments(action: string, supabase: any, url: URL, body: any) {
+async function handleDocuments(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'ListDocuments': {
       const userId = url.searchParams.get('user_id') || body.user_id;
@@ -444,7 +498,7 @@ async function handleDocuments(action: string, supabase: any, url: URL, body: an
   return null;
 }
 
-async function handleStats(action: string, supabase: any, url: URL, body: any) {
+async function handleStats(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'GetEventStats': {
       const eventId = url.searchParams.get('event_id') || body.event_id;
@@ -492,7 +546,7 @@ async function handleStats(action: string, supabase: any, url: URL, body: any) {
   return null;
 }
 
-async function handleSupportTickets(action: string, supabase: any, url: URL, body: any) {
+async function handleSupportTickets(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'ListTickets': {
       const userId = url.searchParams.get('user_id') || body.user_id;
@@ -527,7 +581,7 @@ async function handleSupportTickets(action: string, supabase: any, url: URL, bod
   return null;
 }
 
-async function handleInvoices(action: string, supabase: any, url: URL, body: any) {
+async function handleInvoices(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'ListInvoices': {
       const venueId = url.searchParams.get('venue_id') || body.venue_id;
@@ -564,7 +618,7 @@ async function handleInvoices(action: string, supabase: any, url: URL, body: any
   return null;
 }
 
-async function handleDevices(action: string, supabase: any, url: URL, body: any) {
+async function handleDevices(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'IdentifyDevice': {
       // Identify the active event for a kiosk device by serial_number or hall_id.
@@ -668,7 +722,7 @@ async function handleDevices(action: string, supabase: any, url: URL, body: any)
   return null;
 }
 
-async function handleNotes(action: string, supabase: any, url: URL, body: any) {
+async function handleNotes(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'ListNotes': {
       const leadId = url.searchParams.get('lead_id') || body.lead_id;
@@ -706,7 +760,7 @@ async function handleNotes(action: string, supabase: any, url: URL, body: any) {
   return null;
 }
 
-async function handleTasks(action: string, supabase: any, url: URL, body: any) {
+async function handleTasks(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'ListTasks': {
       const leadId = url.searchParams.get('lead_id') || body.lead_id;
@@ -747,7 +801,7 @@ async function handleTasks(action: string, supabase: any, url: URL, body: any) {
   return null;
 }
 
-async function handleLandingLeads(action: string, supabase: any, url: URL, body: any) {
+async function handleLandingLeads(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'ListLandingLeads': {
       const venueId = url.searchParams.get('venue_id') || body.venue_id;
@@ -788,7 +842,7 @@ async function handleLandingLeads(action: string, supabase: any, url: URL, body:
   return null;
 }
 
-async function handleSettings(action: string, supabase: any, url: URL, body: any) {
+async function handleSettings(action: string, supabase: any, url: URL, body: any, _ctx: ApiKeyContext) {
   switch (action) {
     case 'GetSystemSettings': {
       const { data, error } = await supabase.from('system_settings').select('*').maybeSingle();
@@ -825,7 +879,15 @@ async function handleSettings(action: string, supabase: any, url: URL, body: any
 
 // ===== Main handler =====
 
-const actionHandlers: Record<string, (action: string, supabase: any, url: URL, body: any) => Promise<Response | null>> = {
+type Handler = (
+  action: string,
+  supabase: any,
+  url: URL,
+  body: any,
+  ctx: ApiKeyContext,
+) => Promise<Response | null>;
+
+const actionHandlers: Record<string, Handler> = {
   // Events
   GetEvent: handleEvents, ListEvents: handleEvents, UpdateEvent: handleEvents, CreateEvent: handleEvents,
   // Guests
@@ -874,8 +936,8 @@ Deno.serve(async (req) => {
 
   try {
     const apiKey = req.headers.get('x-api-key') || '';
-    const isValid = await validateApiKey(supabase, apiKey);
-    if (!isValid) {
+    const ctx = await validateApiKey(supabase, apiKey);
+    if (!ctx) {
       return errorResponse('Invalid or missing API key', 401);
     }
 
@@ -888,7 +950,7 @@ Deno.serve(async (req) => {
       return errorResponse(`Unknown action: ${action}. See API docs for available actions.`, 400);
     }
 
-    const result = await handler(action, supabase, url, body);
+    const result = await handler(action, supabase, url, body, ctx);
     if (result) return result;
 
     return errorResponse(`Action ${action} not handled`, 500);
