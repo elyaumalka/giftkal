@@ -17,10 +17,18 @@
  */
 
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Wallet,
   TrendingUp,
@@ -28,7 +36,9 @@ import {
   Search,
   Loader2,
   Building2,
+  ArrowRightLeft,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { formatILS } from "@/lib/fees";
 
@@ -44,11 +54,59 @@ interface EventRow {
   swept: number;
   pending: number;
   gifts: number;
+  /** Number of completed transactions on this event that used installments > 1. */
+  installmentCount: number;
+  /** Total transactions count (regular + installments). */
+  txCount: number;
 }
 
 export default function Wallets() {
   const [tab, setTab] = useState<TabKey>("events");
   const [search, setSearch] = useState("");
+  // In-dashboard sweep: clicking 'העבר' on a row opens this dialog pre-filled
+  // with the pending commission so the admin doesn't need to drill into the
+  // event details just to move money.
+  const [transferTarget, setTransferTarget] = useState<EventRow | null>(null);
+  const [transferAmount, setTransferAmount] = useState("");
+  const [transferNote, setTransferNote] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const transferMutation = useMutation({
+    mutationFn: async () => {
+      if (!transferTarget) throw new Error("no target");
+      const amount = Number(transferAmount);
+      if (!amount || amount <= 0) throw new Error("סכום לא תקין");
+      const { data, error } = await supabase.functions.invoke("payme-generate-transfer", {
+        body: {
+          eventId: transferTarget.event_id,
+          amount,
+          productName: transferNote || undefined,
+        },
+      });
+      if (error) throw new Error(error.message || "שגיאה");
+      if (!data?.success) throw new Error(data?.error || data?.details || "שגיאה");
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: `הועבר ${formatILS(Number(transferAmount))} ל-giftkal ✅`,
+      });
+      setTransferTarget(null);
+      setTransferAmount("");
+      setTransferNote("");
+      queryClient.invalidateQueries({ queryKey: ["wallets-dashboard"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "שגיאה בהעברה", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const openTransfer = (row: EventRow) => {
+    setTransferTarget(row);
+    setTransferAmount(row.pending > 0 ? String(row.pending) : "");
+    setTransferNote("");
+  };
 
   // Pull everything we need in three parallel queries. None of these tables is
   // huge (one row per event/transaction/transfer/payout) so we don't bother
@@ -65,7 +123,7 @@ export default function Wallets() {
           .order("event_date", { ascending: false }),
         supabase
           .from("transactions")
-          .select("event_id, amount, gift_amount, fee_amount, payment_status")
+          .select("event_id, amount, gift_amount, fee_amount, payment_status, installments")
           .eq("payment_status", "completed"),
         (supabase.from as any)("platform_commission_transfers")
           .select("id, event_id, amount, status, submitted_at, completed_at")
@@ -81,12 +139,22 @@ export default function Wallets() {
       const payouts = (poRes.data ?? []) as any[];
 
       // Roll up per-event aggregates.
-      const collectedByEvent = new Map<string, { collected: number; gifts: number }>();
+      const aggByEvent = new Map<
+        string,
+        { collected: number; gifts: number; installmentCount: number; txCount: number }
+      >();
       for (const t of completedTx) {
-        const cur = collectedByEvent.get(t.event_id) ?? { collected: 0, gifts: 0 };
+        const cur = aggByEvent.get(t.event_id) ?? {
+          collected: 0,
+          gifts: 0,
+          installmentCount: 0,
+          txCount: 0,
+        };
         cur.collected += Number(t.fee_amount) || 0;
         cur.gifts += Number(t.gift_amount) || Number(t.amount) || 0;
-        collectedByEvent.set(t.event_id, cur);
+        cur.txCount += 1;
+        if ((Number(t.installments) || 1) > 1) cur.installmentCount += 1;
+        aggByEvent.set(t.event_id, cur);
       }
       const sweptByEvent = new Map<string, number>();
       for (const t of transfers) {
@@ -95,7 +163,7 @@ export default function Wallets() {
       }
 
       const eventRows: EventRow[] = events.map((e) => {
-        const agg = collectedByEvent.get(e.id) ?? { collected: 0, gifts: 0 };
+        const agg = aggByEvent.get(e.id) ?? { collected: 0, gifts: 0, installmentCount: 0, txCount: 0 };
         const swept = sweptByEvent.get(e.id) ?? 0;
         return {
           event_id: e.id,
@@ -114,6 +182,8 @@ export default function Wallets() {
           swept,
           pending: Math.max(0, +(agg.collected - swept).toFixed(2)),
           gifts: agg.gifts,
+          installmentCount: agg.installmentCount,
+          txCount: agg.txCount,
         };
       });
 
@@ -228,13 +298,95 @@ export default function Wallets() {
             <Loader2 className="w-5 h-5 animate-spin mr-2" /> טוען נתונים...
           </div>
         ) : tab === "events" ? (
-          <EventsTable rows={filteredEvents} />
+          <EventsTable rows={filteredEvents} onTransfer={openTransfer} />
         ) : tab === "sweeps" ? (
           <SweepsTable rows={rows.transfers} eventLabel={eventLabelById} />
         ) : (
           <PayoutsTable rows={rows.payouts} eventLabel={eventLabelById} />
         )}
       </div>
+
+      {/* In-dashboard transfer dialog */}
+      <Dialog open={!!transferTarget} onOpenChange={(open) => !open && setTransferTarget(null)}>
+        <DialogContent dir="rtl" className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="w-5 h-5 text-amber-700" />
+              העברת עמלה ל-giftkal
+            </DialogTitle>
+          </DialogHeader>
+          {transferTarget && (
+            <div className="space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+                <div className="font-medium text-amber-900">{transferTarget.event_label}</div>
+                <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
+                  <div>
+                    <div className="text-amber-800/60">עמלות נגבו</div>
+                    <div className="font-bold">{formatILS(transferTarget.collected)}</div>
+                  </div>
+                  <div>
+                    <div className="text-amber-800/60">הועברו</div>
+                    <div className="font-bold">{formatILS(transferTarget.swept)}</div>
+                  </div>
+                  <div>
+                    <div className="text-amber-800/60">זמין</div>
+                    <div className="font-bold text-amber-700">{formatILS(transferTarget.pending)}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm">סכום להעברה</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={transferAmount}
+                  onChange={(e) => setTransferAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  הסכום מולא אוטומטית לפי היתרה הזמינה.
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-sm">הערה (אופציונלי)</Label>
+                <Input
+                  value={transferNote}
+                  onChange={(e) => setTransferNote(e.target.value)}
+                  placeholder="למשל: סגירת חודש יוני"
+                  className="mt-1"
+                />
+              </div>
+
+              {transferTarget.payment_setup_status !== "approved" && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                  ⚠ הסולק לא במצב 'מאושר'. PayMe ידחה את הבקשה.
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setTransferTarget(null)}>
+                  ביטול
+                </Button>
+                <Button
+                  onClick={() => transferMutation.mutate()}
+                  disabled={transferMutation.isPending || !transferAmount || Number(transferAmount) <= 0}
+                  className="bg-amber-700 hover:bg-amber-800 text-white"
+                >
+                  {transferMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    "בצע העברה"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -290,7 +442,13 @@ function TabButton({
   );
 }
 
-function EventsTable({ rows }: { rows: EventRow[] }) {
+function EventsTable({
+  rows,
+  onTransfer,
+}: {
+  rows: EventRow[];
+  onTransfer: (row: EventRow) => void;
+}) {
   if (rows.length === 0) {
     return <div className="p-12 text-center text-muted-foreground">אין אירועים לתצוגה.</div>;
   }
@@ -301,10 +459,13 @@ function EventsTable({ rows }: { rows: EventRow[] }) {
           <Th>אירוע</Th>
           <Th>תאריך</Th>
           <Th>סטטוס סולק</Th>
+          <Th align="right">עסקאות</Th>
+          <Th align="right">תשלומים</Th>
           <Th align="right">סה״כ מתנות</Th>
           <Th align="right">עמלות נגבו</Th>
           <Th align="right">הועברו</Th>
           <Th align="right">זמין להעברה</Th>
+          <Th>פעולות</Th>
         </tr>
       </thead>
       <tbody className="divide-y">
@@ -313,10 +474,35 @@ function EventsTable({ rows }: { rows: EventRow[] }) {
             <Td>{r.event_label}</Td>
             <Td muted>{r.event_date ?? "—"}</Td>
             <Td><SellerStatusBadge status={r.payment_setup_status} /></Td>
+            <Td align="right">{r.txCount}</Td>
+            <Td align="right">
+              {r.installmentCount > 0 ? (
+                <Badge variant="secondary" className="text-[10px] bg-purple-100 text-purple-700">
+                  {r.installmentCount}
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </Td>
             <Td align="right">{formatILS(r.gifts)}</Td>
             <Td align="right">{formatILS(r.collected)}</Td>
             <Td align="right" muted>{formatILS(r.swept)}</Td>
             <Td align="right" className={cn(r.pending > 0 && "font-bold text-amber-700")}>{formatILS(r.pending)}</Td>
+            <Td>
+              <Button
+                size="sm"
+                variant={r.pending > 0 ? "default" : "outline"}
+                disabled={r.payment_setup_status !== "approved" || !r.seller_payme_id}
+                onClick={() => onTransfer(r)}
+                className={cn(
+                  "h-8 gap-1.5",
+                  r.pending > 0 && "bg-amber-700 hover:bg-amber-800 text-white",
+                )}
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+                העבר
+              </Button>
+            </Td>
           </tr>
         ))}
       </tbody>
