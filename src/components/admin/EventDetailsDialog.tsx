@@ -18,7 +18,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, User, X, Upload, Loader2, FileCheck, Send, Eye, AlertCircle, Trash2 } from "lucide-react";
+import { Plus, User, X, Upload, Loader2, FileCheck, Send, Eye, AlertCircle, Trash2, Wallet, ArrowDownToLine } from "lucide-react";
+import { formatILS } from "@/lib/fees";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -48,6 +49,56 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [rejectReason, setRejectReason] = useState("");
   const [approvingSeller, setApprovingSeller] = useState(false);
   const [hfApiKeyInput, setHfApiKeyInput] = useState(event.hf_api_key || "");
+  // Phase C wallet ops state
+  const [sweepAmount, setSweepAmount] = useState("");
+  const [sweepNote, setSweepNote] = useState("");
+  const [sweepingCommission, setSweepingCommission] = useState(false);
+  const [withdrawingBalance, setWithdrawingBalance] = useState(false);
+
+  const sweepCommission = async () => {
+    const amount = Number(sweepAmount);
+    if (!amount || amount <= 0) {
+      toast({ title: "סכום לא תקין", description: "הזן סכום חיובי להעברה", variant: "destructive" });
+      return;
+    }
+    setSweepingCommission(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('payme-generate-transfer', {
+        body: { eventId: event.id, amount, productName: sweepNote || undefined },
+      });
+      if (error) throw new Error(error.message || 'שגיאה');
+      if (!data?.success) throw new Error(data?.error || data?.details || 'שגיאה');
+      toast({ title: `הועברו ${formatILS(amount)} לארנק giftkal ✅` });
+      setSweepAmount("");
+      setSweepNote("");
+      queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+    } catch (err: any) {
+      toast({ title: "שגיאה בהעברה", description: err.message, variant: "destructive" });
+    } finally {
+      setSweepingCommission(false);
+    }
+  };
+
+  const triggerWithdrawal = async () => {
+    if (!confirm('האם להעביר את היתרה לחשבון הבנק של בעל האירוע?')) return;
+    setWithdrawingBalance(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('payme-withdraw-balance', {
+        body: { eventId: event.id },
+      });
+      if (error) throw new Error(error.message || 'שגיאה');
+      if (!data?.success) throw new Error(data?.error || data?.details || 'שגיאה');
+      toast({
+        title: "בקשת המשיכה נשלחה ל-PayMe ✅",
+        description: data?.message || "הכסף יועבר תוך ימי עסקים",
+      });
+      queryClient.invalidateQueries({ queryKey: ['event-owners'] });
+    } catch (err: any) {
+      toast({ title: "שגיאה במשיכה", description: err.message, variant: "destructive" });
+    } finally {
+      setWithdrawingBalance(false);
+    }
+  };
   const [savingHfKey, setSavingHfKey] = useState(false);
 
   const saveHfApiKey = async () => {
@@ -893,6 +944,62 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
               />
               <Button onClick={saveHfApiKey} disabled={savingHfKey || hfApiKeyInput === (event.hf_api_key || "")}>
                 {savingHfKey ? <Loader2 className="w-4 h-4 animate-spin" /> : "שמור"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* PayMe wallet operations — only visible once PayMe has actually approved the seller */}
+        {event.seller_payme_id && event.payment_setup_status === 'approved' && (
+          <div className="mt-6 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200 rounded-2xl p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-amber-700" />
+              <h3 className="text-lg font-semibold text-amber-900">פעולות ארנק PayMe</h3>
+            </div>
+
+            {/* Sweep commission: move giftkal's cut from event-owner wallet → master wallet */}
+            <div className="bg-white/70 rounded-xl p-3 space-y-2">
+              <div className="text-sm font-medium text-amber-900">העברת עמלת giftkal</div>
+              <p className="text-xs text-amber-800/70">
+                העברה wallet → wallet מארנק בעל האירוע אל ארנק giftkal. שווה לסכום הכולל של העמלות שנגבו עד כה.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="סכום בש״ח"
+                  value={sweepAmount}
+                  onChange={(e) => setSweepAmount(e.target.value)}
+                />
+                <Input
+                  placeholder="הערה (אופציונלי)"
+                  value={sweepNote}
+                  onChange={(e) => setSweepNote(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={sweepCommission} disabled={sweepingCommission || !sweepAmount}>
+                  {sweepingCommission ? <Loader2 className="w-4 h-4 animate-spin" /> : "העבר"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Trigger payout to bank */}
+            <div className="bg-white/70 rounded-xl p-3 space-y-2">
+              <div className="text-sm font-medium text-amber-900 flex items-center gap-2">
+                <ArrowDownToLine className="w-4 h-4" />
+                העברה לחשבון הבנק של בעל האירוע
+              </div>
+              <p className="text-xs text-amber-800/70">
+                מבצע <code className="text-[10px]">withdraw-balance</code> ב-PayMe. הסכום יילקח מארנק הסולק לחשבון הבנק שלו (כפוף ל-6 ימי hold של PayMe על כרטיסים ישראליים).
+              </p>
+              <Button
+                variant="default"
+                onClick={triggerWithdrawal}
+                disabled={withdrawingBalance}
+                className="bg-amber-700 hover:bg-amber-800 text-white"
+              >
+                {withdrawingBalance ? <Loader2 className="w-4 h-4 animate-spin" /> : "העבר את היתרה לבנק"}
               </Button>
             </div>
           </div>
