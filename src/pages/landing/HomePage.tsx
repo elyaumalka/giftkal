@@ -300,7 +300,7 @@ function Promise() {
     { kicker: "03", title: "בלי מורכבות", body: "מערכת מוכנה — עמדה מגיעה למקום, רצה על WiFi או 4G של האולם. אפס הקמה אצלכם." },
   ];
   return (
-    <section className="relative py-24 lg:py-32 bg-[var(--cream-soft)]">
+    <section id="why" className="relative py-24 lg:py-32 bg-[var(--cream-soft)] scroll-mt-24">
       <div className="container mx-auto px-6 lg:px-12">
         <header className="mb-16 max-w-2xl">
           <p className="text-xs tracking-[0.3em] text-[var(--burgundy)] font-bold uppercase mb-3">למה לעבור</p>
