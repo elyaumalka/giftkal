@@ -393,7 +393,7 @@ function HowItWorks() {
 
 function FeatureMosaic() {
   return (
-    <section className="py-24 lg:py-32 bg-[var(--cream-soft)]">
+    <section id="features" className="py-24 lg:py-32 bg-[var(--cream-soft)] scroll-mt-24">
       <div className="container mx-auto px-6 lg:px-12">
         <header className="mb-16 max-w-2xl">
           <p className="text-xs tracking-[0.3em] text-[var(--burgundy)] font-bold uppercase mb-3">מה מקבלים</p>
