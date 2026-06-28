@@ -72,12 +72,12 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
           .select('amount, gift_amount, fee_amount, payment_status')
           .eq('event_id', event.id)
           .eq('payment_status', 'completed'),
-        supabase
+        (supabase as any)
           .from('platform_commission_transfers')
           .select('id, amount, status, submitted_at, completed_at')
           .eq('event_id', event.id)
           .order('submitted_at', { ascending: false }),
-        supabase
+        (supabase as any)
           .from('payouts')
           .select('id, amount, status, submitted_at, completed_at')
           .eq('event_id', event.id)
