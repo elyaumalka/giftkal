@@ -40,6 +40,7 @@ export default function HomePage() {
         ["--ink" as any]: BRAND.ink,
       }}
     >
+      <TopNav />
       <Hero />
       <Promise />
       <HowItWorks />
@@ -51,6 +52,156 @@ export default function HomePage() {
       <FinalCTA />
       <SiteFooter />
     </div>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Sticky one-page navigation
+   ─────────────────────────────────────────────────────────────────────────── */
+
+const NAV_LINKS = [
+  { id: "top", label: "דף ראשי" },
+  { id: "how", label: "איך זה עובד" },
+  { id: "features", label: "מה מקבלים" },
+  { id: "venues", label: "בעלי אולמות" },
+  { id: "faq", label: "שאלות נפוצות" },
+  { id: "contact", label: "צור קשר" },
+];
+
+function TopNav() {
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState("top");
+  const location = useLocation();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 30);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) setActive(e.target.id);
+        });
+      },
+      { rootMargin: "-40% 0px -55% 0px", threshold: 0 }
+    );
+    NAV_LINKS.forEach((l) => {
+      const el = document.getElementById(l.id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, []);
+
+  // Support deep-link hashes (#how, #contact …) when arriving from old marketing pages
+  useEffect(() => {
+    const hash = location.hash?.replace("#", "");
+    if (!hash) return;
+    const el = document.getElementById(hash);
+    if (el) {
+      setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+    }
+  }, [location.hash]);
+
+  const go = (id: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    setOpen(false);
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      history.replaceState(null, "", `#${id}`);
+    }
+  };
+
+  return (
+    <nav
+      dir="rtl"
+      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-[var(--cream)]/90 backdrop-blur-xl shadow-[0_4px_30px_-12px_rgba(11,31,74,0.18)] py-2"
+          : "bg-transparent py-4"
+      }`}
+    >
+      <div className="container mx-auto px-6 lg:px-12 flex items-center justify-between gap-4">
+        <a href="#top" onClick={go("top")} className="flex items-center gap-2 shrink-0">
+          <img src={logoAsset.url} alt="בשמחות פלוס" className="h-10 lg:h-12" />
+        </a>
+
+        <ul className="hidden lg:flex items-center gap-7">
+          {NAV_LINKS.map((l) => (
+            <li key={l.id}>
+              <a
+                href={`#${l.id}`}
+                onClick={go(l.id)}
+                className={`text-sm font-bold tracking-wide transition-colors ${
+                  active === l.id
+                    ? "text-[var(--burgundy)]"
+                    : "text-[var(--navy)]/70 hover:text-[var(--navy)]"
+                }`}
+              >
+                {l.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex items-center gap-2">
+          <a
+            href="#contact"
+            onClick={go("contact")}
+            className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--navy)] text-[var(--cream)] text-sm font-bold hover:bg-[var(--navy-dark)] transition-colors"
+          >
+            דברו איתנו
+          </a>
+          <Link
+            to="/access"
+            className="hidden sm:inline-flex text-sm font-bold text-[var(--navy)]/70 hover:text-[var(--navy)] px-3 py-2"
+          >
+            כניסה
+          </Link>
+          <button
+            aria-label="תפריט"
+            onClick={() => setOpen((v) => !v)}
+            className="lg:hidden w-10 h-10 rounded-full bg-[var(--navy)]/5 flex items-center justify-center text-[var(--navy)]"
+          >
+            <div className="space-y-1.5">
+              <span className="block w-5 h-0.5 bg-current" />
+              <span className="block w-5 h-0.5 bg-current" />
+              <span className="block w-5 h-0.5 bg-current" />
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="lg:hidden bg-[var(--cream)] border-t border-[var(--navy)]/10 shadow-lg">
+          <ul className="container mx-auto px-6 py-4 space-y-1">
+            {NAV_LINKS.map((l) => (
+              <li key={l.id}>
+                <a
+                  href={`#${l.id}`}
+                  onClick={go(l.id)}
+                  className={`block py-3 text-base font-bold ${
+                    active === l.id ? "text-[var(--burgundy)]" : "text-[var(--navy)]"
+                  }`}
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))}
+            <li>
+              <Link to="/access" className="block py-3 text-base font-bold text-[var(--navy)]/70">
+                כניסה למערכת
+              </Link>
+            </li>
+          </ul>
+        </div>
+      )}
+    </nav>
   );
 }
 
