@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 // Custom icons
 import DashboardIcon from "@/assets/icons/Dashboard.svg";
@@ -64,7 +64,7 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
       {/* Top Header */}
       <header className="fixed top-0 right-0 left-0 h-16 bg-[#051839] z-50 flex items-center justify-between px-6">
         <div className="flex items-center">
-          <img src={logo} alt="Giftkal Logo" className="h-10" />
+          <img src={logoAsset.url} alt="Giftkal Logo" className="h-10" />
         </div>
         <Button
           variant="ghost"

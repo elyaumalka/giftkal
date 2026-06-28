@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, AlertTriangle, Monitor } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 type Status = "detecting" | "resolving" | "not-found" | "no-bridge" | "error";
 
@@ -92,7 +92,7 @@ export default function KioskEntry() {
       dir="rtl"
     >
       <div className="w-full max-w-md text-center">
-        <img src={logo} alt="Giftkal" className="h-14 mx-auto mb-8" />
+        <img src={logoAsset.url} alt="Giftkal" className="h-14 mx-auto mb-8" />
 
         {(status === "detecting" || status === "resolving") && (
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">

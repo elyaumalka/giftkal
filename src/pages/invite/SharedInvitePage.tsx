@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Download, FileSpreadsheet, Trash2, Users, Heart, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 type SideType = "groom" | "bride" | "general";
 
@@ -206,7 +206,7 @@ export default function SharedInvitePage() {
   if (!event) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F7F4] gap-4" dir="rtl">
-        <img src={logo} alt="Giftkal" className="h-12" />
+        <img src={logoAsset.url} alt="Giftkal" className="h-12" />
         <h1 className="text-2xl font-bold text-[#051839]">הקישור אינו תקף</h1>
         <p className="text-muted-foreground">ייתכן שהקישור פג תוקף או שאינו נכון.</p>
       </div>
@@ -218,7 +218,7 @@ export default function SharedInvitePage() {
       {/* Header */}
       <header className="bg-[#051839] text-white py-6 px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <img src={logo} alt="Giftkal" className="h-8 mx-auto mb-4 brightness-0 invert" />
+          <img src={logoAsset.url} alt="Giftkal" className="h-8 mx-auto mb-4 brightness-0 invert" />
           <h1 className="text-2xl font-bold mb-1">{getPageTitle()}</h1>
           <p className="text-[#C4A35A] font-medium text-lg">{getSideLabel()}</p>
           {event.event_date && (

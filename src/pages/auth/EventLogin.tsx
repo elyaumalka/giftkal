@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PartyPopper, LogIn, Eye, EyeOff, ArrowRight } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 const EventLogin = () => {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ const EventLogin = () => {
       <div className="relative z-10 w-full max-w-md mx-auto px-4">
         <div className="text-center mb-8">
           <Link to="/">
-            <img src={logo} alt="Giftkal" className="h-12 mx-auto mb-6" />
+            <img src={logoAsset.url} alt="Giftkal" className="h-12 mx-auto mb-6" />
           </Link>
         </div>
 

@@ -5,7 +5,7 @@ import { Loader2, Gift, Monitor, Download } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 interface HallInfo {
   id: string;
@@ -165,7 +165,7 @@ export default function KioskPage() {
             {hall?.logo_url ? (
               <img src={hall.logo_url} alt="" className="h-10 w-10 rounded-full object-cover" />
             ) : (
-              <img src={logo} alt="Giftkal" className="h-8" />
+              <img src={logoAsset.url} alt="Giftkal" className="h-8" />
             )}
             <span className="text-sm opacity-70">{hall?.name}</span>
           </div>
@@ -203,7 +203,7 @@ export default function KioskPage() {
             onClick={() => setShowLanding(true)}
           />
         ) : (
-          <img src={logo} alt="Giftkal" className="h-20 mx-auto" />
+          <img src={logoAsset.url} alt="Giftkal" className="h-20 mx-auto" />
         )}
 
         {/* Hall name */}
@@ -263,7 +263,7 @@ export default function KioskPage() {
         <div className="absolute bottom-6 left-0 right-0 text-center">
           <div className="flex items-center justify-center gap-2 text-white/20 text-sm">
             <span>Powered by</span>
-            <img src={logo} alt="Giftkal" className="h-5 opacity-30" />
+            <img src={logoAsset.url} alt="Giftkal" className="h-5 opacity-30" />
           </div>
         </div>
 

@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowLeft, Gift, Sparkles, Phone, MessageCircle, Mail, CreditCard, X, ChevronDown } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -383,7 +383,7 @@ export default function EventWelcome() {
             <img src={venue.logo_url} alt={venue?.name || ""} className="relative w-20 h-20 rounded-full border-2 border-[#C4A35A]/50 shadow-2xl object-cover bg-white/10 backdrop-blur-sm group-hover:scale-105 transition-transform" />
           ) : (
             <div className="relative w-20 h-20 rounded-full border-2 border-[#C4A35A]/50 shadow-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-              <img src={logo} alt="Giftkal" className="h-8 w-auto brightness-0 invert" />
+              <img src={logoAsset.url} alt="Giftkal" className="h-8 w-auto brightness-0 invert" />
             </div>
           )}
         </div>
@@ -433,7 +433,7 @@ export default function EventWelcome() {
 
         <div className="mt-4 flex items-center justify-center gap-2">
           <span className="text-white/25 text-[10px]">Powered by</span>
-          <img src={logo} alt="Giftkal" className="h-3 w-auto opacity-20" />
+          <img src={logoAsset.url} alt="Giftkal" className="h-3 w-auto opacity-20" />
         </div>
       </div>
 

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, X, Sparkles, Gift, Heart } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -187,7 +187,7 @@ export default function Login() {
           <div className="text-center mb-8">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-[#C4A35A]/30 blur-2xl rounded-full scale-150" />
-              <img src={logo} alt="Giftkal Logo" className="h-24 mx-auto relative z-10 drop-shadow-2xl" />
+              <img src={logoAsset.url} alt="Giftkal Logo" className="h-24 mx-auto relative z-10 drop-shadow-2xl" />
             </div>
             <h1 className="text-3xl font-bold text-white mt-6 mb-2">ברוכים הבאים</h1>
             <p className="text-[#C4A35A] text-lg">מערכת לגביית מתנות באירועים</p>

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Eye, EyeOff, ArrowLeft, Sparkles, CheckCircle } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -136,7 +136,7 @@ export default function ResetPassword() {
           <div className="text-center mb-8">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-[#C4A35A]/30 blur-2xl rounded-full scale-150" />
-              <img src={logo} alt="Giftkal Logo" className="h-24 mx-auto relative z-10 drop-shadow-2xl" />
+              <img src={logoAsset.url} alt="Giftkal Logo" className="h-24 mx-auto relative z-10 drop-shadow-2xl" />
             </div>
             <h1 className="text-3xl font-bold text-white mt-6 mb-2">איפוס סיסמה</h1>
             <p className="text-[#C4A35A] text-lg">הזן סיסמה חדשה</p>
