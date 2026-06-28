@@ -1,70 +1,69 @@
 /**
- * Landing page — בשמחות פלוס.
+ * Landing page — בשמחות פלוס / Giftkal
  *
- * Design brief from the brand collateral: warm wedding-luxury aesthetic, NOT
- * the generic Tailwind SaaS template. Cream candlelight base + deep navy text
- * + bold gold display type + burgundy accent (the heart from the brand mark).
- * Editorial spacing, asymmetric layouts, no card-grid of stock-icon features.
+ * Style: dark editorial fintech. Deep navy background, warm gold halo glow,
+ * floating product mockups, oversized display headline, stat strip, alternating
+ * dashboard-preview sections. Inspired by Duma — adapted to our brand
+ * (navy #051839 / gold #C9A35E / burgundy #7C2D3F) and Hebrew RTL typography.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import logoAsset from "@/assets/logo.png.asset.json";
 
 const BRAND = {
-  cream: "#F8F2E4",      // candlelight base
-  creamSoft: "#FBF7EC",
-  navy: "#0B1F4A",       // deep navy from the logo
-  navyDark: "#06143A",
-  gold: "#C9A35E",       // warm gold from the brand mark
-  goldLight: "#E5C988",
-  burgundy: "#7C2D3F",   // the heart accent
-  ink: "#1A2942",
-  mute: "#6B6B6B",
+  bg: "#050B1F",
+  bgSoft: "#0A1430",
+  navy: "#051839",
+  ink: "#0E1B3D",
+  line: "rgba(255,255,255,0.08)",
+  text: "#F4EFE3",
+  textDim: "rgba(244,239,227,0.62)",
+  gold: "#C9A35E",
+  goldSoft: "#E5C988",
+  goldDeep: "#95742F",
+  burgundy: "#C41E3A",
+  burgundyDeep: "#7C2D3F",
 };
+
+const FONT_DISPLAY =
+  "'Frank Ruhl Libre', 'Heebo', ui-serif, Georgia, serif";
+const FONT_SANS =
+  "'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 export default function HomePage() {
   return (
     <div
       dir="rtl"
-      className="text-[var(--navy)] overflow-x-hidden"
+      className="min-h-screen overflow-x-hidden"
       style={{
-        background: BRAND.cream,
-        ["--cream" as any]: BRAND.cream,
-        ["--cream-soft" as any]: BRAND.creamSoft,
-        ["--navy" as any]: BRAND.navy,
-        ["--navy-dark" as any]: BRAND.navyDark,
-        ["--gold" as any]: BRAND.gold,
-        ["--gold-light" as any]: BRAND.goldLight,
-        ["--burgundy" as any]: BRAND.burgundy,
-        ["--ink" as any]: BRAND.ink,
+        background: BRAND.bg,
+        color: BRAND.text,
+        fontFamily: FONT_SANS,
       }}
     >
       <TopNav />
       <Hero />
-      <Promise />
+      <StatStrip />
+      <ControlSection />
       <HowItWorks />
-      <FeatureMosaic />
       <ForVenues />
-      <Numbers />
       <Testimonial />
       <FAQ />
-      <FinalCTA />
+      <ContactCTA />
       <SiteFooter />
     </div>
   );
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
-   Sticky one-page navigation
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────── Nav */
 
-const NAV_LINKS = [
-  { id: "top", label: "דף ראשי" },
+const NAV = [
+  { id: "top", label: "ראשי" },
   { id: "how", label: "איך זה עובד" },
-  { id: "features", label: "מה מקבלים" },
+  { id: "features", label: "יתרונות" },
   { id: "venues", label: "בעלי אולמות" },
-  { id: "faq", label: "שאלות נפוצות" },
+  { id: "faq", label: "שאלות" },
   { id: "contact", label: "צור קשר" },
 ];
 
@@ -83,28 +82,22 @@ function TopNav() {
 
   useEffect(() => {
     const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) setActive(e.target.id);
-        });
-      },
-      { rootMargin: "-40% 0px -55% 0px", threshold: 0 }
+      (entries) =>
+        entries.forEach((e) => e.isIntersecting && setActive(e.target.id)),
+      { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
     );
-    NAV_LINKS.forEach((l) => {
+    NAV.forEach((l) => {
       const el = document.getElementById(l.id);
       if (el) obs.observe(el);
     });
     return () => obs.disconnect();
   }, []);
 
-  // Support deep-link hashes (#how, #contact …) when arriving from old marketing pages
   useEffect(() => {
     const hash = location.hash?.replace("#", "");
     if (!hash) return;
     const el = document.getElementById(hash);
-    if (el) {
-      setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
-    }
+    if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 60);
   }, [location.hash]);
 
   const go = (id: string) => (e: React.MouseEvent) => {
@@ -118,210 +111,316 @@ function TopNav() {
   };
 
   return (
-    <nav
-      dir="rtl"
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-[var(--cream)]/90 backdrop-blur-xl shadow-[0_4px_30px_-12px_rgba(11,31,74,0.18)] py-2"
-          : "bg-transparent py-4"
-      }`}
+    <header
+      className="fixed top-0 inset-x-0 z-50 transition-all duration-300"
+      style={{
+        background: scrolled ? "rgba(5,11,31,0.78)" : "transparent",
+        backdropFilter: scrolled ? "blur(18px) saturate(140%)" : "none",
+        borderBottom: scrolled ? `1px solid ${BRAND.line}` : "1px solid transparent",
+        padding: scrolled ? "10px 0" : "18px 0",
+      }}
     >
-      <div className="container mx-auto px-6 lg:px-12 flex items-center justify-between gap-4">
-        <a href="#top" onClick={go("top")} className="flex items-center gap-2 shrink-0">
-          <img src={logoAsset.url} alt="בשמחות פלוס" className="h-10 lg:h-12" />
+      <div className="container mx-auto px-6 lg:px-10 flex items-center justify-between gap-6">
+        <a href="#top" onClick={go("top")} className="flex items-center shrink-0">
+          <img src={logoAsset.url} alt="בשמחות פלוס" className="h-9 lg:h-11" />
         </a>
 
-        <ul className="hidden lg:flex items-center gap-7">
-          {NAV_LINKS.map((l) => (
-            <li key={l.id}>
-              <a
-                href={`#${l.id}`}
-                onClick={go(l.id)}
-                className={`text-sm font-bold tracking-wide transition-colors ${
-                  active === l.id
-                    ? "text-[var(--burgundy)]"
-                    : "text-[var(--navy)]/70 hover:text-[var(--navy)]"
-                }`}
-              >
+        <nav className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-full"
+             style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${BRAND.line}` }}>
+          {NAV.map((l) => (
+            <a
+              key={l.id}
+              href={`#${l.id}`}
+              onClick={go(l.id)}
+              className="relative px-4 py-2 text-[13px] font-medium rounded-full transition-colors"
+              style={{
+                color: active === l.id ? BRAND.bg : BRAND.textDim,
+                background: active === l.id ? BRAND.gold : "transparent",
+              }}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="w-1 h-1 rounded-full"
+                  style={{ background: active === l.id ? BRAND.bg : BRAND.gold }}
+                />
                 {l.label}
-              </a>
-            </li>
+              </span>
+            </a>
           ))}
-        </ul>
+        </nav>
 
         <div className="flex items-center gap-2">
-          <a
-            href="#contact"
-            onClick={go("contact")}
-            className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--navy)] text-[var(--cream)] text-sm font-bold hover:bg-[var(--navy-dark)] transition-colors"
-          >
-            דברו איתנו
-          </a>
           <Link
             to="/access"
-            className="hidden sm:inline-flex text-sm font-bold text-[var(--navy)]/70 hover:text-[var(--navy)] px-3 py-2"
+            className="hidden sm:inline-flex px-4 py-2 text-[13px] font-medium rounded-full transition-colors"
+            style={{ color: BRAND.textDim }}
           >
             כניסה
           </Link>
+          <a
+            href="#contact"
+            onClick={go("contact")}
+            className="inline-flex items-center px-5 py-2.5 text-[13px] font-bold rounded-full transition-all hover:scale-[1.02]"
+            style={{ background: BRAND.text, color: BRAND.bg }}
+          >
+            בואו נדבר
+          </a>
           <button
             aria-label="תפריט"
             onClick={() => setOpen((v) => !v)}
-            className="lg:hidden w-10 h-10 rounded-full bg-[var(--navy)]/5 flex items-center justify-center text-[var(--navy)]"
+            className="lg:hidden w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.06)" }}
           >
             <div className="space-y-1.5">
-              <span className="block w-5 h-0.5 bg-current" />
-              <span className="block w-5 h-0.5 bg-current" />
-              <span className="block w-5 h-0.5 bg-current" />
+              <span className="block w-4 h-px" style={{ background: BRAND.text }} />
+              <span className="block w-4 h-px" style={{ background: BRAND.text }} />
+              <span className="block w-4 h-px" style={{ background: BRAND.text }} />
             </div>
           </button>
         </div>
       </div>
 
       {open && (
-        <div className="lg:hidden bg-[var(--cream)] border-t border-[var(--navy)]/10 shadow-lg">
-          <ul className="container mx-auto px-6 py-4 space-y-1">
-            {NAV_LINKS.map((l) => (
+        <div
+          className="lg:hidden mx-4 mt-2 rounded-3xl overflow-hidden"
+          style={{ background: BRAND.bgSoft, border: `1px solid ${BRAND.line}` }}
+        >
+          <ul className="p-2">
+            {NAV.map((l) => (
               <li key={l.id}>
                 <a
                   href={`#${l.id}`}
                   onClick={go(l.id)}
-                  className={`block py-3 text-base font-bold ${
-                    active === l.id ? "text-[var(--burgundy)]" : "text-[var(--navy)]"
-                  }`}
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-2xl"
+                  style={{
+                    color: active === l.id ? BRAND.gold : BRAND.text,
+                    background: active === l.id ? "rgba(201,163,94,0.08)" : "transparent",
+                  }}
                 >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: BRAND.gold }}
+                  />
                   {l.label}
                 </a>
               </li>
             ))}
             <li>
-              <Link to="/access" className="block py-3 text-base font-bold text-[var(--navy)]/70">
+              <Link
+                to="/access"
+                className="block px-4 py-3 text-sm font-medium rounded-2xl"
+                style={{ color: BRAND.textDim }}
+              >
                 כניסה למערכת
               </Link>
             </li>
           </ul>
         </div>
       )}
-    </nav>
+    </header>
   );
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
-   Section: Hero
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────── Hero */
 
 function Hero() {
   return (
-    <section id="top" className="relative min-h-[100vh] flex items-center pt-28 pb-16 scroll-mt-24">
-      {/* Soft candlelight bokeh — pure CSS, no stock photo */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-1/4 -right-32 w-[480px] h-[480px] rounded-full opacity-30 blur-3xl"
-          style={{ background: `radial-gradient(circle, ${BRAND.gold}, transparent 70%)` }}
-        />
-        <div
-          className="absolute bottom-1/4 -left-40 w-[520px] h-[520px] rounded-full opacity-20 blur-3xl"
-          style={{ background: `radial-gradient(circle, ${BRAND.burgundy}, transparent 70%)` }}
-        />
-        <SparkleField />
-      </div>
+    <section
+      id="top"
+      className="relative pt-40 pb-24 lg:pt-48 lg:pb-32 scroll-mt-24 overflow-hidden"
+    >
+      {/* Halo arc glow */}
+      <div
+        aria-hidden
+        className="absolute left-1/2 -translate-x-1/2 -top-[55%] w-[180vw] h-[180vw] max-w-[1800px] max-h-[1800px] rounded-full pointer-events-none"
+        style={{
+          background: `radial-gradient(closest-side, ${BRAND.gold}55 0%, ${BRAND.burgundyDeep}22 35%, transparent 60%)`,
+          filter: "blur(20px)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="absolute left-1/2 -translate-x-1/2 -top-[54%] w-[180vw] h-[180vw] max-w-[1800px] max-h-[1800px] rounded-full pointer-events-none"
+        style={{
+          border: `2px solid ${BRAND.gold}`,
+          opacity: 0.35,
+          maskImage: "linear-gradient(to bottom, white 30%, transparent 55%)",
+          WebkitMaskImage: "linear-gradient(to bottom, white 30%, transparent 55%)",
+        }}
+      />
 
-      <div className="container mx-auto px-6 lg:px-12 relative">
-        <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border border-[var(--burgundy)]/20 bg-white/50 backdrop-blur">
-              <span className="w-2 h-2 rounded-full bg-[var(--burgundy)]" />
-              <span className="text-xs tracking-wide text-[var(--burgundy)] font-bold uppercase">בס״ד</span>
-              <span className="text-xs text-[var(--ink)]/60">· עמדות נדרים פלוס</span>
-            </div>
+      <div className="container mx-auto px-6 lg:px-10 relative">
+        <div className="max-w-3xl mx-auto text-center">
+          <span
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: `1px solid ${BRAND.line}`,
+              color: BRAND.textDim,
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: BRAND.gold }} />
+            מערכת המתנות מס׳ 1 בישראל
+          </span>
 
-            <h1
-              className="font-black leading-[0.95] tracking-tight text-[var(--navy)]"
-              style={{ fontSize: "clamp(3.2rem, 7vw, 6rem)" }}
+          <h1
+            className="mt-7 leading-[0.95] font-black tracking-tight"
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: "clamp(2.8rem, 7vw, 6rem)",
+              color: BRAND.text,
+            }}
+          >
+            מתנות דיגיטליות,
+            <br />
+            <span style={{ color: BRAND.goldSoft }}>אירועים שלמים.</span>
+          </h1>
+
+          <p
+            className="mt-6 text-base lg:text-lg max-w-xl mx-auto leading-relaxed"
+            style={{ color: BRAND.textDim }}
+          >
+            עמדה אחת באולם, אפליקציה אחת לאורח. כל מתנה זורמת ישירות לחשבון
+            הזוג — בלי תורים, בלי מזומן, בלי דאגות.
+          </p>
+
+          <div className="mt-10 flex items-center justify-center gap-3">
+            <a
+              href="#contact"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="px-7 py-3.5 rounded-full text-sm font-bold transition-transform hover:scale-[1.03]"
+              style={{ background: BRAND.gold, color: BRAND.bg }}
             >
-              לחגוג <br />
-              <span className="relative inline-block">
-                בראש שקט
-                <GoldSwoosh />
-              </span>
-              <span className="text-[var(--burgundy)]">.</span>
-            </h1>
-
-            <p className="mt-8 text-lg lg:text-xl text-[var(--ink)]/80 max-w-xl leading-relaxed">
-              מעכשיו מתנות לאירועים <strong className="text-[var(--burgundy)]">רק בכרטיס אשראי</strong>.
-              <br />
-              עמדת אשראי מתקדמת להענקת מתנות —
-              <span className="block mt-1">מאובטחת, מהירה, ובפריסה ארצית.</span>
-            </p>
-
-            <div className="mt-10 flex flex-wrap items-center gap-4">
-              <a
-                href="tel:02-3131700"
-                className="group relative inline-flex items-center gap-3 px-8 py-4 bg-[var(--navy)] text-[var(--cream)] font-bold rounded-full overflow-hidden transition-transform hover:scale-[1.02]"
-              >
-                <span className="relative z-10">להזמנת עמדה — 02-3131700</span>
-                <span aria-hidden className="relative z-10 text-[var(--gold)]">→</span>
-                <span className="absolute inset-0 bg-[var(--navy-dark)] translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              </a>
-              <Link
-                to="/event-owners"
-                className="inline-flex items-center gap-2 px-6 py-4 text-[var(--ink)] font-bold border-b-2 border-[var(--gold)] hover:border-[var(--burgundy)] transition-colors"
-              >
-                איך זה עובד?
-              </Link>
-            </div>
-
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-[var(--ink)]/70">
-              <Quickbit icon={<LockIcon />} label="מאובטח לחלוטין" />
-              <Quickbit icon={<ZapIcon />} label="3 דקות לסיום" />
-              <Quickbit icon={<MapPinIcon />} label="פריסה ארצית" />
-            </div>
+              להזמנת עמדה
+            </a>
+            <a
+              href="#how"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById("how")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="px-7 py-3.5 rounded-full text-sm font-bold transition-colors"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: `1px solid ${BRAND.line}`,
+                color: BRAND.text,
+              }}
+            >
+              איך זה עובד
+            </a>
           </div>
-
-          <HeroCard />
         </div>
-      </div>
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 opacity-40">
-        <span className="text-xs text-[var(--ink)]">גוללו לעוד</span>
-        <span className="block w-px h-8 bg-[var(--navy)]/40" />
+        {/* Floating cards */}
+        <FloatingCards />
       </div>
     </section>
   );
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
-   Section: Promise — three quiet promises with editorial typography
-   ─────────────────────────────────────────────────────────────────────────── */
+function FloatingCards() {
+  return (
+    <div className="relative mt-20 lg:mt-28 h-[300px] lg:h-[420px] flex items-center justify-center">
+      {/* Back card — gift */}
+      <div
+        className="absolute w-[280px] lg:w-[400px] aspect-[1.6/1] rounded-3xl p-6 lg:p-8 shadow-2xl"
+        style={{
+          background: `linear-gradient(135deg, ${BRAND.burgundyDeep} 0%, ${BRAND.burgundy} 100%)`,
+          transform: "translate(20%, -8%) rotate(-9deg)",
+          boxShadow: "0 40px 80px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08) inset",
+        }}
+      >
+        <div className="flex items-start justify-between text-[10px] lg:text-xs tracking-widest uppercase opacity-80">
+          <span>Gift Card</span>
+          <div className="flex gap-1">
+            <span className="w-5 h-5 lg:w-6 lg:h-6 rounded-full" style={{ background: BRAND.gold, opacity: 0.85 }} />
+            <span className="w-5 h-5 lg:w-6 lg:h-6 rounded-full -mr-2" style={{ background: BRAND.goldSoft, opacity: 0.7 }} />
+          </div>
+        </div>
+        <div
+          className="mt-8 lg:mt-14 font-black tabular-nums"
+          style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(1.4rem, 3vw, 2.2rem)" }}
+        >
+          ₪ 360
+        </div>
+        <div className="mt-3 lg:mt-5 flex items-end justify-between text-[10px] lg:text-xs opacity-80">
+          <div>
+            <p className="opacity-60">לכבוד</p>
+            <p className="font-bold tracking-wide mt-0.5">משפחת לוי</p>
+          </div>
+          <div className="text-left">
+            <p className="opacity-60">מאת</p>
+            <p className="font-bold tracking-wide mt-0.5">דוד וחנה</p>
+          </div>
+        </div>
+      </div>
 
-function Promise() {
-  const items = [
-    { kicker: "01", title: "בלי תורים", body: "האורח מעניק מתנה בעמדה. סיום מלא ב-3 דקות. ספירת מזומנים בסוף הלילה — נשארת מהעבר." },
-    { kicker: "02", title: "בלי לאבד מזומן", body: "כל מתנה נשמרת ישירות בחשבון הזוג בסליקה מאובטחת. אין סכנת אובדן, גניבה או טעויות." },
-    { kicker: "03", title: "בלי מורכבות", body: "מערכת מוכנה — עמדה מגיעה למקום, רצה על WiFi או 4G של האולם. אפס הקמה אצלכם." },
+      {/* Front card — receipt / kiosk */}
+      <div
+        className="absolute w-[280px] lg:w-[400px] aspect-[1.6/1] rounded-3xl p-6 lg:p-8 shadow-2xl"
+        style={{
+          background: `linear-gradient(135deg, ${BRAND.ink} 0%, ${BRAND.navy} 60%, ${BRAND.bgSoft} 100%)`,
+          transform: "translate(-20%, 12%) rotate(7deg)",
+          boxShadow: "0 40px 80px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(201,163,94,0.18) inset",
+        }}
+      >
+        <div className="flex items-start justify-between text-[10px] lg:text-xs tracking-widest uppercase" style={{ color: BRAND.goldSoft }}>
+          <span>עמדת מתנות</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: BRAND.gold }} />
+            <span>LIVE</span>
+          </div>
+        </div>
+        <div
+          className="mt-7 lg:mt-12 font-black tabular-nums"
+          style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(1.4rem, 3vw, 2.2rem)", color: BRAND.text }}
+        >
+          ₪ 248,500
+        </div>
+        <p className="text-[10px] lg:text-xs mt-1" style={{ color: BRAND.textDim }}>נסלק עד עכשיו · 412 אורחים</p>
+        <div className="mt-4 lg:mt-6 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+          <div className="h-full rounded-full" style={{ width: "78%", background: `linear-gradient(90deg, ${BRAND.gold}, ${BRAND.goldSoft})` }} />
+        </div>
+        <div className="mt-3 flex items-center justify-between text-[10px] lg:text-xs" style={{ color: BRAND.textDim }}>
+          <span>יעד: ₪320,000</span>
+          <span style={{ color: BRAND.goldSoft }}>78%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────── Stats */
+
+function StatStrip() {
+  const stats = [
+    { v: "100%", l: "כסף מאובטח" },
+    { v: "1,200+", l: "אירועים שבוצעו" },
+    { v: "4.9", l: "דירוג ממוצע" },
+    { v: "3 דק׳", l: "זמן מתנה ממוצע" },
   ];
   return (
-    <section id="why" className="relative py-24 lg:py-32 bg-[var(--cream-soft)] scroll-mt-24">
-      <div className="container mx-auto px-6 lg:px-12">
-        <header className="mb-16 max-w-2xl">
-          <p className="text-xs tracking-[0.3em] text-[var(--burgundy)] font-bold uppercase mb-3">למה לעבור</p>
-          <h2 className="font-black leading-tight text-[var(--navy)]" style={{ fontSize: "clamp(2.4rem, 4.5vw, 4rem)" }}>
-            שלושה דברים שכבר<br />
-            <span className="relative inline-block">
-              <span className="relative z-10">לא תפספסו.</span>
-              <span className="absolute -bottom-1 left-0 right-0 h-3 bg-[var(--gold)]/35 -z-0" />
-            </span>
-          </h2>
-        </header>
-
-        <div className="grid md:grid-cols-3 gap-px bg-[var(--navy)]/10">
-          {items.map((it) => (
-            <div key={it.kicker} className="bg-[var(--cream-soft)] p-8 lg:p-10">
-              <div className="flex items-baseline gap-3 mb-4">
-                <span className="text-[5rem] leading-none font-black text-[var(--gold)]">{it.kicker}</span>
-                <span className="h-px flex-1 bg-[var(--navy)]/15 mb-2" />
-              </div>
-              <h3 className="text-2xl font-black text-[var(--navy)] mb-3">{it.title}</h3>
-              <p className="text-[var(--ink)]/75 leading-relaxed">{it.body}</p>
+    <section className="relative py-16 lg:py-20 border-y" style={{ borderColor: BRAND.line }}>
+      <div className="container mx-auto px-6 lg:px-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6">
+          {stats.map((s) => (
+            <div key={s.l} className="text-center lg:text-right">
+              <p
+                className="font-black tabular-nums leading-none"
+                style={{
+                  fontFamily: FONT_DISPLAY,
+                  fontSize: "clamp(2.2rem, 4.5vw, 3.5rem)",
+                  color: BRAND.text,
+                }}
+              >
+                {s.v}
+              </p>
+              <p className="mt-3 text-sm" style={{ color: BRAND.textDim }}>
+                {s.l}
+              </p>
             </div>
           ))}
         </div>
@@ -330,161 +429,335 @@ function Promise() {
   );
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
-   Section: HowItWorks — vertical zigzag narrative
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────── Control / Features section */
 
-function HowItWorks() {
-  const steps = [
-    { title: "הזמנה", body: "מתקשרים אלינו, מתאמים תאריך ומקום. עמדה אחת או כמה — לפי כמות האורחים. שולחים את ההסכם בוואטסאפ." },
-    { title: "הקמה", body: "ביום האירוע אנחנו מגיעים שעתיים לפני. מקימים, מחברים לרשת, ובודקים שהכל זורם. אתם פנויים לעניין החשוב." },
-    { title: "המתנות זורמות", body: "כל אורח מעניק מתנה בקליק — סכום, ברכה, ושם. אם הוא רוצה תשלומים — גם זה אפשרי. רואים את הסכום שעלה בזמן אמת." },
-    { title: "סוף הערב", body: "בסיום: לא ספירה ולא דאגות. כל הסכום עובר ישירות לחשבון הזוג. אנחנו אורזים את העמדה ויוצאים, בשקט." },
-  ];
-
+function ControlSection() {
   return (
-    <section id="how" className="relative py-24 lg:py-32 scroll-mt-24">
-      <div className="container mx-auto px-6 lg:px-12">
-        <header className="mb-20 max-w-3xl">
-          <p className="text-xs tracking-[0.3em] text-[var(--burgundy)] font-bold uppercase mb-3">איך זה עובד</p>
-          <h2 className="font-black leading-tight text-[var(--navy)]" style={{ fontSize: "clamp(2.4rem, 4.5vw, 4rem)" }}>
-            ארבעה צעדים. <br />
-            <span className="text-[var(--gold)]">אחד עליכם, שלושה אצלנו.</span>
-          </h2>
-        </header>
+    <section
+      id="features"
+      className="relative py-24 lg:py-36 scroll-mt-24"
+    >
+      <div className="container mx-auto px-6 lg:px-10">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <span
+              className="inline-flex px-4 py-1.5 rounded-full text-xs font-medium"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: `1px solid ${BRAND.line}`,
+                color: BRAND.textDim,
+              }}
+            >
+              מה מקבלים
+            </span>
+            <h2
+              className="mt-6 leading-[1.05] font-black"
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontSize: "clamp(2.2rem, 4.5vw, 4rem)",
+                color: BRAND.text,
+              }}
+            >
+              שליטה מלאה
+              <br />
+              <span style={{ color: BRAND.goldSoft }}>על כל מתנה.</span>
+            </h2>
+            <p className="mt-6 text-base lg:text-lg leading-relaxed max-w-md" style={{ color: BRAND.textDim }}>
+              דשבורד אישי שמלווה אתכם מהרגע שאישרתם עמדה ועד שאחרון האורחים
+              עזב. רואים מי תרם, כמה, ומתי — בזמן אמת.
+            </p>
 
-        <div className="relative">
-          {/* Vertical thread */}
-          <div className="absolute right-6 md:right-1/2 top-2 bottom-2 w-px bg-[var(--gold)]/30 md:translate-x-[0.5px]" />
-
-          <ol className="space-y-14 lg:space-y-20">
-            {steps.map((step, i) => (
-              <li key={i} className="relative pr-12 md:pr-0">
-                {/* Step dot */}
-                <span className="absolute right-6 md:right-1/2 top-2 md:-translate-x-1/2 -translate-x-[7px] w-3.5 h-3.5 rounded-full bg-[var(--burgundy)] ring-4 ring-[var(--cream)]" />
-
-                <div className="grid md:grid-cols-2 gap-6 md:gap-12 items-center">
-                  <div className={`${i % 2 === 0 ? "md:order-2 md:pr-10" : "md:order-1 md:pl-10 md:text-left md:items-end"} flex flex-col`}>
-                    <span
-                      className="font-black text-[var(--navy)]/[0.08] leading-none"
-                      style={{ fontSize: "clamp(6rem, 14vw, 12rem)" }}
-                    >
-                      0{i + 1}
-                    </span>
+            <ul className="mt-10 space-y-5">
+              {[
+                { t: "מעקב חי", d: "כל מתנה מופיעה תוך שניות בדשבורד." },
+                { t: "ברכות אישיות", d: "כל אורח מוסיף הקדשה, וידאו או הודעה קולית." },
+                { t: "סליקה ישירה", d: "הכסף עובר ישירות לחשבון הזוג, ללא תיווך." },
+              ].map((f) => (
+                <li key={f.t} className="flex gap-4">
+                  <span
+                    className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5"
+                    style={{
+                      background: "rgba(201,163,94,0.1)",
+                      border: `1px solid ${BRAND.gold}44`,
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 12l5 5L20 7" stroke={BRAND.gold} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <div>
+                    <p className="font-bold text-base" style={{ color: BRAND.text }}>{f.t}</p>
+                    <p className="text-sm mt-1" style={{ color: BRAND.textDim }}>{f.d}</p>
                   </div>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-                  <div className={`${i % 2 === 0 ? "md:order-1 md:pl-10 md:text-left" : "md:order-2 md:pr-10"}`}>
-                    <h3 className="text-3xl lg:text-4xl font-black text-[var(--navy)] mb-3">{step.title}</h3>
-                    <p className="text-lg text-[var(--ink)]/75 leading-relaxed max-w-md">{step.body}</p>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ol>
+          <DashboardPreview />
         </div>
       </div>
     </section>
   );
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
-   Section: FeatureMosaic — asymmetric bento
-   ─────────────────────────────────────────────────────────────────────────── */
-
-function FeatureMosaic() {
+function DashboardPreview() {
   return (
-    <section id="features" className="py-24 lg:py-32 bg-[var(--cream-soft)] scroll-mt-24">
-      <div className="container mx-auto px-6 lg:px-12">
-        <header className="mb-16 max-w-2xl">
-          <p className="text-xs tracking-[0.3em] text-[var(--burgundy)] font-bold uppercase mb-3">מה מקבלים</p>
-          <h2 className="font-black leading-tight text-[var(--navy)]" style={{ fontSize: "clamp(2.4rem, 4.5vw, 4rem)" }}>
-            כל מה שצריך, <br />
-            ואפס מה שלא.
+    <div className="relative">
+      <div
+        aria-hidden
+        className="absolute -inset-10 rounded-[40px] pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 50% 50%, ${BRAND.gold}33 0%, transparent 60%)`,
+          filter: "blur(40px)",
+        }}
+      />
+
+      {/* Main card: weekly gifts */}
+      <div
+        className="relative rounded-3xl p-6 lg:p-7"
+        style={{
+          background: `linear-gradient(180deg, ${BRAND.bgSoft} 0%, ${BRAND.navy} 100%)`,
+          border: `1px solid ${BRAND.line}`,
+          boxShadow: "0 30px 80px -20px rgba(0,0,0,0.5)",
+        }}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest" style={{ color: BRAND.textDim }}>
+              סך מתנות
+            </p>
+            <p
+              className="mt-2 font-black tabular-nums leading-none"
+              style={{ fontFamily: FONT_DISPLAY, fontSize: "2.5rem", color: BRAND.text }}
+            >
+              ₪ 312,840
+            </p>
+          </div>
+          <span
+            className="px-3 py-1 rounded-full text-xs font-bold"
+            style={{ background: `${BRAND.gold}22`, color: BRAND.goldSoft }}
+          >
+            +18% השבוע
+          </span>
+        </div>
+
+        {/* Chart */}
+        <div className="mt-6 h-32 relative">
+          <svg viewBox="0 0 300 100" className="w-full h-full" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={BRAND.gold} stopOpacity="0.4" />
+                <stop offset="100%" stopColor={BRAND.gold} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M0,80 L40,65 L80,72 L120,40 L160,48 L200,25 L240,32 L300,15 L300,100 L0,100 Z"
+              fill="url(#chartFill)"
+            />
+            <path
+              d="M0,80 L40,65 L80,72 L120,40 L160,48 L200,25 L240,32 L300,15"
+              fill="none"
+              stroke={BRAND.gold}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx="300" cy="15" r="4" fill={BRAND.goldSoft} />
+          </svg>
+        </div>
+        <div className="mt-2 flex justify-between text-[11px]" style={{ color: BRAND.textDim }}>
+          {["א", "ב", "ג", "ד", "ה", "ו", "ש"].map((d) => (
+            <span key={d}>{d}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Floating mini card */}
+      <div
+        className="absolute -bottom-8 -right-6 lg:-right-10 w-[240px] rounded-2xl p-5"
+        style={{
+          background: BRAND.bg,
+          border: `1px solid ${BRAND.line}`,
+          boxShadow: "0 30px 60px -10px rgba(0,0,0,0.7)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center font-black"
+            style={{ background: BRAND.burgundy, color: BRAND.text, fontFamily: FONT_DISPLAY }}
+          >
+            ר
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold truncate" style={{ color: BRAND.text }}>רחל מ.</p>
+            <p className="text-xs" style={{ color: BRAND.textDim }}>זה עתה תרמה</p>
+          </div>
+          <p
+            className="font-black tabular-nums text-base"
+            style={{ color: BRAND.goldSoft, fontFamily: FONT_DISPLAY }}
+          >
+            ₪500
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────── How it works */
+
+function HowItWorks() {
+  const steps = [
+    { n: "01", t: "הזמנה", d: "מתקשרים, מתאמים תאריך ומקום, וחותמים בוואטסאפ. תוך 5 דקות." },
+    { n: "02", t: "הקמה", d: "מגיעים שעתיים לפני האירוע, מתקינים את העמדה, וזורמים." },
+    { n: "03", t: "מתנות בזמן אמת", d: "האורחים מעניקים בקליק. אתם רואים כל מתנה כשהיא קורית." },
+    { n: "04", t: "סוף הערב", d: "בלי ספירה, בלי מזומן. הכסף כבר בחשבון הזוג." },
+  ];
+  return (
+    <section
+      id="how"
+      className="relative py-24 lg:py-36 scroll-mt-24"
+      style={{ background: BRAND.bgSoft }}
+    >
+      <div className="container mx-auto px-6 lg:px-10">
+        <div className="max-w-2xl">
+          <span
+            className="inline-flex px-4 py-1.5 rounded-full text-xs font-medium"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: `1px solid ${BRAND.line}`,
+              color: BRAND.textDim,
+            }}
+          >
+            התהליך
+          </span>
+          <h2
+            className="mt-6 leading-[1.05] font-black"
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: "clamp(2.2rem, 4.5vw, 4rem)",
+              color: BRAND.text,
+            }}
+          >
+            ארבעה שלבים.
+            <br />
+            <span style={{ color: BRAND.goldSoft }}>ערב אחד מושלם.</span>
           </h2>
-        </header>
+        </div>
 
-        <div className="grid grid-cols-12 gap-4 lg:gap-6">
-          {/* Large feature: secure */}
-          <div className="col-span-12 md:col-span-7 bg-[var(--navy)] text-[var(--cream)] rounded-3xl p-8 lg:p-10 flex flex-col justify-between relative overflow-hidden min-h-[360px]">
-            <div>
-              <p className="text-[var(--gold)] text-xs tracking-[0.3em] font-bold uppercase mb-3">אבטחה ברמת בנק</p>
-              <h3 className="text-3xl lg:text-4xl font-black mb-4 leading-tight">
-                כל אגורה<br />במקום שלה.
-              </h3>
-              <p className="text-[var(--cream)]/70 max-w-md leading-relaxed">
-                סליקה מבוצעת ישירות מול חברת אשראי מורשית. שום מזומן עובר אצלנו, שום נתון של כרטיס לא נשמר אצלנו.
-                המתנה עוברת מהאורח לחשבון הזוג. נקודה.
+        <div className="mt-16 grid sm:grid-cols-2 lg:grid-cols-4 gap-px"
+             style={{ background: BRAND.line }}>
+          {steps.map((s) => (
+            <div
+              key={s.n}
+              className="p-8 lg:p-10 transition-colors hover:bg-white/[0.02]"
+              style={{ background: BRAND.bgSoft }}
+            >
+              <p
+                className="font-black"
+                style={{
+                  fontFamily: FONT_DISPLAY,
+                  fontSize: "3rem",
+                  color: BRAND.gold,
+                  opacity: 0.9,
+                  lineHeight: 1,
+                }}
+              >
+                {s.n}
               </p>
+              <h3 className="mt-6 text-xl font-bold" style={{ color: BRAND.text }}>{s.t}</h3>
+              <p className="mt-3 text-sm leading-relaxed" style={{ color: BRAND.textDim }}>{s.d}</p>
             </div>
-            <div className="flex items-center gap-6 mt-6 pt-6 border-t border-[var(--cream)]/15">
-              <Stat big="100%" small="הצפנת SSL" />
-              <Stat big="PCI-DSS" small="עמידה בתקן" />
-              <Stat big="EMV" small="כרטיס חכם" />
-            </div>
-            <svg viewBox="0 0 200 200" className="absolute -bottom-12 -left-12 w-64 h-64 opacity-10">
-              <circle cx="100" cy="100" r="80" stroke={BRAND.gold} strokeWidth="1" fill="none" />
-              <circle cx="100" cy="100" r="60" stroke={BRAND.gold} strokeWidth="1" fill="none" />
-              <circle cx="100" cy="100" r="40" stroke={BRAND.gold} strokeWidth="1" fill="none" />
-            </svg>
-          </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
-          {/* Speed */}
-          <div className="col-span-12 md:col-span-5 bg-white rounded-3xl p-8 flex flex-col justify-between min-h-[240px]">
-            <div>
-              <p className="text-[var(--burgundy)] text-xs tracking-[0.3em] font-bold uppercase mb-3">מהירות</p>
-              <h3 className="text-2xl font-black text-[var(--navy)] mb-2">מתנה ב-3 דקות.</h3>
-              <p className="text-[var(--ink)]/70 text-sm">ממוצע אמיתי מאלפי עסקאות שעברו אצלנו.</p>
-            </div>
-            <p className="text-[6rem] leading-none font-black text-[var(--gold)] self-end -mb-3">
-              3<span className="text-2xl text-[var(--ink)] mr-1">דק׳</span>
-            </p>
-          </div>
+/* ───────────────────────────────────────────────────────────── For venues */
 
-          {/* Installments */}
-          <div className="col-span-12 md:col-span-5 bg-white rounded-3xl p-6 flex items-center gap-5 min-h-[120px]">
-            <div className="w-14 h-14 rounded-full bg-[var(--burgundy)]/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-2xl font-black text-[var(--burgundy)] leading-none">+</span>
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-[var(--navy)]">תשלומים? אין בעיה.</h3>
-              <p className="text-sm text-[var(--ink)]/70">האורח מחלק את המתנה — עד 12 תשלומים.</p>
-            </div>
-          </div>
+function ForVenues() {
+  return (
+    <section id="venues" className="relative py-24 lg:py-36 scroll-mt-24 overflow-hidden">
+      <div
+        aria-hidden
+        className="absolute top-0 right-1/4 w-[600px] h-[600px] rounded-full pointer-events-none"
+        style={{
+          background: `radial-gradient(circle, ${BRAND.burgundy}22 0%, transparent 60%)`,
+          filter: "blur(60px)",
+        }}
+      />
 
-          {/* Nationwide */}
-          <div className="col-span-12 md:col-span-7 bg-white rounded-3xl p-7">
-            <p className="text-[var(--burgundy)] text-xs tracking-[0.3em] font-bold uppercase mb-3">פריסה ארצית</p>
-            <h3 className="text-2xl font-black text-[var(--navy)] mb-3">מהדרום עד הגליל.</h3>
-            <p className="text-[var(--ink)]/70 leading-relaxed mb-4">
-              אולמות בכל הארץ עובדים איתנו. עמדה מגיעה לכל מקום — באר שבע, ירושלים, בני ברק, חיפה, צפת.
-            </p>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {["ירושלים", "בני ברק", "בית שמש", "אשדוד", "מודיעין עילית", "חיפה", "צפת", "באר שבע"].map((c) => (
-                <span key={c} className="px-3 py-1 rounded-full bg-[var(--gold)]/10 text-[var(--ink)]">{c}</span>
+      <div className="container mx-auto px-6 lg:px-10 relative">
+        <div className="grid lg:grid-cols-[1fr_1.1fr] gap-16 items-center">
+          <div className="order-2 lg:order-1">
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { v: "+34%", l: "הכנסה ממוצעת לאירוע" },
+                { v: "0₪", l: "השקעה ראשונית" },
+                { v: "24/7", l: "תמיכה טכנית" },
+                { v: "100%", l: "מיתוג של האולם" },
+              ].map((c) => (
+                <div
+                  key={c.l}
+                  className="rounded-2xl p-6 lg:p-7"
+                  style={{
+                    background: BRAND.bgSoft,
+                    border: `1px solid ${BRAND.line}`,
+                  }}
+                >
+                  <p
+                    className="font-black tabular-nums leading-none"
+                    style={{ fontFamily: FONT_DISPLAY, fontSize: "2.2rem", color: BRAND.goldSoft }}
+                  >
+                    {c.v}
+                  </p>
+                  <p className="mt-3 text-sm" style={{ color: BRAND.textDim }}>{c.l}</p>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Blessings */}
-          <div className="col-span-12 md:col-span-7 bg-[var(--gold)]/15 border border-[var(--gold)]/30 rounded-3xl p-7 relative overflow-hidden">
-            <p className="text-[var(--burgundy)] text-xs tracking-[0.3em] font-bold uppercase mb-3">ברכות</p>
-            <h3 className="text-2xl font-black text-[var(--navy)] mb-3">לא רק כסף — גם מילים.</h3>
-            <p className="text-[var(--ink)]/75 leading-relaxed max-w-md">
-              לכל מתנה מצרפים ברכה אישית, תמונה, וגם סרטון קצר. הזוג מקבל גלריה דיגיטלית מלאה — לזכר חיי הנישואין.
+          <div className="order-1 lg:order-2">
+            <span
+              className="inline-flex px-4 py-1.5 rounded-full text-xs font-medium"
+              style={{
+                background: `${BRAND.burgundy}22`,
+                border: `1px solid ${BRAND.burgundy}55`,
+                color: BRAND.text,
+              }}
+            >
+              לבעלי אולמות
+            </span>
+            <h2
+              className="mt-6 leading-[1.05] font-black"
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontSize: "clamp(2.2rem, 4.5vw, 4rem)",
+                color: BRAND.text,
+              }}
+            >
+              שירות יוקרתי, <br />
+              <span style={{ color: BRAND.goldSoft }}>בלי לוגיסטיקה.</span>
+            </h2>
+            <p className="mt-6 text-base lg:text-lg leading-relaxed max-w-lg" style={{ color: BRAND.textDim }}>
+              משכירים לכם עמדות לפי אירוע, חודש או שותפות. אתם מציעים שירות
+              פרימיום ללקוחות — אנחנו דואגים לכל השאר.
             </p>
-            <svg className="absolute -bottom-2 -left-2 w-28 h-28 opacity-25" viewBox="0 0 100 100">
-              <path d="M50 82 Q28 60 28 38 Q28 18 50 18 Q72 18 72 38 Q72 60 50 82 Z" fill={BRAND.burgundy} />
-            </svg>
-          </div>
-
-          {/* Dashboard */}
-          <div className="col-span-12 md:col-span-5 bg-white rounded-3xl p-7 flex flex-col justify-between min-h-[200px]">
-            <div>
-              <p className="text-[var(--burgundy)] text-xs tracking-[0.3em] font-bold uppercase mb-3">שליטה מלאה</p>
-              <h3 className="text-2xl font-black text-[var(--navy)] mb-3">דשבורד בזמן אמת.</h3>
-              <p className="text-[var(--ink)]/70 leading-relaxed text-sm">
-                לזוג ולמנהל האירוע — מבט חי על כמה נכנס, ממי, ומה הברכות שצורפו.
-              </p>
+            <div className="mt-10 flex gap-3">
+              <a
+                href="#contact"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="px-7 py-3.5 rounded-full text-sm font-bold transition-transform hover:scale-[1.03]"
+                style={{ background: BRAND.gold, color: BRAND.bg }}
+              >
+                לפרטים ושותפויות
+              </a>
             </div>
           </div>
         </div>
@@ -493,191 +766,126 @@ function FeatureMosaic() {
   );
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
-   Section: ForVenues
-   ─────────────────────────────────────────────────────────────────────────── */
-
-function ForVenues() {
-  return (
-    <section id="venues" className="bg-[var(--navy)] text-[var(--cream)] scroll-mt-24">
-      <div className="container mx-auto px-6 lg:px-12 py-20 lg:py-28">
-        <header className="mb-14 max-w-2xl">
-          <p className="text-xs tracking-[0.3em] text-[var(--gold)] font-bold uppercase mb-3">לבעלי אולמות</p>
-          <h2 className="font-black leading-tight" style={{ fontSize: "clamp(2.4rem, 4.5vw, 4rem)" }}>
-            רוצים להציע<br />
-            <span className="text-[var(--gold)]">שירות יוקרתי</span> בלי להחזיק עמדות?
-          </h2>
-          <p className="mt-6 text-lg text-[var(--cream)]/75 max-w-xl">
-            אנחנו משכירים לכם עמדות לפי אירוע, לפי חודש, או על בסיס שותפות. אתם מציעים את השירות ללקוחות — אנחנו מטפלים בלוגיסטיקה.
-          </p>
-        </header>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-[var(--cream)]/5 backdrop-blur border border-[var(--cream)]/10 rounded-3xl p-8 lg:p-10">
-            <h3 className="text-2xl font-black mb-4 flex items-center gap-3">
-              <span className="text-[var(--gold)]">→</span>
-              השכרה לפי אירוע
-            </h3>
-            <ul className="space-y-3 mb-6 text-[var(--cream)]/85">
-              <ListBullet>עמדה אחת או כמה לפי כמות האורחים</ListBullet>
-              <ListBullet>הקמה ופירוק — אנחנו</ListBullet>
-              <ListBullet>תמיכה טכנית בזמן האירוע</ListBullet>
-              <ListBullet>תמחור הוגן, ללא הפתעות</ListBullet>
-            </ul>
-            <a
-              href="tel:02-3131700"
-              className="inline-flex items-center gap-2 text-[var(--gold)] hover:text-[var(--gold-light)] font-bold border-b border-[var(--gold)]/40 pb-1"
-            >
-              לפרטים ומחירים →
-            </a>
-          </div>
-
-          <div className="bg-[var(--burgundy)] rounded-3xl p-8 lg:p-10 relative overflow-hidden">
-            <h3 className="text-2xl font-black mb-4 flex items-center gap-3 text-[var(--cream)]">
-              <span className="text-[var(--gold-light)]">★</span>
-              שותפות אסטרטגית
-            </h3>
-            <ul className="space-y-3 mb-6 text-[var(--cream)]/85">
-              <ListBullet>עמדות קבועות באולם שלכם</ListBullet>
-              <ListBullet>נתח מכל אירוע שעובר</ListBullet>
-              <ListBullet>מיתוג משותף, שיווק משותף</ListBullet>
-              <ListBullet>גישה מלאה לדשבורד אנליטיקה</ListBullet>
-            </ul>
-            <a
-              href="tel:02-3131700"
-              className="inline-flex items-center gap-2 text-[var(--gold-light)] hover:text-[var(--cream)] font-bold border-b border-[var(--gold-light)]/40 pb-1"
-            >
-              נדבר על שותפות →
-            </a>
-            <div aria-hidden className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[var(--gold)]/15" />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
-   Section: Numbers
-   ─────────────────────────────────────────────────────────────────────────── */
-
-function Numbers() {
-  const numbers = [
-    { figure: "₪3.2M", label: "בסליקה עברו בשנה האחרונה" },
-    { figure: "1,200+", label: "אירועים שכבר התקיימו" },
-    { figure: "97%", label: "מהאורחים סיימו תוך פחות מ-4 דקות" },
-  ];
-  return (
-    <section className="py-24 lg:py-32">
-      <div className="container mx-auto px-6 lg:px-12">
-        <p className="text-xs tracking-[0.3em] text-[var(--burgundy)] font-bold uppercase mb-16 text-center">המספרים מדברים</p>
-        <div className="grid md:grid-cols-3 gap-12 lg:gap-6 text-center">
-          {numbers.map((n) => (
-            <div key={n.label}>
-              <p className="font-black text-[var(--navy)] leading-none" style={{ fontSize: "clamp(3rem, 7vw, 6.5rem)" }}>
-                {n.figure}
-              </p>
-              <p className="mt-3 text-[var(--ink)]/65 text-sm max-w-[16rem] mx-auto">{n.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
-   Section: Testimonial
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────── Testimonial */
 
 function Testimonial() {
   return (
-    <section className="py-24 lg:py-32 bg-[var(--cream-soft)]">
-      <div className="container mx-auto px-6 lg:px-12 max-w-4xl">
-        <span className="block text-[8rem] leading-none text-[var(--gold)] -mb-10 font-black" dir="ltr">”</span>
-        <p className="text-2xl lg:text-4xl font-bold text-[var(--navy)] leading-snug relative z-10">
-          הזמנו עמדה לחתונה של 600 אורחים, בערב אחד עברו 480 מתנות בלי שאף אחד הרגיש שהוא ממתין בתור.
-          כשהגיע בוקר אחרי החתונה — כל הכסף כבר היה בחשבון. <span className="text-[var(--burgundy)]">בלי דאגות.</span>
+    <section className="relative py-24 lg:py-32">
+      <div className="container mx-auto px-6 lg:px-10 max-w-4xl text-center">
+        <span
+          className="inline-block text-7xl lg:text-9xl font-black leading-none"
+          style={{ color: BRAND.gold, fontFamily: FONT_DISPLAY }}
+          dir="ltr"
+        >
+          ”
+        </span>
+        <p
+          className="-mt-4 lg:-mt-8 leading-snug font-medium"
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: "clamp(1.5rem, 3vw, 2.5rem)",
+            color: BRAND.text,
+          }}
+        >
+          הזמנו עמדה לחתונה של 600 אורחים. בערב אחד עברו 480 מתנות בלי שאף
+          אחד הרגיש שהוא ממתין בתור. בבוקר — כל הכסף כבר היה בחשבון.{" "}
+          <span style={{ color: BRAND.goldSoft }}>בלי דאגות.</span>
         </p>
-        <footer className="mt-8 flex items-center gap-4 text-[var(--ink)]/70">
-          <div className="h-px w-12 bg-[var(--gold)]" />
+        <div className="mt-10 flex items-center justify-center gap-4 text-sm" style={{ color: BRAND.textDim }}>
+          <span className="h-px w-12" style={{ background: BRAND.gold }} />
           <span>
-            <span className="font-black text-[var(--navy)]">משפחת לוי</span>
-            <span className="mx-2">·</span>
-            חתונה באולם "פאר ים", אשדוד
+            <strong style={{ color: BRAND.text }}>משפחת לוי</strong> · אולם פאר ים, אשדוד
           </span>
-        </footer>
+        </div>
       </div>
     </section>
   );
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
-   Section: FAQ
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────── FAQ */
 
 function FAQ() {
   const items = [
-    { q: "מה המחיר?", a: "המחיר משתנה לפי כמות אורחים, מספר עמדות, ואם זה אירוע חד-פעמי או שותפות מתמשכת. מומלץ להתקשר 02-3131700 לקבלת הצעת מחיר תוך 5 דקות." },
-    { q: "האם צריך לחבר את העמדה לאינטרנט?", a: "העמדה עובדת על 4G מובנה. אם יש WiFi באולם — נשמח. אם אין — אנחנו מסתדרים." },
-    { q: "מה קורה אם האורח טועה ומעניק פעמיים?", a: "כל מתנה נסלקת רק לאחר אישור מפורש. במקרה של טעות, ניתן לבטל באמצעות צוות התמיכה שלנו תוך 24 שעות." },
-    { q: "האם המתנות נכנסות לחשבון של הזוג מיד?", a: "כן. כל מתנה זורמת ישירות לחשבון בנק של הזוג (בכפוף לזמני הסליקה של חברת האשראי — לרוב 1-3 ימי עסקים)." },
-    { q: "האם אפשר לקבל ברכות עם המתנות?", a: "בוודאי. כל אורח יכול לצרף ברכה כתובה, תמונה, ואף סרטון קצר. הזוג מקבל את הכל בחבילה דיגיטלית לאחר האירוע." },
+    { q: "מה המחיר?", a: "המחיר נקבע לפי כמות אורחים, מספר עמדות וסוג האירוע. התקשרו 02-3131700 לקבלת הצעת מחיר תוך 5 דקות." },
+    { q: "האם צריך אינטרנט באולם?", a: "העמדה עובדת על 4G מובנה. אם יש WiFi באולם — מעולה. אם אין — אנחנו מסודרים." },
+    { q: "מתי הכסף מגיע לחשבון?", a: "תוך 1-3 ימי עסקים. הסליקה ישירה לחשבון של הזוג, ללא תיווך וללא חסימת כספים." },
+    { q: "מה אם אורח טועה בסכום?", a: "ניתן לבטל או לתקן מתנה תוך 30 דקות מההזמנה — גם דרך האפליקציה, גם דרכנו." },
+    { q: "כמה זמן לוקח להקים?", a: "אנחנו מגיעים שעתיים לפני האירוע, מקימים תוך 20 דקות, ובודקים שהכל זורם." },
   ];
-
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-24 lg:py-32 scroll-mt-24">
-      <div className="container mx-auto px-6 lg:px-12">
-        <div className="grid md:grid-cols-[0.4fr_0.6fr] gap-12">
-          <header>
-            <p className="text-xs tracking-[0.3em] text-[var(--burgundy)] font-bold uppercase mb-3">שאלות נפוצות</p>
-            <h2 className="font-black leading-tight text-[var(--navy)]" style={{ fontSize: "clamp(2.4rem, 4.5vw, 4rem)" }}>
-              לפני שאתם<br />
-              <span className="text-[var(--gold)]">מתקשרים אלינו.</span>
+    <section
+      id="faq"
+      className="relative py-24 lg:py-36 scroll-mt-24"
+      style={{ background: BRAND.bgSoft }}
+    >
+      <div className="container mx-auto px-6 lg:px-10">
+        <div className="grid lg:grid-cols-[1fr_1.4fr] gap-16">
+          <div>
+            <span
+              className="inline-flex px-4 py-1.5 rounded-full text-xs font-medium"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: `1px solid ${BRAND.line}`,
+                color: BRAND.textDim,
+              }}
+            >
+              שאלות נפוצות
+            </span>
+            <h2
+              className="mt-6 leading-[1.05] font-black"
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontSize: "clamp(2rem, 4vw, 3.5rem)",
+                color: BRAND.text,
+              }}
+            >
+              שאלה?
+              <br />
+              <span style={{ color: BRAND.goldSoft }}>יש תשובה.</span>
             </h2>
-            <p className="mt-4 text-[var(--ink)]/70">
-              עוד שאלה?{" "}
-              <a
-                href="tel:02-3131700"
-                className="text-[var(--burgundy)] font-bold border-b border-[var(--burgundy)]/50 hover:text-[var(--navy)]"
-              >
-                חייגו 02-3131700
-              </a>
+            <p className="mt-6 text-sm leading-relaxed max-w-xs" style={{ color: BRAND.textDim }}>
+              לא מצאתם את התשובה? התקשרו 02-3131700 ונשמח לעזור.
             </p>
-          </header>
+          </div>
 
           <div className="space-y-3">
             {items.map((it, i) => {
               const isOpen = open === i;
               return (
-                <div key={i} className="border-b border-[var(--navy)]/10 pb-2">
-                  <button
-                    onClick={() => setOpen(isOpen ? null : i)}
-                    className="w-full flex items-center justify-between gap-4 py-4 text-right group"
-                  >
-                    <span
-                      className={`text-lg font-bold transition-colors ${
-                        isOpen ? "text-[var(--burgundy)]" : "text-[var(--navy)] group-hover:text-[var(--burgundy)]"
-                      }`}
-                    >
+                <button
+                  key={it.q}
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  className="w-full text-right rounded-2xl p-6 lg:p-7 transition-colors"
+                  style={{
+                    background: isOpen ? BRAND.bg : "rgba(255,255,255,0.025)",
+                    border: `1px solid ${isOpen ? BRAND.gold + "55" : BRAND.line}`,
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="font-bold text-base lg:text-lg" style={{ color: BRAND.text }}>
                       {it.q}
                     </span>
                     <span
-                      className={`flex-shrink-0 w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
-                        isOpen ? "bg-[var(--burgundy)] border-[var(--burgundy)] text-[var(--cream)] rotate-45" : "border-[var(--navy)]/30 text-[var(--navy)]"
-                      }`}
+                      className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-transform"
+                      style={{
+                        background: isOpen ? BRAND.gold : "rgba(255,255,255,0.06)",
+                        color: isOpen ? BRAND.bg : BRAND.text,
+                        transform: isOpen ? "rotate(45deg)" : "none",
+                      }}
                     >
-                      +
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
                     </span>
-                  </button>
-                  <div className={`grid transition-all duration-300 ${isOpen ? "grid-rows-[1fr] opacity-100 pb-4" : "grid-rows-[0fr] opacity-0"}`}>
-                    <div className="overflow-hidden">
-                      <p className="text-[var(--ink)]/75 leading-relaxed pl-12">{it.a}</p>
-                    </div>
                   </div>
-                </div>
+                  {isOpen && (
+                    <p className="mt-4 text-sm leading-relaxed" style={{ color: BRAND.textDim }}>
+                      {it.a}
+                    </p>
+                  )}
+                </button>
               );
             })}
           </div>
@@ -687,251 +895,106 @@ function FAQ() {
   );
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
-   Section: Final CTA
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────── Contact CTA */
 
-function FinalCTA() {
+function ContactCTA() {
   return (
-    <section id="contact" className="relative py-24 lg:py-32 bg-[var(--navy-dark)] text-[var(--cream)] overflow-hidden scroll-mt-24">
-      <div aria-hidden className="absolute top-0 inset-x-0 h-px bg-gradient-to-l from-transparent via-[var(--gold)] to-transparent" />
+    <section id="contact" className="relative py-28 lg:py-40 scroll-mt-24 overflow-hidden">
       <div
         aria-hidden
-        className="absolute top-1/2 -translate-y-1/2 -right-32 w-96 h-96 rounded-full opacity-15"
-        style={{ background: `radial-gradient(circle, ${BRAND.gold}, transparent 70%)` }}
+        className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-[110vw] h-[110vw] max-w-[1200px] max-h-[1200px] rounded-full pointer-events-none"
+        style={{
+          background: `radial-gradient(circle, ${BRAND.gold}22 0%, ${BRAND.burgundy}11 40%, transparent 65%)`,
+          filter: "blur(40px)",
+        }}
       />
 
-      <div className="container mx-auto px-6 lg:px-12 relative text-center max-w-3xl">
-        <p className="text-xs tracking-[0.3em] text-[var(--gold)] font-bold uppercase mb-6">להזמנת עמדה</p>
-        <h2 className="font-black leading-tight" style={{ fontSize: "clamp(2.6rem, 5vw, 4.5rem)" }}>
+      <div className="container mx-auto px-6 lg:px-10 relative text-center max-w-3xl">
+        <span
+          className="inline-flex px-4 py-1.5 rounded-full text-xs font-medium"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            border: `1px solid ${BRAND.line}`,
+            color: BRAND.textDim,
+          }}
+        >
+          להזמנת עמדה
+        </span>
+        <h2
+          className="mt-6 leading-[0.98] font-black"
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: "clamp(2.6rem, 6vw, 5rem)",
+            color: BRAND.text,
+          }}
+        >
           זה הזמן <br />
-          <span className="text-[var(--gold)]">לדבר איתנו.</span>
+          <span style={{ color: BRAND.goldSoft }}>לדבר איתנו.</span>
         </h2>
-        <p className="mt-6 text-lg text-[var(--cream)]/75">
-          תאמינו, אחרי האירוע שלכם — לא תרצו להחזיר את העמדה.
-          <br />
-          חייגו ונפתח לכם תאריך תוך 5 דקות.
+        <p className="mt-6 text-base lg:text-lg" style={{ color: BRAND.textDim }}>
+          חייגו ונפתח לכם תאריך תוך 5 דקות. ובלי לחץ — גם בוואטסאפ זה עובד.
         </p>
 
-        <div className="mt-12 inline-flex flex-col items-center gap-3">
+        <div className="mt-12 flex flex-col items-center gap-3">
           <a
             href="tel:02-3131700"
-            className="group inline-flex items-center gap-5 px-12 py-6 bg-[var(--gold)] text-[var(--navy-dark)] rounded-full transition-all hover:bg-[var(--gold-light)] hover:scale-[1.02]"
+            className="group inline-flex items-center gap-4 px-10 py-5 rounded-full transition-all hover:scale-[1.02]"
+            style={{ background: BRAND.gold, color: BRAND.bg }}
           >
-            <span className="text-3xl lg:text-4xl font-black">02-3131700</span>
-            <span aria-hidden className="text-2xl">←</span>
+            <span
+              className="font-black tabular-nums"
+              style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(1.8rem, 3vw, 2.5rem)" }}
+            >
+              02-3131700
+            </span>
+            <span aria-hidden className="text-xl">←</span>
           </a>
-          <a href="mailto:g023131700@gmail.com" className="text-sm text-[var(--cream)]/60 hover:text-[var(--gold-light)] transition-colors">
-            g023131700@gmail.com
-          </a>
+          <div className="flex items-center gap-4 mt-2 text-sm" style={{ color: BRAND.textDim }}>
+            <a href="mailto:g023131700@gmail.com" className="hover:underline">g023131700@gmail.com</a>
+            <span>·</span>
+            <a href="https://wa.me/97223131700" target="_blank" rel="noreferrer" className="hover:underline">WhatsApp</a>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-/* ───────────────────────────────────────────────────────────────────────────
-   Footer
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────── Footer */
 
 function SiteFooter() {
   return (
-    <footer className="bg-[var(--navy)] text-[var(--cream)]/60 py-12">
-      <div className="container mx-auto px-6 lg:px-12">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 text-sm">
+    <footer
+      className="border-t py-12"
+      style={{ borderColor: BRAND.line, background: BRAND.bg }}
+    >
+      <div className="container mx-auto px-6 lg:px-10">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 text-sm">
           <div>
-            <p className="text-[var(--cream)] font-black text-lg mb-1">בשמחות פלוס</p>
-            <p>נותנים מתנה בקליק</p>
-            <p className="text-xs mt-2 text-[var(--cream)]/40">מופעל ע״י עמדות נדרים פלוס</p>
+            <img src={logoAsset.url} alt="בשמחות פלוס" className="h-10 mb-4" />
+            <p style={{ color: BRAND.textDim }}>נותנים מתנה בקליק</p>
+            <p className="text-xs mt-1" style={{ color: BRAND.textDim, opacity: 0.7 }}>מופעל ע״י עמדות נדרים פלוס</p>
           </div>
-          <div className="flex flex-wrap gap-x-8 gap-y-2">
-            <a href="#how" className="hover:text-[var(--gold)]">איך זה עובד</a>
-            <a href="#features" className="hover:text-[var(--gold)]">מה מקבלים</a>
-            <a href="#venues" className="hover:text-[var(--gold)]">בעלי אולמות</a>
-            <a href="#faq" className="hover:text-[var(--gold)]">שאלות נפוצות</a>
-            <a href="#contact" className="hover:text-[var(--gold)]">צור קשר</a>
-            <Link to="/access" className="hover:text-[var(--gold)]">כניסה למערכת</Link>
+          <div className="flex flex-wrap gap-x-6 gap-y-3" style={{ color: BRAND.textDim }}>
+            {NAV.map((l) => (
+              <a key={l.id} href={`#${l.id}`} className="hover:opacity-100 transition-opacity"
+                 style={{ opacity: 0.75 }}>
+                {l.label}
+              </a>
+            ))}
+            <Link to="/access" className="hover:opacity-100 transition-opacity" style={{ opacity: 0.75 }}>
+              כניסה למערכת
+            </Link>
           </div>
         </div>
-        <div className="mt-10 pt-6 border-t border-[var(--cream)]/10 text-xs text-[var(--cream)]/40 flex flex-col md:flex-row justify-between gap-3">
+        <div
+          className="mt-10 pt-6 border-t text-xs flex flex-col md:flex-row justify-between gap-3"
+          style={{ borderColor: BRAND.line, color: BRAND.textDim, opacity: 0.7 }}
+        >
           <span>© {new Date().getFullYear()} בשמחות פלוס. כל הזכויות שמורות.</span>
           <span>02-3131700 · g023131700@gmail.com</span>
         </div>
       </div>
     </footer>
-  );
-}
-
-/* ───────────────────────────────────────────────────────────────────────────
-   Decorative + reused bits
-   ─────────────────────────────────────────────────────────────────────────── */
-
-function HeroCard() {
-  return (
-    <div className="relative h-[460px] lg:h-[560px] flex items-center justify-center">
-      <div className="relative w-[300px] lg:w-[360px]" style={{ transform: "rotate(-8deg)" }}>
-        {/* Credit card */}
-        <div
-          className="relative aspect-[1.586/1] rounded-2xl overflow-hidden"
-          style={{
-            background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyDark} 100%)`,
-            boxShadow: "0 30px 60px -20px rgba(0,0,0,0.4), 0 18px 36px -18px rgba(11,31,74,0.5)",
-          }}
-        >
-          {/* Chip */}
-          <div
-            className="absolute top-7 right-7 w-11 h-8 rounded-md"
-            style={{
-              background: `linear-gradient(135deg, ${BRAND.gold} 0%, ${BRAND.goldLight} 50%, ${BRAND.gold} 100%)`,
-              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.3)",
-            }}
-          >
-            <div className="absolute inset-1 grid grid-cols-2 grid-rows-2 gap-px opacity-50" style={{ background: BRAND.navyDark }} />
-          </div>
-          {/* Contactless icon */}
-          <div className="absolute top-9 right-24 text-[var(--gold)] opacity-80">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M8 4 Q14 12 8 20" />
-              <path d="M12 6 Q16 12 12 18" />
-              <path d="M16 8 Q18 12 16 16" />
-            </svg>
-          </div>
-          {/* Card number */}
-          <div className="absolute bottom-20 right-7 left-7 font-mono text-[var(--cream)] text-lg tracking-widest" dir="ltr">
-            1234 5678 9012 3456
-          </div>
-          {/* Brand mark */}
-          <div className="absolute bottom-7 right-7">
-            <span className="text-[var(--gold)] font-black text-sm tracking-wider">בשמחות+</span>
-            <p className="text-[var(--cream)]/60 text-[10px] mt-0.5">מתנה. בקליק.</p>
-          </div>
-          {/* Foil */}
-          <div
-            className="absolute bottom-7 left-7 w-10 h-7 rounded-sm opacity-40"
-            style={{ background: `linear-gradient(45deg, ${BRAND.gold}, ${BRAND.goldLight}, ${BRAND.gold})` }}
-          />
-        </div>
-
-        <Ribbon />
-
-        {/* Floating heart */}
-        <div className="absolute -top-8 -left-8 w-16 h-16 flex items-center justify-center bg-[var(--cream)] rounded-full shadow-lg">
-          <svg viewBox="0 0 32 32" className="w-7 h-7" fill={BRAND.burgundy}>
-            <path d="M16 28 C 6 20, 4 12, 10 8 C 13 6, 16 8, 16 11 C 16 8, 19 6, 22 8 C 28 12, 26 20, 16 28 Z" />
-          </svg>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Ribbon() {
-  return (
-    <div aria-hidden className="absolute -top-12 left-1/2 -translate-x-1/2 w-full pointer-events-none">
-      <svg viewBox="0 0 200 120" className="w-full">
-        <ellipse cx="100" cy="80" rx="14" ry="10" fill={BRAND.gold} stroke={BRAND.navyDark} strokeWidth="0.4" />
-        <path d="M86 78 Q 50 35, 30 55 Q 25 75, 60 85 Q 78 85, 86 80 Z" fill={BRAND.gold} stroke={BRAND.navyDark} strokeWidth="0.4" />
-        <path d="M114 78 Q 150 35, 170 55 Q 175 75, 140 85 Q 122 85, 114 80 Z" fill={BRAND.gold} stroke={BRAND.navyDark} strokeWidth="0.4" />
-        <path d="M92 88 Q 75 105, 70 118 L 90 118 L 100 90 Z" fill={BRAND.goldLight} stroke={BRAND.navyDark} strokeWidth="0.4" />
-        <path d="M108 88 Q 125 105, 130 118 L 110 118 L 100 90 Z" fill={BRAND.gold} stroke={BRAND.navyDark} strokeWidth="0.4" />
-        <ellipse cx="100" cy="78" rx="6" ry="4" fill={BRAND.goldLight} opacity="0.6" />
-      </svg>
-    </div>
-  );
-}
-
-function GoldSwoosh() {
-  return (
-    <svg viewBox="0 0 320 30" preserveAspectRatio="none" className="absolute -bottom-3 right-0 w-full h-4">
-      <path d="M 4 22 Q 80 4, 160 14 T 316 8" stroke={BRAND.gold} strokeWidth="4" fill="none" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function Quickbit({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="w-7 h-7 rounded-full bg-[var(--gold)]/15 text-[var(--burgundy)] flex items-center justify-center">{icon}</span>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function Stat({ big, small }: { big: string; small: string }) {
-  return (
-    <div>
-      <p className="text-[var(--gold)] font-black text-lg">{big}</p>
-      <p className="text-[var(--cream)]/60 text-xs mt-0.5">{small}</p>
-    </div>
-  );
-}
-
-function ListBullet({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2.5">
-      <span className="w-1.5 h-1.5 rounded-full bg-[var(--gold)] mt-2.5 flex-shrink-0" />
-      <span>{children}</span>
-    </li>
-  );
-}
-
-function SparkleField() {
-  const sparkleRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!sparkleRef.current) return;
-    const container = sparkleRef.current;
-    container.innerHTML = "";
-    const count = 18;
-    for (let i = 0; i < count; i++) {
-      const dot = document.createElement("span");
-      dot.className = "absolute rounded-full pointer-events-none";
-      dot.style.cssText = `
-        width: ${2 + Math.random() * 3}px;
-        height: ${2 + Math.random() * 3}px;
-        background: ${BRAND.gold};
-        opacity: ${0.25 + Math.random() * 0.45};
-        left: ${Math.random() * 100}%;
-        top: ${Math.random() * 100}%;
-        box-shadow: 0 0 ${4 + Math.random() * 8}px ${BRAND.gold};
-        animation: bsmHomeSparkle ${3 + Math.random() * 4}s ease-in-out infinite;
-        animation-delay: ${Math.random() * 5}s;
-      `;
-      container.appendChild(dot);
-    }
-  }, []);
-  return (
-    <>
-      <div ref={sparkleRef} className="absolute inset-0" />
-      <style>{`
-        @keyframes bsmHomeSparkle {
-          0%, 100% { transform: scale(1); opacity: 0.3; }
-          50% { transform: scale(1.5); opacity: 1; }
-        }
-      `}</style>
-    </>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2">
-      <rect x="5" y="11" width="14" height="9" rx="2" />
-      <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-    </svg>
-  );
-}
-function ZapIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
-      <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" />
-    </svg>
-  );
-}
-function MapPinIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2">
-      <path d="M12 22s8-7.58 8-13a8 8 0 1 0-16 0c0 5.42 8 13 8 13z" />
-      <circle cx="12" cy="9" r="2.5" />
-    </svg>
   );
 }
