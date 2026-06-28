@@ -10,7 +10,7 @@ import {
   UserPlus, Eye, EyeOff, ArrowRight, ArrowLeft, CreditCard, Send,
   Monitor, BarChart3, CheckCircle2, Loader2, Gift, Sparkles, Tag
 } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 /* ─── Plan items ─── */
 const PLANS = [
@@ -393,7 +393,7 @@ const Signup = () => {
         {/* Logo */}
         <div className="text-center mb-6">
           <Link to="/">
-            <img src={logo} alt="Giftkal" className="h-12 mx-auto mb-4" />
+            <img src={logoAsset.url} alt="Giftkal" className="h-12 mx-auto mb-4" />
           </Link>
         </div>
 

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, HelpCircle, Baby, Loader2, PartyPopper, Heart } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 type RsvpChoice = "confirmed" | "declined" | "maybe" | null;
 
@@ -105,7 +105,7 @@ export default function PublicRSVP() {
   if (!event || !guest) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F7F4] gap-4" dir="rtl">
-        <img src={logo} alt="Giftkal" className="h-10" />
+        <img src={logoAsset.url} alt="Giftkal" className="h-10" />
         <p className="text-muted-foreground">טוען...</p>
       </div>
     );
@@ -141,7 +141,7 @@ export default function PublicRSVP() {
             רוצה לשנות תשובה?
           </button>
           <div className="pt-4">
-            <img src={logo} alt="Giftkal" className="h-6 mx-auto opacity-40" />
+            <img src={logoAsset.url} alt="Giftkal" className="h-6 mx-auto opacity-40" />
           </div>
         </div>
       </div>
@@ -158,7 +158,7 @@ export default function PublicRSVP() {
     <div className="min-h-screen bg-[#F8F7F4]" dir="rtl">
       {/* Header */}
       <header className="bg-[#051839] text-white py-8 px-4 text-center">
-        <img src={logo} alt="Giftkal" className="h-8 mx-auto mb-5 brightness-0 invert" />
+        <img src={logoAsset.url} alt="Giftkal" className="h-8 mx-auto mb-5 brightness-0 invert" />
         <h1 className="text-2xl font-bold mb-2">{getEventTitle()}</h1>
         {event.event_date && (
           <p className="text-white/60 text-sm">

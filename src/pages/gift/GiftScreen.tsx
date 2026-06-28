@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Gift, Heart, CreditCard, Check, ArrowLeft, ArrowRight, Sparkles, Loader2, X, Home, Video, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 import PayMeIframe from "@/components/payment/PayMeIframe";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { computeBreakdown, formatILS, type FeeMode } from "@/lib/fees";
@@ -415,7 +415,7 @@ export default function GiftScreen() {
           {(event.venues as any)?.logo_url && (
             <img src={(event.venues as any).logo_url} alt="" className="w-9 h-9 rounded-full border border-[#C4A35A]/40 object-cover" />
           )}
-          <img src={logo} alt="Giftkal" className="h-6 w-auto brightness-0 invert opacity-60" />
+          <img src={logoAsset.url} alt="Giftkal" className="h-6 w-auto brightness-0 invert opacity-60" />
         </div>
       </div>
 
@@ -909,7 +909,7 @@ export default function GiftScreen() {
           </button>
           <div className="flex items-center justify-center gap-2">
             <span className="text-white/20 text-[10px]">Powered by</span>
-            <img src={logo} alt="Giftkal" className="h-3 w-auto opacity-15" />
+            <img src={logoAsset.url} alt="Giftkal" className="h-3 w-auto opacity-15" />
           </div>
         </div>
       </div>

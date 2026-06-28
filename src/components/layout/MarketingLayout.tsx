@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Phone, Mail, MessageCircle, LogIn, X } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 const navLinks = [
   { label: "דף ראשי", href: "/" },
@@ -34,7 +34,7 @@ const MarketingNavbar = () => {
     }`}>
       <div className="container mx-auto px-4 flex items-center justify-between">
         <Link to="/">
-          <img src={logo} alt="Giftkal" className="h-10 md:h-12" />
+          <img src={logoAsset.url} alt="Giftkal" className="h-10 md:h-12" />
         </Link>
 
         <div className="hidden lg:flex items-center gap-5">
@@ -105,7 +105,7 @@ const MarketingFooter = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           <div className="md:col-span-2">
-            <img src={logo} alt="Giftkal" className="h-14 mb-6" />
+            <img src={logoAsset.url} alt="Giftkal" className="h-14 mb-6" />
             <p className="text-white/60 text-sm max-w-md leading-relaxed">
               Giftkal - הפלטפורמה המובילה לגביית מתנות דיגיטליות באירועים.
               מערכת פשוטה, מאובטחת ואלגנטית.

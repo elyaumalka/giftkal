@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { PartyPopper, Building2, Gift, UserPlus, ArrowRight } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 const AccessPage = () => {
   const panels = [
@@ -17,7 +17,7 @@ const AccessPage = () => {
       <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <Link to="/">
-            <img src={logo} alt="Giftkal" className="h-14 mx-auto mb-8" />
+            <img src={logoAsset.url} alt="Giftkal" className="h-14 mx-auto mb-8" />
           </Link>
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
             ברוכים הבאים ל-<span className="text-gradient-gold">Giftkal</span>

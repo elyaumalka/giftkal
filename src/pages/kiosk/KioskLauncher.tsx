@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Monitor, ArrowLeft, Calendar, MapPin } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 interface LookupResult {
   entity_type: "hall" | "venue";
@@ -121,7 +121,7 @@ export default function KioskLauncher() {
       <div className="w-full max-w-3xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <img src={logo} alt="Giftkal" className="h-14 mx-auto mb-4" />
+          <img src={logoAsset.url} alt="Giftkal" className="h-14 mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-white mb-2">השקת קיוסק</h1>
           <p className="text-white/60">הכניסו קוד גישה לבחירת אולם או אירוע</p>
         </div>
