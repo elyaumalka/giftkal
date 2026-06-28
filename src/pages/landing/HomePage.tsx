@@ -628,7 +628,7 @@ function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section className="py-24 lg:py-32">
+    <section id="faq" className="py-24 lg:py-32 scroll-mt-24">
       <div className="container mx-auto px-6 lg:px-12">
         <div className="grid md:grid-cols-[0.4fr_0.6fr] gap-12">
           <header>
