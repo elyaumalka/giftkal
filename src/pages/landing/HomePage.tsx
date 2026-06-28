@@ -693,7 +693,7 @@ function FAQ() {
 
 function FinalCTA() {
   return (
-    <section className="relative py-24 lg:py-32 bg-[var(--navy-dark)] text-[var(--cream)] overflow-hidden">
+    <section id="contact" className="relative py-24 lg:py-32 bg-[var(--navy-dark)] text-[var(--cream)] overflow-hidden scroll-mt-24">
       <div aria-hidden className="absolute top-0 inset-x-0 h-px bg-gradient-to-l from-transparent via-[var(--gold)] to-transparent" />
       <div
         aria-hidden
