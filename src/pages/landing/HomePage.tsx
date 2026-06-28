@@ -343,7 +343,7 @@ function HowItWorks() {
   ];
 
   return (
-    <section className="relative py-24 lg:py-32">
+    <section id="how" className="relative py-24 lg:py-32 scroll-mt-24">
       <div className="container mx-auto px-6 lg:px-12">
         <header className="mb-20 max-w-3xl">
           <p className="text-xs tracking-[0.3em] text-[var(--burgundy)] font-bold uppercase mb-3">איך זה עובד</p>
