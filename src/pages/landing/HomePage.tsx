@@ -211,7 +211,7 @@ function TopNav() {
 
 function Hero() {
   return (
-    <section className="relative min-h-[100vh] flex items-center pt-24 pb-16">
+    <section id="top" className="relative min-h-[100vh] flex items-center pt-28 pb-16 scroll-mt-24">
       {/* Soft candlelight bokeh — pure CSS, no stock photo */}
       <div className="absolute inset-0 pointer-events-none">
         <div
