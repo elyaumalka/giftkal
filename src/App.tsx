@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 
 // Auth
@@ -15,13 +15,6 @@ import AccessPage from "./pages/auth/AccessPage";
 
 // Landing / Marketing
 import HomePage from "./pages/landing/HomePage";
-import MarketingLayout from "./components/layout/MarketingLayout";
-import VenueOwners from "./pages/marketing/VenueOwners";
-import EventOwnersPage from "./pages/marketing/EventOwners";
-import Benefits from "./pages/marketing/Benefits";
-import Pricing from "./pages/marketing/Pricing";
-import Testimonials from "./pages/marketing/Testimonials";
-import Contact from "./pages/marketing/Contact";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -89,16 +82,14 @@ function App() {
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Marketing pages with shared nav/footer */}
-          <Route element={<MarketingLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/venues-page" element={<VenueOwners />} />
-            <Route path="/event-owners" element={<EventOwnersPage />} />
-            <Route path="/benefits" element={<Benefits />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/testimonials-page" element={<Testimonials />} />
-            <Route path="/contact" element={<Contact />} />
-          </Route>
+          {/* Single one-page marketing site. Old marketing routes redirect to the relevant section. */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/venues-page" element={<Navigate to="/#venues" replace />} />
+          <Route path="/event-owners" element={<Navigate to="/#how" replace />} />
+          <Route path="/benefits" element={<Navigate to="/#features" replace />} />
+          <Route path="/pricing" element={<Navigate to="/#contact" replace />} />
+          <Route path="/testimonials-page" element={<Navigate to="/#faq" replace />} />
+          <Route path="/contact" element={<Navigate to="/#contact" replace />} />
           <Route path="/access" element={<AccessPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/event" element={<EventLogin />} />
