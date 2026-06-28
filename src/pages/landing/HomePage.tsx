@@ -499,7 +499,7 @@ function FeatureMosaic() {
 
 function ForVenues() {
   return (
-    <section className="bg-[var(--navy)] text-[var(--cream)]">
+    <section id="venues" className="bg-[var(--navy)] text-[var(--cream)] scroll-mt-24">
       <div className="container mx-auto px-6 lg:px-12 py-20 lg:py-28">
         <header className="mb-14 max-w-2xl">
           <p className="text-xs tracking-[0.3em] text-[var(--gold)] font-bold uppercase mb-3">לבעלי אולמות</p>
