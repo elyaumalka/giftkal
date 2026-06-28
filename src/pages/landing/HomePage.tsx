@@ -745,10 +745,11 @@ function SiteFooter() {
             <p className="text-xs mt-2 text-[var(--cream)]/40">מופעל ע״י עמדות נדרים פלוס</p>
           </div>
           <div className="flex flex-wrap gap-x-8 gap-y-2">
-            <Link to="/event-owners" className="hover:text-[var(--gold)]">לבעלי אירועים</Link>
-            <Link to="/venues-page" className="hover:text-[var(--gold)]">לבעלי אולמות</Link>
-            <Link to="/pricing" className="hover:text-[var(--gold)]">מחירים</Link>
-            <Link to="/contact" className="hover:text-[var(--gold)]">צור קשר</Link>
+            <a href="#how" className="hover:text-[var(--gold)]">איך זה עובד</a>
+            <a href="#features" className="hover:text-[var(--gold)]">מה מקבלים</a>
+            <a href="#venues" className="hover:text-[var(--gold)]">בעלי אולמות</a>
+            <a href="#faq" className="hover:text-[var(--gold)]">שאלות נפוצות</a>
+            <a href="#contact" className="hover:text-[var(--gold)]">צור קשר</a>
             <Link to="/access" className="hover:text-[var(--gold)]">כניסה למערכת</Link>
           </div>
         </div>
