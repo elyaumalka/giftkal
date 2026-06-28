@@ -15,13 +15,6 @@ import AccessPage from "./pages/auth/AccessPage";
 
 // Landing / Marketing
 import HomePage from "./pages/landing/HomePage";
-import MarketingLayout from "./components/layout/MarketingLayout";
-import VenueOwners from "./pages/marketing/VenueOwners";
-import EventOwnersPage from "./pages/marketing/EventOwners";
-import Benefits from "./pages/marketing/Benefits";
-import Pricing from "./pages/marketing/Pricing";
-import Testimonials from "./pages/marketing/Testimonials";
-import Contact from "./pages/marketing/Contact";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
