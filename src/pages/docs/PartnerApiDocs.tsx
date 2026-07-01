@@ -5,7 +5,7 @@ import { ArrowLeft, Copy, Check, Download } from "lucide-react";
 import { useState } from "react";
 // @ts-ignore - vite raw import
 import mdContent from "@/content/partner-api.md?raw";
-import logoAsset from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 export default function PartnerApiDocs() {
   const [copied, setCopied] = useState(false);
@@ -32,7 +32,7 @@ export default function PartnerApiDocs() {
       <header className="sticky top-0 z-40 bg-[#051839]/95 backdrop-blur text-white border-b border-white/10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-3">
-            <img src={logoAsset} alt="Giftkal" className="h-9 w-auto" />
+            <img src={logoAsset.url} alt="Giftkal" className="h-9 w-auto" />
             <span className="text-sm text-white/70 hidden sm:inline">Partner API Documentation</span>
           </Link>
           <div className="flex items-center gap-2">
