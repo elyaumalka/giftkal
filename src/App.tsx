@@ -71,6 +71,7 @@ import KioskEntry from "./pages/kiosk/KioskEntry";
 import YemotApiDocs from "./pages/api/YemotApiDocs";
 import SystemApiDocs from "./pages/api/SystemApiDocs";
 import NedarimApiDocs from "./pages/api/NedarimApiDocs";
+import PartnerApiDocs from "./pages/docs/PartnerApiDocs";
 
 const queryClient = new QueryClient();
 
