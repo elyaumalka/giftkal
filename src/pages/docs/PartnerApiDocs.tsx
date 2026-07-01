@@ -55,7 +55,7 @@ export default function PartnerApiDocs() {
       </header>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-6 py-12" dir="ltr">
+      <main className="max-w-4xl mx-auto px-6 py-12" dir="rtl">
         <article className="prose prose-slate max-w-none bg-white rounded-2xl shadow-sm p-8 md:p-12
           prose-headings:text-[#051839]
           prose-h1:text-4xl prose-h1:font-bold prose-h1:mb-2
