@@ -5,7 +5,7 @@ import { ArrowLeft, Copy, Check, Download } from "lucide-react";
 import { useState } from "react";
 // @ts-ignore - vite raw import
 import mdContent from "@/content/partner-api.md?raw";
-import logoAsset from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 export default function PartnerApiDocs() {
   const [copied, setCopied] = useState(false);
