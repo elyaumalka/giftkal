@@ -112,6 +112,8 @@ function App() {
           <Route path="/api/yemot" element={<YemotApiDocs />} />
           <Route path="/api/docs" element={<SystemApiDocs />} />
           <Route path="/api/nedarim" element={<NedarimApiDocs />} />
+          <Route path="/docs/partner-api" element={<PartnerApiDocs />} />
+
 
           {/* Admin routes */}
           <Route path="/admin" element={<AdminLayout />}>
