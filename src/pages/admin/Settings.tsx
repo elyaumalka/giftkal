@@ -819,10 +819,21 @@ export default function Settings() {
       {activeTab === "partners" && (
         <div className="space-y-6">
           <div className="flex items-start justify-between gap-4">
-            <p className="text-sm text-muted-foreground max-w-2xl">
-              שותף = מערכת חיצונית (למשל ספק אישורי הגעה) שיוצרת אצלך אירועים דרך ה-API.
-              לכל שותף — webhook URL מאובטח (HMAC-SHA256), מפתחות API ייעודיים, וגישה רק לאירועים שהוא יצר.
-            </p>
+            <div className="max-w-2xl space-y-2">
+              <p className="text-sm text-muted-foreground">
+                שותף = מערכת חיצונית (למשל ספק אישורי הגעה) שיוצרת אצלך אירועים דרך ה-API.
+                לכל שותף — webhook URL מאובטח (HMAC-SHA256), מפתחות API ייעודיים, וגישה רק לאירועים שהוא יצר.
+              </p>
+              <a
+                href="/docs/partner-api"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-[#95742F] hover:underline font-medium"
+              >
+                📄 מסמך API לשותפים (קישור לשליחה)
+                <span className="text-xs text-muted-foreground ltr">/docs/partner-api</span>
+              </a>
+            </div>
             <button
               onClick={() => setIsAddPartnerOpen(true)}
               className="w-10 h-10 rounded-full bg-[#1a2942] text-white flex items-center justify-center hover:bg-[#243a56] transition-colors flex-shrink-0"
@@ -830,6 +841,7 @@ export default function Settings() {
               <Plus className="w-5 h-5" />
             </button>
           </div>
+
 
           <div className="grid grid-cols-[1fr_2fr_1.5fr_1fr_auto] gap-4 px-6 py-3 text-sm font-medium text-muted-foreground text-center">
             <span>שם השותף</span>
