@@ -421,7 +421,7 @@ if (!hash_equals($expected, $_SERVER['HTTP_X_GIFTKAL_SIGNATURE'] ?? '')) {
 - **Idempotency** ב-`CreateEventOwner` — טפלו בשגיאת `email already registered` כאילו המשתמש קיים.
 - **סיסמאות** — שלחו סיסמה אקראית ארוכה ואל תשמרו אותה. המשתמש יאפס דרך Giftkal.
 - **קבצי KYC** — השתמשו ב-PDF < 5MB. שלחו רק Base64 של המידע (בלי `data:...;base64,`).
-- **תאריכים** — בכל ה-API בפורמט ISO 8601. **חריגים:** ב-`CreatePaymeSeller` השדות `birthdate` ו-`social_id_date` בפורמט `DD/MM/YYYY`.
+- **תאריכים** — בכל ה-API בפורמט ISO 8601. **חריגים:** ב-`SubmitPaymentAccount` השדות `birthdate` ו-`social_id_date` בפורמט `DD/MM/YYYY`.
 - **טקסט בעברית** — UTF-8 בלבד.
 
 ---
