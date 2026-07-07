@@ -439,8 +439,8 @@ Giftkal תספק:
 
 - [ ] לבצע `CreateEventOwner` ולראות ב-`ListProfiles`.
 - [ ] לבצע `CreateEvent` ולראות ב-`ListEvents`.
-- [ ] לבצע `CreatePaymeSeller` + `UploadSellerFile` × 2 ולראות `local_status = created` ב-`GetSellerStatus`.
-- [ ] לקבל webhook `seller-approve` ולאמת חתימה.
+- [ ] לבצע `UploadPaymentDocument` × 2 + `SubmitPaymentAccount` ולראות `status = pending_review` ב-`GetPaymentAccountStatus`.
+- [ ] לקבל webhook `payment-account-approved` אחרי אישור ידני של Giftkal.
 - [ ] לקבל webhook `sale-paid` ולאמת חתימה.
 
 ---
