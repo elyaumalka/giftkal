@@ -1091,7 +1091,10 @@ const actionHandlers: Record<string, Handler> = {
   // Landing Page Leads
   ListLandingLeads: handleLandingLeads, CreateLandingLead: handleLandingLeads, UpdateLandingLead: handleLandingLeads, DeleteLandingLead: handleLandingLeads,
   // Settings
+  // Settings
   GetSystemSettings: handleSettings, UpdateSystemSettings: handleSettings, GetRequiredDocuments: handleSettings,
+  // Payments / PayMe seller onboarding
+  CreatePaymeSeller: handlePayments, UploadSellerFile: handlePayments, GetSellerStatus: handlePayments,
 };
 
 Deno.serve(async (req) => {
