@@ -952,8 +952,8 @@ export default function Settings() {
                   { id: "sale-paid", label: "תשלום התקבל (sale-paid)" },
                   { id: "sale-failure", label: "תשלום נכשל (sale-failure)" },
                   { id: "refund", label: "החזר (refund)" },
-                  { id: "sale-chargeback", label: "Chargeback (sale-chargeback)" },
-                  { id: "seller-approve", label: "מוכר אושר ב-PayMe (seller-approve)" },
+                  { id: "chargeback", label: "Chargeback (chargeback)" },
+                  { id: "payment-account-approved", label: "חשבון סליקה אושר (payment-account-approved)" },
                   { id: "withdrawal-complete", label: "משיכה הושלמה (withdrawal-complete)" },
                 ].map((ev) => (
                   <label key={ev.id} className="flex items-center gap-2 cursor-pointer text-sm">
