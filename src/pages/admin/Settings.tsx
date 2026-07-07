@@ -935,10 +935,33 @@ export default function Settings() {
               </p>
             </div>
             <div>
-              <Label className="text-muted-foreground text-sm mb-2 block">אירועים לקבלה (מופרדים בפסיק)</Label>
-              <Input value={newPartnerEvents} onChange={(e) => setNewPartnerEvents(e.target.value)} placeholder="sale-paid,seller-approve" className="ltr text-left" dir="ltr" />
+              <Label className="text-muted-foreground text-sm mb-2 block">אירועים לקבלה</Label>
+              <div className="border rounded-lg p-3 space-y-2 bg-slate-50">
+                {[
+                  { id: "sale-paid", label: "תשלום התקבל (sale-paid)" },
+                  { id: "sale-failure", label: "תשלום נכשל (sale-failure)" },
+                  { id: "refund", label: "החזר (refund)" },
+                  { id: "sale-chargeback", label: "Chargeback (sale-chargeback)" },
+                  { id: "seller-approve", label: "מוכר אושר ב-PayMe (seller-approve)" },
+                  { id: "withdrawal-complete", label: "משיכה הושלמה (withdrawal-complete)" },
+                ].map((ev) => (
+                  <label key={ev.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input
+                      type="checkbox"
+                      checked={newPartnerEvents.includes(ev.id)}
+                      onChange={(e) => {
+                        setNewPartnerEvents((prev) =>
+                          e.target.checked ? [...prev, ev.id] : prev.filter((x) => x !== ev.id)
+                        );
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span>{ev.label}</span>
+                  </label>
+                ))}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                ערכים נפוצים: <code>sale-paid</code>, <code>sale-failure</code>, <code>refund</code>, <code>seller-approve</code>, <code>withdrawal-complete</code>
+                השותף יקבל POST חתום ב-HMAC-SHA256 (כותרת <code>X-Giftkal-Signature</code>) עבור כל אירוע שסומן. ה-secret ייווצר אוטומטית ויוצג לך פעם אחת בסיום.
               </p>
             </div>
             <Button
