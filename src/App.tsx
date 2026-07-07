@@ -114,6 +114,7 @@ function App() {
           <Route path="/api/docs" element={<SystemApiDocs />} />
           <Route path="/api/nedarim" element={<NedarimApiDocs />} />
           <Route path="/docs/partner-api" element={<PartnerApiDocs />} />
+          <Route path="/docs/partner-api-explorer" element={<PartnerApiExplorer />} />
 
 
           {/* Admin routes */}
