@@ -246,7 +246,7 @@ export default function Settings() {
       setNewPartnerName("");
       setNewPartnerEmail("");
       setNewPartnerWebhookUrl("");
-      setNewPartnerEvents("sale-paid,seller-approve");
+      setNewPartnerEvents(["sale-paid", "seller-approve"]);
       setIsAddPartnerOpen(false);
       // Show the HMAC secret once so the admin can hand it to the partner.
       setRevealedSecret({ id, secret });
