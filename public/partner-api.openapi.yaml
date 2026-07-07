@@ -1,0 +1,351 @@
+openapi: 3.0.3
+info:
+  title: Giftkal Partner API
+  version: "1.0.0"
+  description: |
+    Server-to-server API for Giftkal partners. Authenticate with the
+    `x-api-key` header issued to your partner. Every request is scoped
+    automatically to the data your key created.
+
+    All endpoints share a single URL. Select the action via `?action=<Name>`.
+  contact:
+    name: Giftkal Support
+    email: support@giftkal.com
+
+servers:
+  - url: https://xadihaigjkbvphzphxxk.supabase.co/functions/v1/public-api
+    description: Production
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        responseStatus: { type: string, enum: [ERROR] }
+        error: { type: string }
+        code: { type: integer }
+
+    OkEnvelope:
+      type: object
+      properties:
+        responseStatus: { type: string, enum: [OK] }
+
+    Event:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        owner_id: { type: string, format: uuid }
+        event_type: { type: string, example: חתונה }
+        event_date: { type: string, format: date }
+        groom_name: { type: string, nullable: true }
+        bride_name: { type: string, nullable: true }
+        child_name: { type: string, nullable: true }
+        family_name: { type: string, nullable: true }
+        venue_id: { type: string, format: uuid, nullable: true }
+        hall_id: { type: string, format: uuid, nullable: true }
+        custom_venue_name: { type: string, nullable: true }
+        custom_venue_location: { type: string, nullable: true }
+        reception_time: { type: string, example: "19:00" }
+        ceremony_time: { type: string, example: "20:00" }
+        seller_payme_id: { type: string, nullable: true }
+        payment_setup_status: { type: string, nullable: true, enum: [null, created, approved, rejected] }
+        created_by_partner_id: { type: string, format: uuid, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    CreateEventOwnerRequest:
+      type: object
+      required: [email, password, full_name]
+      properties:
+        email: { type: string, format: email, description: Unique email for the new user. }
+        password: { type: string, minLength: 8, description: Random 16+ chars. The user resets via Giftkal. }
+        full_name: { type: string, description: Full display name (Hebrew allowed). }
+        phone: { type: string, example: "+972501234567" }
+        event:
+          type: object
+          description: Optional starter event created together with the owner.
+          properties:
+            event_type: { type: string, enum: [חתונה, בר מצווה, בת מצווה, ברית, חינה, אירוסין, אחר] }
+            event_date: { type: string, format: date }
+            venue_id: { type: string, format: uuid, nullable: true }
+            groom_name: { type: string, nullable: true }
+            bride_name: { type: string, nullable: true }
+
+    CreateEventRequest:
+      type: object
+      required: [owner_id, event_date]
+      properties:
+        owner_id: { type: string, format: uuid, description: Existing profile.user_id belonging to this partner. }
+        event_date: { type: string, format: date }
+        event_type: { type: string, default: חתונה }
+        groom_name: { type: string, nullable: true }
+        bride_name: { type: string, nullable: true }
+        child_name: { type: string, nullable: true }
+        family_name: { type: string, nullable: true }
+        venue_id: { type: string, format: uuid, nullable: true }
+        hall_id: { type: string, format: uuid, nullable: true }
+        custom_venue_name: { type: string, nullable: true }
+        custom_venue_location: { type: string, nullable: true }
+        reception_time: { type: string, example: "19:00", nullable: true }
+        ceremony_time: { type: string, example: "20:00", nullable: true }
+
+    Guest:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        event_id: { type: string, format: uuid }
+        full_name: { type: string }
+        phone: { type: string }
+        email: { type: string, nullable: true }
+        side: { type: string, enum: [groom, bride, general], nullable: true }
+        relationship: { type: string, nullable: true }
+        number_of_guests: { type: integer }
+        rsvp_status: { type: string, enum: [pending, approved, declined] }
+        invitation_sent: { type: boolean }
+
+    AddGuestRequest:
+      type: object
+      required: [event_id, full_name]
+      properties:
+        event_id: { type: string, format: uuid }
+        full_name: { type: string }
+        phone: { type: string, example: "+972501234567" }
+        email: { type: string, format: email, nullable: true }
+        relationship: { type: string, nullable: true }
+        number_of_guests: { type: integer, default: 1 }
+
+    Transaction:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        event_id: { type: string, format: uuid }
+        amount: { type: number, format: float }
+        gift_amount: { type: number, format: float, description: Amount that reaches the couple after fees. }
+        fee_amount: { type: number, format: float }
+        payer_name: { type: string, nullable: true }
+        payment_status: { type: string, enum: [pending, completed, failed, refunded] }
+        created_at: { type: string, format: date-time }
+
+    CreatePaymeSellerRequest:
+      type: object
+      required:
+        - event_id
+        - first_name
+        - last_name
+        - social_id
+        - birthdate
+        - email
+        - phone
+        - bank_code
+        - bank_branch
+        - bank_account_number
+        - inc_type
+        - merchant_name
+        - city
+        - street
+        - street_number
+      properties:
+        event_id:
+          type: string
+          format: uuid
+          description: Event to attach the PayMe seller to. Must belong to this partner.
+        first_name: { type: string, example: דוד }
+        last_name: { type: string, example: כהן }
+        social_id:
+          type: string
+          pattern: '^\d{9}$'
+          example: "123456789"
+          description: Israeli תעודת זהות — exactly 9 digits.
+        social_id_date:
+          type: string
+          pattern: '^\d{2}/\d{2}/\d{4}$'
+          example: "01/01/2015"
+          description: Date the ID was issued. DD/MM/YYYY.
+        birthdate:
+          type: string
+          pattern: '^\d{2}/\d{2}/\d{4}$'
+          example: "01/01/1990"
+          description: DD/MM/YYYY.
+        gender:
+          type: integer
+          enum: [0, 1]
+          description: "0 = male, 1 = female."
+        email: { type: string, format: email }
+        phone:
+          type: string
+          example: "+972501234567"
+          description: Israeli phone. Accepts +972... or 0...
+        contact_email: { type: string, format: email, description: Defaults to `email`. }
+        contact_phone: { type: string, description: Defaults to `phone`. }
+        bank_code:
+          type: integer
+          description: "Israeli bank code. 10=לאומי, 11=דיסקונט, 12=פועלים, 20=מזרחי, 31=בינלאומי, 4=יהב, 9=דואר, 13=איגוד, 14=אוצה\"ח, 17=מרכנתיל, 46=מסד, 52=פאגי, 54=ירושלים."
+          example: 12
+        bank_branch:
+          type: integer
+          example: 123
+        bank_account_number:
+          type: string
+          example: "12345678"
+        inc_type:
+          type: integer
+          enum: [1, 2, 3]
+          description: "1 = עוסק פטור, 2 = עוסק מורשה, 3 = חברה בע\"מ"
+        inc_code:
+          type: string
+          description: ח.פ. / עוסק מורשה. Required for inc_type=2 or 3.
+        merchant_name: { type: string, example: אירוע חתונה דוד ושרה }
+        merchant_name_en: { type: string, description: English transliteration. Auto-derived if omitted. }
+        description: { type: string }
+        site_url: { type: string, format: uri }
+        city: { type: string, example: תל אביב }
+        street: { type: string, example: דיזנגוף }
+        street_number: { type: string, example: "50" }
+
+    CreatePaymeSellerResponse:
+      allOf:
+        - $ref: '#/components/schemas/OkEnvelope'
+        - type: object
+          properties:
+            seller_payme_id: { type: string }
+            hf_api_key: { type: string, description: Hosted Fields client key for embedded checkout. }
+            status: { type: string, example: created }
+            message: { type: string }
+
+    UploadSellerFileRequest:
+      type: object
+      required: [event_id, file_type, file_name, file_base64]
+      properties:
+        event_id: { type: string, format: uuid }
+        file_type:
+          type: integer
+          enum: [1, 2, 3, 4]
+          description: "1 = ת\"ז, 2 = אישור ניהול חשבון בנק, 3 = רישיון עסק, 4 = אחר."
+        file_name: { type: string, example: "id.pdf" }
+        file_base64:
+          type: string
+          description: Base64-encoded file bytes (no data-URL prefix).
+        mime_type:
+          type: string
+          default: application/pdf
+          enum: [application/pdf, image/jpeg, image/png]
+
+    SellerStatusResponse:
+      allOf:
+        - $ref: '#/components/schemas/OkEnvelope'
+        - type: object
+          properties:
+            seller_payme_id: { type: string, nullable: true }
+            local_status:
+              type: string
+              enum: [null, created, approved, rejected]
+              nullable: true
+              description: Giftkal-side status. Updated to `approved` when we receive the seller-approve webhook.
+            payme_status: { type: string, description: Latest status string from PayMe. }
+
+paths:
+  /:
+    parameters:
+      - name: action
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Which endpoint to invoke.
+
+    post:
+      summary: Invoke any write action
+      description: |
+        The `action` query param decides which operation runs. The request
+        body schema depends on the action — see per-action sections below.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            examples:
+              CreateEventOwner:
+                summary: CreateEventOwner
+                value:
+                  email: chatan@example.com
+                  password: SecurePass123!Long
+                  full_name: דוד כהן
+                  phone: "+972501234567"
+                  event:
+                    event_type: חתונה
+                    event_date: "2026-11-05"
+                    groom_name: דוד
+                    bride_name: שרה
+              CreateEvent:
+                summary: CreateEvent
+                value:
+                  owner_id: "6f1b..."
+                  event_date: "2026-11-05"
+                  event_type: חתונה
+                  groom_name: דוד
+                  bride_name: שרה
+              AddGuest:
+                summary: AddGuest
+                value:
+                  event_id: "a12b..."
+                  full_name: אבי לוי
+                  phone: "+972501112222"
+                  number_of_guests: 2
+              CreatePaymeSeller:
+                summary: CreatePaymeSeller
+                value:
+                  event_id: "a12b..."
+                  first_name: דוד
+                  last_name: כהן
+                  social_id: "123456789"
+                  social_id_date: "01/01/2015"
+                  birthdate: "01/01/1990"
+                  gender: 0
+                  email: chatan@example.com
+                  phone: "+972501234567"
+                  bank_code: 12
+                  bank_branch: 123
+                  bank_account_number: "12345678"
+                  inc_type: 1
+                  merchant_name: חתונת דוד ושרה
+                  city: תל אביב
+                  street: דיזנגוף
+                  street_number: "50"
+              UploadSellerFile:
+                summary: UploadSellerFile
+                value:
+                  event_id: "a12b..."
+                  file_type: 1
+                  file_name: "teudat-zehut.pdf"
+                  mime_type: application/pdf
+                  file_base64: JVBERi0xLjcKJcOkw7zDtsO...
+      responses:
+        "200":
+          description: Success. Envelope always includes `responseStatus: OK`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OkEnvelope' }
+        "400": { description: Bad request, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        "401": { description: Missing or invalid API key, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        "403": { description: Cross-partner access denied, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        "404": { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+
+    get:
+      summary: Read-only actions
+      description: |
+        Actions that only read data can be called with GET and query params
+        (`ListEvents`, `GetEvent`, `ListGuests`, `GetTransactions`,
+        `GetSellerStatus`, etc.).
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OkEnvelope' }
