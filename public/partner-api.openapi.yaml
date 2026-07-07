@@ -56,8 +56,11 @@ components:
         custom_venue_location: { type: string, nullable: true }
         reception_time: { type: string, example: "19:00" }
         ceremony_time: { type: string, example: "20:00" }
-        seller_payme_id: { type: string, nullable: true }
-        payment_setup_status: { type: string, nullable: true, enum: [null, created, approved, rejected] }
+        payment_account_status:
+          type: string
+          nullable: true
+          enum: [null, not_submitted, pending_review, rejected, processing, approved]
+          description: Public status of the event's payment account.
         created_by_partner_id: { type: string, format: uuid, nullable: true }
         created_at: { type: string, format: date-time }
 
