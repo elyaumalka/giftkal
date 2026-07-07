@@ -309,8 +309,16 @@ paths:
                   full_name: אבי לוי
                   phone: "+972501112222"
                   number_of_guests: 2
-              CreatePaymeSeller:
-                summary: CreatePaymeSeller
+              UploadPaymentDocument:
+                summary: UploadPaymentDocument (call twice — social_id + bank_approval)
+                value:
+                  event_id: "a12b..."
+                  document_type: social_id
+                  file_name: "teudat-zehut.pdf"
+                  mime_type: application/pdf
+                  file_base64: JVBERi0xLjcKJcOkw7zDtsO...
+              SubmitPaymentAccount:
+                summary: SubmitPaymentAccount (queues for Giftkal review)
                 value:
                   event_id: "a12b..."
                   first_name: דוד
@@ -322,21 +330,13 @@ paths:
                   email: chatan@example.com
                   phone: "+972501234567"
                   bank_code: 12
-                  bank_branch: 123
+                  bank_branch: "123"
                   bank_account_number: "12345678"
                   inc_type: 1
                   merchant_name: חתונת דוד ושרה
                   city: תל אביב
                   street: דיזנגוף
                   street_number: "50"
-              UploadSellerFile:
-                summary: UploadSellerFile
-                value:
-                  event_id: "a12b..."
-                  file_type: 1
-                  file_name: "teudat-zehut.pdf"
-                  mime_type: application/pdf
-                  file_base64: JVBERi0xLjcKJcOkw7zDtsO...
       responses:
         "200":
           description: Success. Envelope always includes `responseStatus: OK`.
@@ -353,7 +353,7 @@ paths:
       description: |
         Actions that only read data can be called with GET and query params
         (`ListEvents`, `GetEvent`, `ListGuests`, `GetTransactions`,
-        `GetSellerStatus`, etc.).
+        `GetPaymentAccountStatus`, etc.).
       responses:
         "200":
           description: Success
