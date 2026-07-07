@@ -378,8 +378,8 @@ X-Giftkal-Signature: <hex HMAC-SHA256>
 **Payload לפי סוג:**
 
 - `sale-paid` / `sale-failure` / `refund`: `{ transaction_id, event_id, payment_status, amount, gift_amount, fee_amount, payer_name }`
-- `seller-approve`: `{ event_id, seller_payme_id, status: "approved" }`
-- `withdrawal-complete`: `{ event_id, seller_payme_id, payme_payout_code, amount }`
+- `payment-account-approved`: `{ event_id, status: "approved" }`
+- `withdrawal-complete`: `{ event_id, payout_reference, amount }`
 
 ### 6.3 אימות חתימה (חובה)
 
