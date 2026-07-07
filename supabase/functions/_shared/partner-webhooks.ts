@@ -100,17 +100,23 @@ export async function dispatchPartnerWebhooks(
 
     if (!partners?.length) return
 
+    // Translate to the partner-facing event name and strip processor-specific fields.
+    const publicEventType = INTERNAL_TO_PUBLIC[input.eventType] ?? input.eventType
+    const publicPayload = sanitizeForPartner(input.payload)
+
     const body = JSON.stringify({
-      event_type: input.eventType,
+      event_type: publicEventType,
       delivered_at: new Date().toISOString(),
-      data: input.payload,
+      data: publicPayload,
     })
 
     for (const partner of partners) {
       if (!partner.is_active) continue
       if (!partner.webhook_url) continue
       const subs: string[] = partner.webhook_events ?? []
-      if (subs.length > 0 && !subs.includes(input.eventType)) continue
+      // Match subscription against either the public or the legacy internal name
+      // so partners saved with older event ids keep working.
+      if (subs.length > 0 && !subs.includes(publicEventType) && !subs.includes(input.eventType)) continue
 
       const signature = partner.webhook_secret
         ? signHmac(partner.webhook_secret, body)
@@ -125,12 +131,11 @@ export async function dispatchPartnerWebhooks(
           headers: {
             'Content-Type': 'application/json',
             ...(signature ? { 'X-Giftkal-Signature': signature } : {}),
-            'X-Giftkal-Event': input.eventType,
+            'X-Giftkal-Event': publicEventType,
           },
           body,
         })
         responseStatus = resp.status
-        // Truncate so we don't bloat the deliveries table.
         responseBody = (await resp.text()).slice(0, 1000)
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'unknown error'
@@ -139,8 +144,8 @@ export async function dispatchPartnerWebhooks(
 
       await supabase.from('partner_webhook_deliveries').insert({
         partner_id: partner.id,
-        event_type: input.eventType,
-        payload: input.payload,
+        event_type: publicEventType,
+        payload: publicPayload,
         signature,
         response_status: responseStatus,
         response_body: responseBody,
