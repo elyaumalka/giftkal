@@ -66,7 +66,7 @@ export default function Settings() {
   const [newPartnerName, setNewPartnerName] = useState("");
   const [newPartnerEmail, setNewPartnerEmail] = useState("");
   const [newPartnerWebhookUrl, setNewPartnerWebhookUrl] = useState("");
-  const [newPartnerEvents, setNewPartnerEvents] = useState<string[]>(["sale-paid", "seller-approve"]);
+  const [newPartnerEvents, setNewPartnerEvents] = useState<string[]>(["sale-paid", "payment-account-approved"]);
   const [revealedSecret, setRevealedSecret] = useState<{ id: string; secret: string } | null>(null);
   const [copiedSecret, setCopiedSecret] = useState(false);
 
@@ -246,7 +246,7 @@ export default function Settings() {
       setNewPartnerName("");
       setNewPartnerEmail("");
       setNewPartnerWebhookUrl("");
-      setNewPartnerEvents(["sale-paid", "seller-approve"]);
+      setNewPartnerEvents(["sale-paid", "payment-account-approved"]);
       setIsAddPartnerOpen(false);
       // Show the HMAC secret once so the admin can hand it to the partner.
       setRevealedSecret({ id, secret });
@@ -952,8 +952,8 @@ export default function Settings() {
                   { id: "sale-paid", label: "תשלום התקבל (sale-paid)" },
                   { id: "sale-failure", label: "תשלום נכשל (sale-failure)" },
                   { id: "refund", label: "החזר (refund)" },
-                  { id: "sale-chargeback", label: "Chargeback (sale-chargeback)" },
-                  { id: "seller-approve", label: "מוכר אושר ב-PayMe (seller-approve)" },
+                  { id: "chargeback", label: "Chargeback (chargeback)" },
+                  { id: "payment-account-approved", label: "חשבון סליקה אושר (payment-account-approved)" },
                   { id: "withdrawal-complete", label: "משיכה הושלמה (withdrawal-complete)" },
                 ].map((ev) => (
                   <label key={ev.id} className="flex items-center gap-2 cursor-pointer text-sm">

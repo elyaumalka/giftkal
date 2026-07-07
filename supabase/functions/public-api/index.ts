@@ -877,35 +877,49 @@ async function handleSettings(action: string, supabase: any, url: URL, body: any
   return null;
 }
 
-// ===== PayMe Seller Onboarding (partner-scoped) =====
-// Wraps PayMe's create-seller / upload-seller-files / seller-status endpoints
-// so partners can onboard their event owners to Giftkal's payment processor
-// entirely through the API — no login required.
+// ===== Payment Account Onboarding (partner-scoped, admin-gated) =====
+// The partner submits KYC data + documents through the API. It lands as
+// `payment_setup_status = 'pending_approval'` on the event, exactly like a
+// direct event-owner submission. A Giftkal admin reviews and approves it in
+// the admin UI — only then does Giftkal open the merchant account with the
+// underlying payment processor. The partner never sees the processor name.
+//
+// `payment_setup_data` is a JSONB blob that must match the shape written by
+// src/pages/event/PaymeSetup.tsx so the existing admin approval dialog reads it
+// without changes. Keep the camelCase field names below aligned with that page.
 async function handlePayments(action: string, supabase: any, url: URL, body: any, ctx: ApiKeyContext) {
-  const paymeClientKey = Deno.env.get('PAYME_CLIENT_KEY');
-  if (!paymeClientKey) return errorResponse('PayMe not configured', 500);
-  const paymeBaseUrl = 'https://live.payme.io';
-
-  // Verify event belongs to this partner. Returns the event or an error response.
   async function requirePartnerEvent(eventId: string) {
     if (!eventId) return { err: errorResponse('event_id is required', 400) };
-    let q = supabase.from('events').select('id, owner_id, seller_payme_id, payment_setup_status').eq('id', eventId);
+    let q = supabase.from('events').select('id, owner_id, seller_payme_id, payment_setup_status, payment_setup_data').eq('id', eventId);
     q = applyPartnerScope(q, ctx);
     const { data } = await q.maybeSingle();
     if (!data) return { err: errorResponse('Event not found or not accessible to this API key', 404) };
     return { event: data };
   }
 
+  // Map internal (PayMe-shaped) statuses to a processor-agnostic vocabulary
+  // that we expose publicly.
+  function publicStatus(local: string | null, hasSeller: boolean): string {
+    if (!local && !hasSeller) return 'not_submitted';
+    if (local === 'pending_approval') return 'pending_review';
+    if (local === 'rejected') return 'rejected';
+    if (local === 'approved') return 'approved';
+    if (hasSeller && local !== 'approved') return 'processing';
+    return local || 'not_submitted';
+  }
+
   switch (action) {
-    case 'CreatePaymeSeller': {
+    case 'SubmitPaymentAccount': {
       const eventId = body.event_id;
       const { event, err } = await requirePartnerEvent(eventId);
       if (err) return err;
       if (event.seller_payme_id) {
-        return errorResponse(`Seller already exists for this event: ${event.seller_payme_id}`, 400);
+        return errorResponse('Payment account already active for this event', 400);
+      }
+      if (event.payment_setup_status === 'pending_approval') {
+        return errorResponse('Payment account already submitted and awaiting Giftkal review', 400);
       }
 
-      // Required fields
       const required = [
         'first_name', 'last_name', 'social_id', 'birthdate', 'email', 'phone',
         'bank_code', 'bank_branch', 'bank_account_number',
@@ -919,129 +933,114 @@ async function handlePayments(action: string, supabase: any, url: URL, body: any
       if (!/^\d{9}$/.test(String(body.social_id))) {
         return errorResponse('social_id must be exactly 9 digits', 400);
       }
-      const cleanPhone = String(body.phone).replace(/[^0-9+]/g, '');
+      const cleanPhone = String(body.phone).replace(/[^0-9+\s-]/g, '').replace(/[\s-]/g, '');
       if (!/^(\+972|0)\d{9}$/.test(cleanPhone)) {
         return errorResponse('phone must be a valid Israeli number (+972XXXXXXXXX or 0XXXXXXXXX)', 400);
       }
-      const formattedPhone = cleanPhone.startsWith('0') ? '+972' + cleanPhone.slice(1) : cleanPhone;
 
-      const payload = {
-        payme_client_key: paymeClientKey,
-        seller_first_name: String(body.first_name).trim(),
-        seller_last_name: String(body.last_name).trim(),
-        seller_social_id: body.social_id,
-        seller_social_id_date: body.social_id_date || '',
-        seller_social_id_issued: body.social_id_date || '',
-        seller_birthdate: body.birthdate,
-        seller_gender: body.gender ?? 0,
-        seller_email: String(body.email).trim().toLowerCase(),
-        seller_phone: formattedPhone,
-        seller_contact_email: String(body.contact_email || body.email).trim().toLowerCase(),
-        seller_contact_phone: body.contact_phone
-          ? (String(body.contact_phone).startsWith('0') ? '+972' + String(body.contact_phone).slice(1) : body.contact_phone)
-          : formattedPhone,
-        seller_bank_code: body.bank_code,
-        seller_bank_branch: body.bank_branch,
-        seller_bank_account_number: body.bank_account_number,
-        seller_inc: body.inc_type,
-        seller_inc_code: body.inc_code || '',
-        seller_merchant_name: String(body.merchant_name).trim(),
-        seller_merchant_name_en: body.merchant_name_en || String(body.merchant_name).trim(),
-        seller_dba: String(body.merchant_name).trim(),
-        seller_dba_en: body.merchant_name_en || String(body.merchant_name).trim(),
-        seller_site_url: body.site_url || 'https://giftkal.com',
-        seller_description: body.description || `אירוע - ${body.merchant_name}`,
-        seller_address_city: String(body.city).trim(),
-        seller_address_street: String(body.street).trim(),
-        seller_address_street_number: String(body.street_number).trim(),
-        seller_address_country: 'IL',
-        seller_retail_type: 1,
-        seller_person_business_type: 10010,
-        businessType: 1,
-        businessNumber: body.social_id,
-        language: 'he',
+      // Preserve any files already uploaded via UploadPaymentDocument.
+      const prior = (event.payment_setup_data as Record<string, unknown>) || {};
+
+      // Shape must match src/pages/event/PaymeSetup.tsx submitForApproval().
+      const setupData: Record<string, unknown> = {
+        firstName: String(body.first_name).trim(),
+        lastName: String(body.last_name).trim(),
+        socialId: body.social_id,
+        socialIdDate: body.social_id_date || '',
+        birthdate: body.birthdate,
+        gender: body.gender ?? 0,
+        email: String(body.email).trim().toLowerCase(),
+        phone: cleanPhone,
+        bankCode: Number(body.bank_code),
+        bankBranch: String(body.bank_branch),
+        bankAccountNumber: String(body.bank_account_number),
+        incType: Number(body.inc_type),
+        incCode: body.inc_code || '',
+        merchantName: String(body.merchant_name).trim(),
+        merchantNameEn: body.merchant_name_en || String(body.merchant_name).trim(),
+        siteUrl: body.site_url || 'https://giftkal.com',
+        city: String(body.city).trim(),
+        street: String(body.street).trim(),
+        streetNumber: String(body.street_number).trim(),
+        contactEmail: body.contact_email || undefined,
+        contactPhone: body.contact_phone || undefined,
+        description: body.description || undefined,
+        // Preserve documents uploaded earlier.
+        socialIdFile: prior.socialIdFile,
+        bankApprovalFile: prior.bankApprovalFile,
+        // Audit trail.
+        submitted_by_partner_id: ctx.partnerId,
+        submitted_at: new Date().toISOString(),
       };
 
-      const paymeResp = await fetch(`${paymeBaseUrl}/api/create-seller`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const result = await paymeResp.json();
-
-      if (result.status_code !== 0) {
-        return errorResponse(
-          result.status_error_details || result.status_error_code || result.status_message || 'PayMe error',
-          400,
-        );
-      }
-
-      const hfKey = result?.seller_public_key?.uuid ?? null;
-      await supabase.from('events').update({
-        seller_payme_id: result.seller_payme_id,
-        payment_setup_status: 'created',
-        ...(hfKey ? { hf_api_key: hfKey } : {}),
+      const { error } = await supabase.from('events').update({
+        payment_setup_status: 'pending_approval',
+        payment_setup_data: setupData,
       }).eq('id', eventId);
+      if (error) return errorResponse(error.message, 500);
 
       return okResponse({
-        seller_payme_id: result.seller_payme_id,
-        hf_api_key: hfKey,
-        status: 'created',
-        message: 'Seller created. Upload KYC documents via UploadSellerFile, then poll GetSellerStatus. Approval arrives via the seller-approve webhook.',
+        status: 'pending_review',
+        message: 'Payment account submitted. A Giftkal administrator will review it. You will receive a webhook when the account is approved.',
+        documents_uploaded: {
+          social_id: Boolean(prior.socialIdFile),
+          bank_approval: Boolean(prior.bankApprovalFile),
+        },
       });
     }
 
-    case 'UploadSellerFile': {
+    case 'UploadPaymentDocument': {
       const eventId = body.event_id;
       const { event, err } = await requirePartnerEvent(eventId);
       if (err) return err;
-      if (!event.seller_payme_id) return errorResponse('Call CreatePaymeSeller first', 400);
-      if (!body.file_type || !body.file_base64 || !body.file_name) {
-        return errorResponse('file_type, file_name, and file_base64 are required', 400);
+      if (event.seller_payme_id) {
+        return errorResponse('Payment account already active — cannot update documents via API', 400);
       }
-      // file_type: 1=social_id, 2=bank_approval, 3=business_license, 4=other
-      const resp = await fetch(`${paymeBaseUrl}/api/upload-seller-files`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payme_client_key: paymeClientKey,
-          seller_payme_id: event.seller_payme_id,
-          seller_files: [{
-            name: body.file_name,
-            type: body.file_type,
-            base64: body.file_base64,
-            mime_type: body.mime_type || 'application/pdf',
-          }],
-        }),
+      const docType = body.document_type;
+      if (!['social_id', 'bank_approval'].includes(docType)) {
+        return errorResponse('document_type must be one of: social_id, bank_approval', 400);
+      }
+      if (!body.file_base64 || !body.file_name) {
+        return errorResponse('file_name and file_base64 are required', 400);
+      }
+
+      const prior = (event.payment_setup_data as Record<string, unknown>) || {};
+      const fileObj = {
+        base64: String(body.file_base64),
+        name: String(body.file_name),
+        mimeType: body.mime_type || 'application/pdf',
+      };
+      const nextData = {
+        ...prior,
+        ...(docType === 'social_id' ? { socialIdFile: fileObj } : { bankApprovalFile: fileObj }),
+      };
+      const { error } = await supabase.from('events').update({
+        payment_setup_data: nextData,
+      }).eq('id', eventId);
+      if (error) return errorResponse(error.message, 500);
+
+      return okResponse({
+        uploaded: true,
+        document_type: docType,
+        documents_uploaded: {
+          social_id: Boolean(nextData.socialIdFile),
+          bank_approval: Boolean(nextData.bankApprovalFile),
+        },
       });
-      const result = await resp.json();
-      if (result.status_code !== 0) {
-        return errorResponse(result.status_error_details || result.status_message || 'PayMe upload error', 400);
-      }
-      return okResponse({ uploaded: true, seller_payme_id: event.seller_payme_id });
     }
 
-    case 'GetSellerStatus': {
+    case 'GetPaymentAccountStatus': {
       const eventId = url.searchParams.get('event_id') || body.event_id;
       const { event, err } = await requirePartnerEvent(eventId);
       if (err) return err;
-      if (!event.seller_payme_id) {
-        return okResponse({ status: 'not_created', seller_payme_id: null });
-      }
-      const resp = await fetch(`${paymeBaseUrl}/api/seller-status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payme_client_key: paymeClientKey,
-          seller_payme_id: event.seller_payme_id,
-        }),
-      });
-      const result = await resp.json();
+      const prior = (event.payment_setup_data as Record<string, unknown>) || {};
       return okResponse({
-        seller_payme_id: event.seller_payme_id,
-        local_status: event.payment_setup_status,
-        payme_status: result.seller_status || result.status_message || 'unknown',
-        payme_raw: result,
+        status: publicStatus(event.payment_setup_status, Boolean(event.seller_payme_id)),
+        can_receive_payments: event.payment_setup_status === 'approved' && Boolean(event.seller_payme_id),
+        documents_uploaded: {
+          social_id: Boolean(prior.socialIdFile),
+          bank_approval: Boolean(prior.bankApprovalFile),
+        },
       });
     }
   }
@@ -1093,8 +1092,8 @@ const actionHandlers: Record<string, Handler> = {
   // Settings
   // Settings
   GetSystemSettings: handleSettings, UpdateSystemSettings: handleSettings, GetRequiredDocuments: handleSettings,
-  // Payments / PayMe seller onboarding
-  CreatePaymeSeller: handlePayments, UploadSellerFile: handlePayments, GetSellerStatus: handlePayments,
+  // Payment account onboarding (admin-gated; processor is abstracted away)
+  SubmitPaymentAccount: handlePayments, UploadPaymentDocument: handlePayments, GetPaymentAccountStatus: handlePayments,
 };
 
 Deno.serve(async (req) => {

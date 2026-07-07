@@ -14,8 +14,8 @@
 
 1. ליצור משתמשי קצה (בעלי אירוע, בעלי אולם) בתוך Giftkal.
 2. ליצור ולנהל אירועים, מוזמנים, אישורי הגעה, תשלומים, אולמות, אולמות אירועים ומכשירי קיוסק בשמם.
-3. **להקים לאירוע חשבון סליקה מלא מול PayMe דרך ה-API — כולל KYC** (סעיף 5).
-4. לקבל **התראות webhook בזמן אמת** כשמתבצעים תשלומים, כשמאושרים מוכרים ב-PayMe וכשמסתיימות משיכות כספים.
+3. **להגיש בקשה לפתיחת חשבון סליקה לאירוע — כולל KYC** (סעיף 5). האישור ידני על ידי Giftkal.
+4. לקבל **התראות webhook בזמן אמת** כשמתבצעים תשלומים, כשחשבון הסליקה של אירוע מאושר וכשמסתיימות משיכות כספים.
 
 **שותף** הוא זהות מבודדת ב-Giftkal. כל מפתח API משויך למזהה השותף שלכם, ולכן:
 
@@ -176,28 +176,55 @@ CRUD סטנדרטי (ראו Swagger): `ListLeads` / `CreateLead` / `UpdateLead` 
 
 ---
 
-## 5. הקמת חשבון סליקה (PayMe Seller Onboarding)
+## 5. הקמת חשבון סליקה (Payment Account Onboarding)
 
-זהו התהליך שבסופו האירוע יכול לקבל תשלומי מתנות. Giftkal סולק דרך **PayMe**, ולכן צריך לפתוח לכל אירוע חשבון מוכר (seller) עם KYC.
+בסוף התהליך הזה האירוע יכול לקבל תשלומי מתנות. **כל האינטגרציה עם ספק הסליקה מתבצעת בתוך Giftkal** — אתם רק שולחים את פרטי ה-KYC, ואנחנו פותחים את החשבון ומעדכנים אתכם כשהוא פעיל.
 
-**זרימה:**
+**סדר קריאות חובה:**
 
 ```text
-1. CreatePaymeSeller  →  PayMe מקצה seller_payme_id (סטטוס: created)
-2. UploadSellerFile   →  העלאת ת"ז + אישור ניהול חשבון בנק (Base64)
-3. GetSellerStatus    →  polling לסטטוס
-4. seller-approve     →  webhook כש-PayMe אישר. מכאן האירוע יכול לקבל תשלומים.
+1. CreateEventOwner         →  יצירת בעל האירוע (סעיף 4.1)
+2. CreateEvent              →  יצירת האירוע (סעיף 4.4)
+3. UploadPaymentDocument ×2 →  ת"ז + אישור ניהול חשבון בנק
+4. SubmitPaymentAccount     →  שליחת פרטי ה-KYC. סטטוס → pending_review
+                                (הבקשה עולה ל-Giftkal לבדיקה ידנית)
+5. אישור על ידי צוות Giftkal   →  אנחנו פותחים את חשבון הסליקה
+6. Webhook: seller-approve  →  החשבון פעיל. האירוע יכול לקבל תשלומים.
 ```
 
-### 5.1 `CreatePaymeSeller`
+> ⚠️ בין שלב 4 לשלב 6 עוברת בדיקת עמידה בדרישות (KYC) של Giftkal. הבדיקה ידנית ולא מיידית — צפו לעד 24 שעות עסקים. סטטוס הבקשה זמין בכל רגע דרך `GetPaymentAccountStatus`.
 
-יוצר את המוכר ב-PayMe ומקשר אותו לאירוע.
+### 5.1 `UploadPaymentDocument`
+
+מעלה מסמך KYC. מומלץ להעלות את שני המסמכים **לפני** קריאת `SubmitPaymentAccount`.
+
+| שדה | טיפוס | הערות |
+|---|---|---|
+| `event_id` | uuid | חובה. אירוע של השותף שלכם. |
+| `document_type` | enum | חובה. `social_id` (ת״ז) או `bank_approval` (אישור ניהול חשבון בנק). |
+| `file_name` | string | חובה. למשל `id.pdf`. |
+| `mime_type` | string | `application/pdf` (ברירת מחדל), `image/jpeg`, `image/png`. |
+| `file_base64` | string | חובה. תוכן הקובץ ב-Base64 **בלי** `data:...;base64,`. |
+
+**תשובה:**
+```json
+{
+  "responseStatus": "OK",
+  "uploaded": true,
+  "document_type": "social_id",
+  "documents_uploaded": { "social_id": true, "bank_approval": false }
+}
+```
+
+### 5.2 `SubmitPaymentAccount`
+
+שולח את פרטי ה-KYC לבדיקה. הבקשה עולה **לתור אישורים ידני** אצל Giftkal.
 
 **שדות חובה — פרטים אישיים**
 
 | שדה | טיפוס | הערות |
 |---|---|---|
-| `event_id` | uuid | אירוע קיים של השותף שלכם. |
+| `event_id` | uuid | אירוע קיים של השותף. |
 | `first_name` | string | |
 | `last_name` | string | |
 | `social_id` | string | **9 ספרות בדיוק** (ת״ז ישראלית). |
@@ -210,8 +237,8 @@ CRUD סטנדרטי (ראו Swagger): `ListLeads` / `CreateLead` / `UpdateLead` 
 | שדה | טיפוס | הערות |
 |---|---|---|
 | `bank_code` | integer | קוד בנק ישראלי (טבלה למטה). |
-| `bank_branch` | integer | מספר סניף. |
-| `bank_account_number` | string | מספר חשבון. |
+| `bank_branch` | string | מספר סניף (1–4 ספרות). |
+| `bank_account_number` | string | מספר חשבון (4–12 ספרות). |
 
 **שדות חובה — פרטי עסק וכתובת**
 
@@ -231,9 +258,9 @@ CRUD סטנדרטי (ראו Swagger): `ListLeads` / `CreateLead` / `UpdateLead` 
 | `gender` | 0 \| 1 | 0 = זכר, 1 = נקבה. ברירת מחדל 0. |
 | `contact_email` / `contact_phone` | string | ברירת מחדל = `email`/`phone`. |
 | `inc_code` | string | ח.פ. / עוסק מורשה. **חובה** ל-`inc_type` 2 או 3. |
-| `merchant_name_en` | string | תעתיק לאנגלית. יופק אוטומטית אם לא נשלח. |
+| `merchant_name_en` | string | תעתיק לאנגלית. |
 | `description` | string | |
-| `site_url` | string (uri) | ברירת מחדל `https://giftkal.com`. |
+| `site_url` | string (uri) | |
 
 **קודי בנק ישראליים נפוצים:**
 
@@ -249,7 +276,7 @@ CRUD סטנדרטי (ראו Swagger): `ListLeads` / `CreateLead` / `UpdateLead` 
 
 **דוגמה:**
 ```json
-POST ?action=CreatePaymeSeller
+POST ?action=SubmitPaymentAccount
 {
   "event_id": "a12b...",
   "first_name": "דוד",
@@ -261,7 +288,7 @@ POST ?action=CreatePaymeSeller
   "email": "chatan@example.com",
   "phone": "+972501234567",
   "bank_code": 12,
-  "bank_branch": 123,
+  "bank_branch": "123",
   "bank_account_number": "12345678",
   "inc_type": 1,
   "merchant_name": "חתונת דוד ושרה",
@@ -275,51 +302,45 @@ POST ?action=CreatePaymeSeller
 ```json
 {
   "responseStatus": "OK",
-  "seller_payme_id": "SLR-...",
-  "hf_api_key": "86e0b...",
-  "status": "created",
-  "message": "Seller created. Upload KYC documents..."
+  "status": "pending_review",
+  "message": "Payment account submitted. A Giftkal administrator will review it...",
+  "documents_uploaded": { "social_id": true, "bank_approval": true }
 }
 ```
 
-### 5.2 `UploadSellerFile`
+### 5.3 `GetPaymentAccountStatus`
 
-מעלה מסמך KYC לחשבון המוכר.
-
-| שדה | טיפוס | הערות |
-|---|---|---|
-| `event_id` | uuid | חובה. חייב להיות אחרי `CreatePaymeSeller`. |
-| `file_type` | integer | `1` = ת״ז · `2` = אישור ניהול חשבון בנק · `3` = רישיון עסק · `4` = אחר. |
-| `file_name` | string | לדוגמה `id.pdf`. |
-| `mime_type` | string | `application/pdf` (ברירת מחדל), `image/jpeg`, `image/png`. |
-| `file_base64` | string | תוכן הקובץ ב-Base64 **בלי** `data:...;base64,`. |
-
-**מינימום נדרש לאישור:** קובץ מסוג `1` (ת״ז) + קובץ מסוג `2` (אישור בנק). קראו שוב לכל מסמך.
-
-### 5.3 `GetSellerStatus`
-
-בודק את סטטוס האישור.
+בודק את סטטוס הבקשה.
 
 ```
-GET ?action=GetSellerStatus&event_id=a12b...
+GET ?action=GetPaymentAccountStatus&event_id=a12b...
 ```
+
+**סטטוסים אפשריים:**
+
+| `status` | משמעות |
+|---|---|
+| `not_submitted` | עדיין לא נקראה `SubmitPaymentAccount`. |
+| `pending_review` | ממתין לאישור ידני של Giftkal. |
+| `rejected` | Giftkal דחתה את הבקשה. פנו לתמיכה לפרטים. |
+| `processing` | Giftkal אישרה, החשבון בהקמה מול ספק הסליקה. |
+| `approved` | פעיל. האירוע יכול לקבל תשלומים. |
 
 **תשובה:**
 ```json
 {
   "responseStatus": "OK",
-  "seller_payme_id": "SLR-...",
-  "local_status": "created",     // created | approved | rejected
-  "payme_status": "pending_review",
-  "payme_raw": { ... }
+  "status": "pending_review",
+  "can_receive_payments": false,
+  "documents_uploaded": { "social_id": true, "bank_approval": true }
 }
 ```
 
-`local_status: "approved"` מתעדכן ברגע ש-Giftkal מקבלת webhook `seller-approve` מ-PayMe. באותו רגע נשלח גם לכם webhook `seller-approve` (סעיף 6).
+השדה `can_receive_payments` הופך ל-`true` ברגע שהחשבון פעיל. באותו רגע נשלח גם webhook `seller-approve` (סעיף 6).
 
 ### 5.4 סביבת בדיקות בלי חיוב אמיתי
 
-Giftkal יכולה להנפיק שותף עם דגל `sandbox` שמדלג על PayMe וקופון `GIFTKAL-TEST` שמדמה תשלום מלא. פנו לתמיכה.
+Giftkal יכולה להנפיק שותף עם דגל `sandbox` שמדלג על תהליך ה-KYC וקופון `GIFTKAL-TEST` שמדמה תשלום מלא. פנו לתמיכה.
 
 ---
 
@@ -331,7 +352,7 @@ Giftkal יכולה להנפיק שותף עם דגל `sandbox` שמדלג על P
 
 | `event_type` | מתי נשלח |
 |---|---|
-| `seller-approve` | PayMe סיימה לאשר את המוכר עבור אירוע — האירוע יכול לקבל תשלומים. |
+| `payment-account-approved` | חשבון הסליקה של האירוע אושר על ידי Giftkal והופעל — האירוע יכול לקבל תשלומים. |
 | `sale-paid` | תשלום מתנה הצליח. |
 | `sale-failure` | תשלום מתנה נכשל. |
 | `refund` | מתנה זוכתה חזרה. |
@@ -357,8 +378,8 @@ X-Giftkal-Signature: <hex HMAC-SHA256>
 **Payload לפי סוג:**
 
 - `sale-paid` / `sale-failure` / `refund`: `{ transaction_id, event_id, payment_status, amount, gift_amount, fee_amount, payer_name }`
-- `seller-approve`: `{ event_id, seller_payme_id, status: "approved" }`
-- `withdrawal-complete`: `{ event_id, seller_payme_id, payme_payout_code, amount }`
+- `payment-account-approved`: `{ event_id, status: "approved" }`
+- `withdrawal-complete`: `{ event_id, payout_reference, amount }`
 
 ### 6.3 אימות חתימה (חובה)
 
@@ -400,7 +421,7 @@ if (!hash_equals($expected, $_SERVER['HTTP_X_GIFTKAL_SIGNATURE'] ?? '')) {
 - **Idempotency** ב-`CreateEventOwner` — טפלו בשגיאת `email already registered` כאילו המשתמש קיים.
 - **סיסמאות** — שלחו סיסמה אקראית ארוכה ואל תשמרו אותה. המשתמש יאפס דרך Giftkal.
 - **קבצי KYC** — השתמשו ב-PDF < 5MB. שלחו רק Base64 של המידע (בלי `data:...;base64,`).
-- **תאריכים** — בכל ה-API בפורמט ISO 8601. **חריגים:** ב-`CreatePaymeSeller` השדות `birthdate` ו-`social_id_date` בפורמט `DD/MM/YYYY`.
+- **תאריכים** — בכל ה-API בפורמט ISO 8601. **חריגים:** ב-`SubmitPaymentAccount` השדות `birthdate` ו-`social_id_date` בפורמט `DD/MM/YYYY`.
 - **טקסט בעברית** — UTF-8 בלבד.
 
 ---
@@ -418,8 +439,8 @@ Giftkal תספק:
 
 - [ ] לבצע `CreateEventOwner` ולראות ב-`ListProfiles`.
 - [ ] לבצע `CreateEvent` ולראות ב-`ListEvents`.
-- [ ] לבצע `CreatePaymeSeller` + `UploadSellerFile` × 2 ולראות `local_status = created` ב-`GetSellerStatus`.
-- [ ] לקבל webhook `seller-approve` ולאמת חתימה.
+- [ ] לבצע `UploadPaymentDocument` × 2 + `SubmitPaymentAccount` ולראות `status = pending_review` ב-`GetPaymentAccountStatus`.
+- [ ] לקבל webhook `payment-account-approved` אחרי אישור ידני של Giftkal.
 - [ ] לקבל webhook `sale-paid` ולאמת חתימה.
 
 ---
