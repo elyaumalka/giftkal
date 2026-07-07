@@ -1092,8 +1092,8 @@ const actionHandlers: Record<string, Handler> = {
   // Settings
   // Settings
   GetSystemSettings: handleSettings, UpdateSystemSettings: handleSettings, GetRequiredDocuments: handleSettings,
-  // Payments / PayMe seller onboarding
-  CreatePaymeSeller: handlePayments, UploadSellerFile: handlePayments, GetSellerStatus: handlePayments,
+  // Payment account onboarding (admin-gated; processor is abstracted away)
+  SubmitPaymentAccount: handlePayments, UploadPaymentDocument: handlePayments, GetPaymentAccountStatus: handlePayments,
 };
 
 Deno.serve(async (req) => {
