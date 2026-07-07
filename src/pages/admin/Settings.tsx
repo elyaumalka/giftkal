@@ -66,7 +66,7 @@ export default function Settings() {
   const [newPartnerName, setNewPartnerName] = useState("");
   const [newPartnerEmail, setNewPartnerEmail] = useState("");
   const [newPartnerWebhookUrl, setNewPartnerWebhookUrl] = useState("");
-  const [newPartnerEvents, setNewPartnerEvents] = useState<string>("sale-paid,seller-approve");
+  const [newPartnerEvents, setNewPartnerEvents] = useState<string[]>(["sale-paid", "seller-approve"]);
   const [revealedSecret, setRevealedSecret] = useState<{ id: string; secret: string } | null>(null);
   const [copiedSecret, setCopiedSecret] = useState(false);
 
