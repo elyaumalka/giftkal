@@ -137,8 +137,12 @@ components:
         payment_status: { type: string, enum: [pending, completed, failed, refunded] }
         created_at: { type: string, format: date-time }
 
-    CreatePaymeSellerRequest:
+    SubmitPaymentAccountRequest:
       type: object
+      description: |
+        KYC submission for opening a payment account for an event.
+        The request is queued for manual review by Giftkal's compliance team.
+        Approval is delivered asynchronously via the `payment-account-approved` webhook.
       required:
         - event_id
         - first_name
@@ -159,7 +163,7 @@ components:
         event_id:
           type: string
           format: uuid
-          description: Event to attach the PayMe seller to. Must belong to this partner.
+          description: Event that will receive the payment account. Must belong to this partner.
         first_name: { type: string, example: דוד }
         last_name: { type: string, example: כהן }
         social_id:
@@ -171,7 +175,7 @@ components:
           type: string
           pattern: '^\d{2}/\d{2}/\d{4}$'
           example: "01/01/2015"
-          description: Date the ID was issued. DD/MM/YYYY.
+          description: DD/MM/YYYY.
         birthdate:
           type: string
           pattern: '^\d{2}/\d{2}/\d{4}$'
@@ -182,22 +186,15 @@ components:
           enum: [0, 1]
           description: "0 = male, 1 = female."
         email: { type: string, format: email }
-        phone:
-          type: string
-          example: "+972501234567"
-          description: Israeli phone. Accepts +972... or 0...
+        phone: { type: string, example: "+972501234567" }
         contact_email: { type: string, format: email, description: Defaults to `email`. }
         contact_phone: { type: string, description: Defaults to `phone`. }
         bank_code:
           type: integer
           description: "Israeli bank code. 10=לאומי, 11=דיסקונט, 12=פועלים, 20=מזרחי, 31=בינלאומי, 4=יהב, 9=דואר, 13=איגוד, 14=אוצה\"ח, 17=מרכנתיל, 46=מסד, 52=פאגי, 54=ירושלים."
           example: 12
-        bank_branch:
-          type: integer
-          example: 123
-        bank_account_number:
-          type: string
-          example: "12345678"
+        bank_branch: { type: string, example: "123" }
+        bank_account_number: { type: string, example: "12345678" }
         inc_type:
           type: integer
           enum: [1, 2, 3]
@@ -205,33 +202,36 @@ components:
         inc_code:
           type: string
           description: ח.פ. / עוסק מורשה. Required for inc_type=2 or 3.
-        merchant_name: { type: string, example: אירוע חתונה דוד ושרה }
-        merchant_name_en: { type: string, description: English transliteration. Auto-derived if omitted. }
+        merchant_name: { type: string, example: חתונת דוד ושרה }
+        merchant_name_en: { type: string }
         description: { type: string }
         site_url: { type: string, format: uri }
         city: { type: string, example: תל אביב }
         street: { type: string, example: דיזנגוף }
         street_number: { type: string, example: "50" }
 
-    CreatePaymeSellerResponse:
+    SubmitPaymentAccountResponse:
       allOf:
         - $ref: '#/components/schemas/OkEnvelope'
         - type: object
           properties:
-            seller_payme_id: { type: string }
-            hf_api_key: { type: string, description: Hosted Fields client key for embedded checkout. }
-            status: { type: string, example: created }
+            status: { type: string, enum: [pending_review] }
             message: { type: string }
+            documents_uploaded:
+              type: object
+              properties:
+                social_id: { type: boolean }
+                bank_approval: { type: boolean }
 
-    UploadSellerFileRequest:
+    UploadPaymentDocumentRequest:
       type: object
-      required: [event_id, file_type, file_name, file_base64]
+      required: [event_id, document_type, file_name, file_base64]
       properties:
         event_id: { type: string, format: uuid }
-        file_type:
-          type: integer
-          enum: [1, 2, 3, 4]
-          description: "1 = ת\"ז, 2 = אישור ניהול חשבון בנק, 3 = רישיון עסק, 4 = אחר."
+        document_type:
+          type: string
+          enum: [social_id, bank_approval]
+          description: "social_id = ת\"ז · bank_approval = אישור ניהול חשבון בנק"
         file_name: { type: string, example: "id.pdf" }
         file_base64:
           type: string
@@ -241,18 +241,26 @@ components:
           default: application/pdf
           enum: [application/pdf, image/jpeg, image/png]
 
-    SellerStatusResponse:
+    PaymentAccountStatusResponse:
       allOf:
         - $ref: '#/components/schemas/OkEnvelope'
         - type: object
           properties:
-            seller_payme_id: { type: string, nullable: true }
-            local_status:
+            status:
               type: string
-              enum: [null, created, approved, rejected]
-              nullable: true
-              description: Giftkal-side status. Updated to `approved` when we receive the seller-approve webhook.
-            payme_status: { type: string, description: Latest status string from PayMe. }
+              enum: [not_submitted, pending_review, rejected, processing, approved]
+              description: |
+                * `not_submitted` — no KYC data received yet.
+                * `pending_review` — awaiting manual review by Giftkal.
+                * `rejected` — Giftkal rejected the submission.
+                * `processing` — Giftkal approved; payment account is being provisioned.
+                * `approved` — active. The event can receive payments.
+            can_receive_payments: { type: boolean }
+            documents_uploaded:
+              type: object
+              properties:
+                social_id: { type: boolean }
+                bank_approval: { type: boolean }
 
 paths:
   /:
