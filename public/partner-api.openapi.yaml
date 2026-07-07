@@ -339,7 +339,7 @@ paths:
                   street_number: "50"
       responses:
         "200":
-          description: Success. Envelope always includes `responseStatus: OK`.
+          description: "Success. Envelope always includes `responseStatus: OK`."
           content:
             application/json:
               schema: { $ref: '#/components/schemas/OkEnvelope' }
