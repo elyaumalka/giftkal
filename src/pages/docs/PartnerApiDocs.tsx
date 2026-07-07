@@ -1,7 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Download } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, PlayCircle } from "lucide-react";
 import { useState } from "react";
 // @ts-ignore - vite raw import
 import mdContent from "@/content/partner-api.md?raw";
