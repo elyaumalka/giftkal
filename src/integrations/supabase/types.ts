@@ -21,6 +21,7 @@ export type Database = {
           is_active: boolean | null
           key_hash: string
           name: string
+          partner_id: string | null
         }
         Insert: {
           created_at?: string
@@ -28,6 +29,7 @@ export type Database = {
           is_active?: boolean | null
           key_hash: string
           name: string
+          partner_id?: string | null
         }
         Update: {
           created_at?: string
@@ -35,8 +37,17 @@ export type Database = {
           is_active?: boolean | null
           key_hash?: string
           name?: string
+          partner_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       billing_charges: {
         Row: {
@@ -322,6 +333,7 @@ export type Database = {
           ceremony_time: string | null
           child_name: string | null
           created_at: string
+          created_by_partner_id: string | null
           custom_venue_location: string | null
           custom_venue_name: string | null
           device_rental_cost: number | null
@@ -365,6 +377,7 @@ export type Database = {
           ceremony_time?: string | null
           child_name?: string | null
           created_at?: string
+          created_by_partner_id?: string | null
           custom_venue_location?: string | null
           custom_venue_name?: string | null
           device_rental_cost?: number | null
@@ -408,6 +421,7 @@ export type Database = {
           ceremony_time?: string | null
           child_name?: string | null
           created_at?: string
+          created_by_partner_id?: string | null
           custom_venue_location?: string | null
           custom_venue_name?: string | null
           device_rental_cost?: number | null
@@ -444,6 +458,13 @@ export type Database = {
           voice_text?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "events_created_by_partner_id_fkey"
+            columns: ["created_by_partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_hall_id_fkey"
             columns: ["hall_id"]
@@ -714,6 +735,83 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      partner_webhook_deliveries: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          partner_id: string
+          payload: Json | null
+          response_body: string | null
+          response_status: number | null
+          signature: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          partner_id: string
+          payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          signature?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          partner_id?: string
+          payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          signature?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_webhook_deliveries_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          webhook_events: string[]
+          webhook_secret: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          webhook_events?: string[]
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          webhook_events?: string[]
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
