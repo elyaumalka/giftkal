@@ -821,15 +821,26 @@ export default function Settings() {
                 שותף = מערכת חיצונית (למשל ספק אישורי הגעה) שיוצרת אצלך אירועים דרך ה-API.
                 לכל שותף — webhook URL מאובטח (HMAC-SHA256), מפתחות API ייעודיים, וגישה רק לאירועים שהוא יצר.
               </p>
-              <a
-                href="/docs/partner-api"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-[#95742F] hover:underline font-medium"
-              >
-                📄 מסמך API לשותפים (קישור לשליחה)
-                <span className="text-xs text-muted-foreground ltr">/docs/partner-api</span>
-              </a>
+              <div className="flex flex-wrap gap-4">
+                <a
+                  href="/docs/partner-api"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-[#95742F] hover:underline font-medium"
+                >
+                  📄 מסמך API לשותפים
+                  <span className="text-xs text-muted-foreground ltr">/docs/partner-api</span>
+                </a>
+                <a
+                  href="/docs/partner-api-explorer"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-[#95742F] hover:underline font-medium"
+                >
+                  ▶️ Swagger אינטראקטיבי
+                  <span className="text-xs text-muted-foreground ltr">/docs/partner-api-explorer</span>
+                </a>
+              </div>
             </div>
             <button
               onClick={() => setIsAddPartnerOpen(true)}

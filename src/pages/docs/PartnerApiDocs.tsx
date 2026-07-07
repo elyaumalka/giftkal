@@ -1,7 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Download } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, PlayCircle } from "lucide-react";
 import { useState } from "react";
 // @ts-ignore - vite raw import
 import mdContent from "@/content/partner-api.md?raw";
@@ -36,6 +36,13 @@ export default function PartnerApiDocs() {
             <span className="text-sm text-white/70 hidden sm:inline">Partner API Documentation</span>
           </Link>
           <div className="flex items-center gap-2">
+            <Link
+              to="/docs/partner-api-explorer"
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg text-sm transition"
+            >
+              <PlayCircle className="w-4 h-4" />
+              Try it (Swagger)
+            </Link>
             <button
               onClick={copyLink}
               className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg text-sm transition"

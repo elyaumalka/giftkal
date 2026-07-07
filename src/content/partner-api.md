@@ -1,8 +1,9 @@
 # Giftkal – מסמך API לשותפים
 
-**גרסה:** 1.0
+**גרסה:** 1.1
 **עודכן:** יולי 2026
 **כתובת בסיס:** `https://xadihaigjkbvphzphxxk.supabase.co/functions/v1/public-api`
+**Swagger אינטראקטיבי:** [/docs/partner-api-explorer](/docs/partner-api-explorer)
 **תמיכה:** support@giftkal.com
 
 ---
@@ -13,13 +14,14 @@
 
 1. ליצור משתמשי קצה (בעלי אירוע, בעלי אולם) בתוך Giftkal.
 2. ליצור ולנהל אירועים, מוזמנים, אישורי הגעה, תשלומים, אולמות, אולמות אירועים ומכשירי קיוסק בשמם.
-3. לקבל **התראות webhook בזמן אמת** כשמתבצעים תשלומים, כשמאושרים מוכרים ב-PayMe וכשמסתיימות משיכות כספים.
+3. **להקים לאירוע חשבון סליקה מלא מול PayMe דרך ה-API — כולל KYC** (סעיף 5).
+4. לקבל **התראות webhook בזמן אמת** כשמתבצעים תשלומים, כשמאושרים מוכרים ב-PayMe וכשמסתיימות משיכות כספים.
 
-**שותף** הוא זהות מבודדת בתוך Giftkal. כל מפתח API שמונפק לכם משויך למזהה השותף שלכם, ולכן:
+**שותף** הוא זהות מבודדת ב-Giftkal. כל מפתח API משויך למזהה השותף שלכם, ולכן:
 
 - כל קריאת קריאה/רשימה מסוננת אוטומטית — **תוכלו לראות רק אירועים, משתמשים ונתונים שהמפתח שלכם יצר.**
 - כל קריאת יצירה מתויגת אוטומטית במזהה השותף שלכם.
-- אין אפשרות לקרוא או לשנות נתונים ששייכים לשותף אחר או ללקוחות ישירים של Giftkal.
+- ניסיון גישה למשאב של שותף אחר יחזיר `403` או `404`.
 
 ---
 
@@ -34,150 +36,310 @@ Content-Type: application/json
 
 בקשות ללא מפתח תקין ופעיל יחזירו `401 Unauthorized`.
 
-> 🔐 **שמרו את מפתח ה-API בצד השרת בלבד.** לעולם אל תטמיעו אותו בדפדפן, באפליקציית מובייל או במאגר קוד ציבורי. במקרה של חשש לדליפה — צרו קשר עם Giftkal מיידית להחלפת המפתח.
+> 🔐 **שמרו את מפתח ה-API בצד השרת בלבד.** אל תטמיעו אותו בדפדפן, באפליקציית מובייל או במאגר קוד ציבורי.
 
 ---
 
-## 3. פורמט בקשות
+## 3. פורמט בקשות ומוסכמות
 
-כל ה-endpoints עוברים דרך כתובת אחת. שם ה-**action** מועבר כפרמטר query, וגוף הבקשה כ-JSON:
+כל ה-endpoints עוברים דרך כתובת אחת. שם ה-**action** מועבר כ-query, וגוף הבקשה כ-JSON:
 
 ```
-POST https://xadihaigjkbvphzphxxk.supabase.co/functions/v1/public-api?action=CreateEvent
+POST /?action=CreateEvent
 x-api-key: sk_live_xxxxxxxxxxxxxxxx
 Content-Type: application/json
 
-{
-  "owner_id": "6f1b...",
-  "event_date": "2026-11-05",
-  "event_type": "חתונה",
-  "groom_name": "דוד",
-  "bride_name": "שרה"
-}
+{ "owner_id": "6f1b...", "event_date": "2026-11-05" }
 ```
 
-פעולות קריאה בלבד (read-only) תומכות גם ב-`GET` עם query params במקום body.
+פעולות קריאה בלבד תומכות גם ב-`GET` עם query params.
 
 ### מבנה תשובה
 
-הצלחה:
-```json
-{ "responseStatus": "OK", "event": { ... } }
-```
+- הצלחה: `{ "responseStatus": "OK", ... }`
+- שגיאה: `{ "responseStatus": "ERROR", "error": "<msg>", "code": 400 }`
 
-שגיאה:
-```json
-{ "responseStatus": "ERROR", "error": "event_id is required", "code": 400 }
-```
+### מוסכמות שדות
 
-קודי HTTP: `200` הצלחה, `400` בקשה שגויה, `401` לא מאומת, `403` אין הרשאה (גישה חוצת שותפים), `404` לא נמצא, `500` שגיאת שרת.
+| מוסכמה | פורמט |
+|---|---|
+| מזהים | UUID (`6f1b1e40-...`) |
+| תאריכים | ISO 8601 UTC (`2026-11-05T12:00:00Z`) |
+| תאריך בלבד | `YYYY-MM-DD` |
+| טלפון ישראלי | `+972XXXXXXXXX` או `0XXXXXXXXX` (9 ספרות אחרי) |
+| ת״ז | 9 ספרות בדיוק |
+| טקסט | UTF-8 (עברית מותרת) |
+| מטבע | ILS, שברי אגורות מותרים |
+
+### קודי HTTP
+
+`200` הצלחה · `400` בקשה שגויה · `401` לא מאומת · `403` אין הרשאה · `404` לא נמצא · `500` שגיאת שרת.
 
 ---
 
-## 4. פירוט פעולות (Actions)
+## 4. פעולות עם שדות מלאים
 
-### 4.1 משתמשים ופרופילים
+> 💡 לכל endpoint מופיע כאן טופס אינטראקטיבי ב-Swagger UI: **[/docs/partner-api-explorer](/docs/partner-api-explorer)**.
 
-| Action | Method | תיאור |
+### 4.1 משתמשים – `CreateEventOwner`
+
+יוצר משתמש חדש עם תפקיד `event_owner` ואופציונלית אירוע התחלתי.
+
+| שדה | טיפוס | חובה | הערות |
+|---|---|---|---|
+| `email` | string (email) | ✅ | ייחודי במערכת. |
+| `password` | string | ✅ | 8+ תווים. מומלץ 16+ אקראי. |
+| `full_name` | string | ✅ | עברית מותרת. |
+| `phone` | string | ⬜ | פורמט טלפון ישראלי. |
+| `event` | object | ⬜ | אירוע התחלתי (ראו CreateEvent). |
+| `event.event_type` | enum | ⬜ | `חתונה` \| `בר מצווה` \| `בת מצווה` \| `ברית` \| `חינה` \| `אירוסין` \| `אחר` |
+| `event.event_date` | date | ⬜ (חובה אם יש event) | `YYYY-MM-DD` |
+| `event.groom_name` / `bride_name` / `child_name` / `family_name` | string | ⬜ | לפי סוג האירוע. |
+
+**מחזיר:** `{ user: { id, email, full_name }, event: { ... } | null }`
+
+### 4.2 משתמשים – `CreateVenueOwner`
+
+זהה ל-`CreateEventOwner` אבל יוצר בעל אולם. במקום `event` ניתן להעביר `venue` עם `{ name, address, phone?, email?, monthly_subscription? }`.
+
+### 4.3 משתמשים – שאר הפעולות
+
+| Action | שדות |
+|---|---|
+| `ListProfiles` (GET) | ללא. מחזיר את כל הפרופילים של השותף שלכם. |
+| `GetProfile` (GET) | `user_id` (חובה). |
+| `UpdateProfile` (POST) | `user_id` (חובה) + כל שילוב של `full_name`, `phone`, `avatar_url`. |
+| `ListUsers` (GET) | ללא. כמו `ListProfiles` + מערך `roles` לכל משתמש. |
+
+### 4.4 אירועים – `CreateEvent`
+
+| שדה | טיפוס | חובה | הערות |
+|---|---|---|---|
+| `owner_id` | uuid | ✅ | `user_id` של בעל האירוע. חייב להיות שייך לשותף שלכם. |
+| `event_date` | date | ✅ | `YYYY-MM-DD` |
+| `event_type` | enum | ⬜ | ברירת מחדל `חתונה`. |
+| `groom_name` / `bride_name` / `child_name` / `family_name` | string | ⬜ | |
+| `venue_id` / `hall_id` | uuid | ⬜ | |
+| `custom_venue_name` / `custom_venue_location` | string | ⬜ | מיקום חופשי כשאין אולם. |
+| `reception_time` / `ceremony_time` | string | ⬜ | `HH:MM` |
+
+### 4.5 אירועים – שאר הפעולות
+
+| Action | שדות עיקריים |
+|---|---|
+| `GetEvent` (GET) | `event_id` (חובה). |
+| `ListEvents` (GET) | סינון אופציונלי: `venue_id`, `owner_id`. |
+| `UpdateEvent` (POST) | `event_id` (חובה) + כל שדה עדכון. |
+| `GetEventStats` (GET) | `event_id`. מחזיר סיכומי מוזמנים ותשלומים. |
+
+### 4.6 מוזמנים – `AddGuest`
+
+| שדה | טיפוס | חובה | הערות |
+|---|---|---|---|
+| `event_id` | uuid | ✅ | |
+| `full_name` | string | ✅ | |
+| `phone` | string | ⬜ | טלפון ישראלי. |
+| `email` | string | ⬜ | |
+| `side` | enum | ⬜ | `groom` \| `bride` \| `general` |
+| `relationship` | string | ⬜ | חופשי. |
+| `number_of_guests` | integer | ⬜ | ברירת מחדל 1. |
+
+`BulkAddGuests`: Body `{ event_id, guests: [ { full_name, phone, ... }, ... ] }`.
+
+### 4.7 מוזמנים – אישורי הגעה
+
+| Action | שדות |
+|---|---|
+| `ListGuests` (GET) | `event_id` + `status?` (`approved`/`declined`/`pending`). |
+| `UpdateGuest` (POST) | `guest_id` + כל שדה. |
+| `UpdateRSVP` (POST) | `guest_id`, `rsvp_status`, `number_of_guests?`. |
+| `BulkUpdateRSVP` (POST) | `updates: [{ guest_id, rsvp_status, number_of_guests }]`. |
+| `DeleteGuest` (DELETE/GET) | `guest_id`. |
+
+### 4.8 תשלומים
+
+| Action | שדות |
+|---|---|
+| `GetTransactions` (GET) | `event_id`. |
+| `GetTransaction` (GET) | `transaction_id`. |
+| `CreateTransaction` (POST) | `event_id`, `amount`, `payer_name?`, `payment_method?`, `notes?` — נדרש רק לתשלומים ידניים. |
+
+### 4.9 אולמות ומכשירים
+
+`CreateVenue`/`UpdateVenue`: `name`, `address`, `phone?`, `email?`, `monthly_subscription?`, `logo_url?`.
+`CreateDevice`: `venue_id`, `serial_number`, `hall_id?`, `nickname?`.
+`IdentifyDevice` (GET): `serial_number` **או** `hall_id`. מחזיר את האירוע הפעיל היום + קישור למסך המתנות.
+
+### 4.10 שאר המשאבים
+
+CRUD סטנדרטי (ראו Swagger): `ListLeads` / `CreateLead` / `UpdateLead` / `DeleteLead`, `ListLandingLeads`, `ListTickets` / `CreateTicket` / `UpdateTicket`, `ListInvoices` / `CreateInvoice` / `UpdateInvoice`, `ListDocuments` / `AddDocument` / `DeleteDocument`, `ListNotes`, `ListTasks`, `GetSystemSettings`, `GetRequiredDocuments`, `GetSystemStats`.
+
+---
+
+## 5. הקמת חשבון סליקה (PayMe Seller Onboarding)
+
+זהו התהליך שבסופו האירוע יכול לקבל תשלומי מתנות. Giftkal סולק דרך **PayMe**, ולכן צריך לפתוח לכל אירוע חשבון מוכר (seller) עם KYC.
+
+**זרימה:**
+
+```text
+1. CreatePaymeSeller  →  PayMe מקצה seller_payme_id (סטטוס: created)
+2. UploadSellerFile   →  העלאת ת"ז + אישור ניהול חשבון בנק (Base64)
+3. GetSellerStatus    →  polling לסטטוס
+4. seller-approve     →  webhook כש-PayMe אישר. מכאן האירוע יכול לקבל תשלומים.
+```
+
+### 5.1 `CreatePaymeSeller`
+
+יוצר את המוכר ב-PayMe ומקשר אותו לאירוע.
+
+**שדות חובה — פרטים אישיים**
+
+| שדה | טיפוס | הערות |
 |---|---|---|
-| `CreateEventOwner` | POST | יצירת בעל אירוע + אירוע התחלתי (אופציונלי). |
-| `CreateVenueOwner` | POST | יצירת בעל אולם + אולם התחלתי (אופציונלי). |
-| `ListProfiles` | GET | רשימת כל הפרופילים שיצר מפתח השותף שלכם. |
-| `GetProfile` | GET | פרופיל בודד לפי `user_id`. |
-| `UpdateProfile` | POST | עדכון `full_name`, `phone`, `avatar_url`. |
+| `event_id` | uuid | אירוע קיים של השותף שלכם. |
+| `first_name` | string | |
+| `last_name` | string | |
+| `social_id` | string | **9 ספרות בדיוק** (ת״ז ישראלית). |
+| `birthdate` | string | `DD/MM/YYYY` |
+| `email` | string | |
+| `phone` | string | טלפון ישראלי. |
 
-**דוגמה — CreateEventOwner:**
+**שדות חובה — פרטי בנק**
+
+| שדה | טיפוס | הערות |
+|---|---|---|
+| `bank_code` | integer | קוד בנק ישראלי (טבלה למטה). |
+| `bank_branch` | integer | מספר סניף. |
+| `bank_account_number` | string | מספר חשבון. |
+
+**שדות חובה — פרטי עסק וכתובת**
+
+| שדה | טיפוס | הערות |
+|---|---|---|
+| `inc_type` | integer | `1` = עוסק פטור · `2` = עוסק מורשה · `3` = חברה בע״מ. |
+| `merchant_name` | string | שם העסק/האירוע. |
+| `city` | string | |
+| `street` | string | |
+| `street_number` | string | |
+
+**שדות אופציונליים**
+
+| שדה | טיפוס | ברירת מחדל |
+|---|---|---|
+| `social_id_date` | `DD/MM/YYYY` | תאריך הנפקת ת״ז (מומלץ). |
+| `gender` | 0 \| 1 | 0 = זכר, 1 = נקבה. ברירת מחדל 0. |
+| `contact_email` / `contact_phone` | string | ברירת מחדל = `email`/`phone`. |
+| `inc_code` | string | ח.פ. / עוסק מורשה. **חובה** ל-`inc_type` 2 או 3. |
+| `merchant_name_en` | string | תעתיק לאנגלית. יופק אוטומטית אם לא נשלח. |
+| `description` | string | |
+| `site_url` | string (uri) | ברירת מחדל `https://giftkal.com`. |
+
+**קודי בנק ישראליים נפוצים:**
+
+| קוד | בנק | | קוד | בנק |
+|---|---|---|---|---|
+| 10 | לאומי | | 4 | יהב |
+| 11 | דיסקונט | | 9 | דואר |
+| 12 | הפועלים | | 13 | איגוד |
+| 20 | מזרחי טפחות | | 14 | אוצה״ח |
+| 31 | הבינלאומי | | 17 | מרכנתיל |
+| 46 | מסד | | 52 | פאגי |
+| 54 | ירושלים | | | |
+
+**דוגמה:**
 ```json
-POST ?action=CreateEventOwner
+POST ?action=CreatePaymeSeller
 {
+  "event_id": "a12b...",
+  "first_name": "דוד",
+  "last_name": "כהן",
+  "social_id": "123456789",
+  "social_id_date": "01/01/2015",
+  "birthdate": "01/01/1990",
+  "gender": 0,
   "email": "chatan@example.com",
-  "password": "SecurePass123!",
-  "full_name": "דוד כהן",
   "phone": "+972501234567",
-  "event": {
-    "event_type": "חתונה",
-    "event_date": "2026-11-05",
-    "groom_name": "דוד",
-    "bride_name": "שרה"
-  }
+  "bank_code": 12,
+  "bank_branch": 123,
+  "bank_account_number": "12345678",
+  "inc_type": 1,
+  "merchant_name": "חתונת דוד ושרה",
+  "city": "תל אביב",
+  "street": "דיזנגוף",
+  "street_number": "50"
 }
 ```
-מחזיר `{ user: { id, email, full_name }, event: { ... } }`.
 
-### 4.2 אירועים
+**תשובה:**
+```json
+{
+  "responseStatus": "OK",
+  "seller_payme_id": "SLR-...",
+  "hf_api_key": "86e0b...",
+  "status": "created",
+  "message": "Seller created. Upload KYC documents..."
+}
+```
 
-| Action | Method | תיאור |
+### 5.2 `UploadSellerFile`
+
+מעלה מסמך KYC לחשבון המוכר.
+
+| שדה | טיפוס | הערות |
 |---|---|---|
-| `CreateEvent` | POST | יצירת אירוע לבעל אירוע קיים. חובה: `owner_id`, `event_date`. |
-| `GetEvent` | GET | קבלת אירוע לפי `event_id`. |
-| `ListEvents` | GET | רשימת כל האירועים שלכם. סינון אופציונלי: `venue_id`, `owner_id`. |
-| `UpdateEvent` | POST | עדכון כל שדה באירוע. חובה: `event_id`. |
-| `GetEventStats` | GET | סיכום מוזמנים ותשלומים לאירוע. |
+| `event_id` | uuid | חובה. חייב להיות אחרי `CreatePaymeSeller`. |
+| `file_type` | integer | `1` = ת״ז · `2` = אישור ניהול חשבון בנק · `3` = רישיון עסק · `4` = אחר. |
+| `file_name` | string | לדוגמה `id.pdf`. |
+| `mime_type` | string | `application/pdf` (ברירת מחדל), `image/jpeg`, `image/png`. |
+| `file_base64` | string | תוכן הקובץ ב-Base64 **בלי** `data:...;base64,`. |
 
-### 4.3 מוזמנים ואישורי הגעה
+**מינימום נדרש לאישור:** קובץ מסוג `1` (ת״ז) + קובץ מסוג `2` (אישור בנק). קראו שוב לכל מסמך.
 
-| Action | Method | תיאור |
-|---|---|---|
-| `ListGuests` | GET | רשימת מוזמנים לפי `event_id`. סינון אופציונלי לפי `status` (`approved`/`declined`/`pending`). מחזיר גם סטטיסטיקות. |
-| `AddGuest` | POST | הוספת מוזמן בודד. |
-| `BulkAddGuests` | POST | הוספה מרובה. Body: `{ event_id, guests: [{ full_name, phone, ... }] }`. |
-| `UpdateGuest` | POST | עדכון כל שדה של מוזמן. חובה: `guest_id`. |
-| `UpdateRSVP` | POST | עדכון `rsvp_status` (`approved`/`declined`/`pending`) ו-`number_of_guests`. |
-| `BulkUpdateRSVP` | POST | Body: `{ updates: [{ guest_id, rsvp_status, number_of_guests }] }`. |
-| `DeleteGuest` | DELETE/GET | מחיקה לפי `guest_id`. |
+### 5.3 `GetSellerStatus`
 
-### 4.4 תשלומים (Transactions)
+בודק את סטטוס האישור.
 
-| Action | Method | תיאור |
-|---|---|---|
-| `GetTransactions` | GET | רשימת תשלומים לאירוע `event_id` כולל סכום כולל. |
-| `GetTransaction` | GET | תשלום בודד לפי `transaction_id`. |
-| `CreateTransaction` | POST | תיעוד תשלום ידני (נדרש לעיתים רחוקות — רוב התשלומים נכנסים מ-Giftkal אוטומטית). |
+```
+GET ?action=GetSellerStatus&event_id=a12b...
+```
 
-### 4.5 אולמות, אולמות פנים ומכשירים
+**תשובה:**
+```json
+{
+  "responseStatus": "OK",
+  "seller_payme_id": "SLR-...",
+  "local_status": "created",     // created | approved | rejected
+  "payme_status": "pending_review",
+  "payme_raw": { ... }
+}
+```
 
-| Action | Method | תיאור |
-|---|---|---|
-| `CreateVenue` / `GetVenue` / `ListVenues` / `UpdateVenue` / `DeleteVenue` | mixed | ניהול אולמות. |
-| `CreateDevice` / `ListDevices` / `UpdateDevice` / `DeleteDevice` | mixed | ניהול מכשירי קיוסק (דורש `venue_id`, `serial_number`). |
-| `IdentifyDevice` | GET | זיהוי מכשיר בהפעלה — לפי `serial_number` או `hall_id`, מחזיר את האירוע הפעיל היום + קישור למסך המתנות. |
+`local_status: "approved"` מתעדכן ברגע ש-Giftkal מקבלת webhook `seller-approve` מ-PayMe. באותו רגע נשלח גם לכם webhook `seller-approve` (סעיף 6).
 
-### 4.6 לידים ולידים מדפי נחיתה
+### 5.4 סביבת בדיקות בלי חיוב אמיתי
 
-| Action | Method | תיאור |
-|---|---|---|
-| `ListLeads` / `GetLead` / `CreateLead` / `UpdateLead` / `DeleteLead` | mixed | לידים ב-CRM. |
-| `ListLandingLeads` / `CreateLandingLead` / `UpdateLandingLead` / `DeleteLandingLead` | mixed | לידים שנקלטו מדפי נחיתה של אולמות. |
-
-### 4.7 תמיכה, חשבוניות, מסמכים, הערות ומשימות
-
-פעולות CRUD סטנדרטיות — ראו רשימה מלאה בסעיף 8.
-
-### 4.8 סטטיסטיקות מערכת
-
-| Action | Method | תיאור |
-|---|---|---|
-| `GetSystemStats` | GET | סיכומים ברמה גבוהה (אירועים, אולמות, משתמשים, לידים, סה״כ תשלומים). |
+Giftkal יכולה להנפיק שותף עם דגל `sandbox` שמדלג על PayMe וקופון `GIFTKAL-TEST` שמדמה תשלום מלא. פנו לתמיכה.
 
 ---
 
-## 5. Webhooks
+## 6. Webhooks
 
-אם סיפקתם `webhook_url` בעת יצירת השותף, Giftkal תשלח בקשות POST לכתובת הזו כשמתרחשים אירועים ב**אירועים שלכם**.
+אם סיפקתם `webhook_url` בעת יצירת השותף, Giftkal תשלח POST לכתובת הזו כשמתרחשים אירועים ב**אירועים שלכם**.
 
-### 5.1 סוגי אירועים
+### 6.1 סוגי אירועים
 
 | `event_type` | מתי נשלח |
 |---|---|
-| `seller-approve` | PayMe סיימה לאשר את המוכר עבור אירוע מסוים — האירוע יכול לקבל תשלומים. |
+| `seller-approve` | PayMe סיימה לאשר את המוכר עבור אירוע — האירוע יכול לקבל תשלומים. |
 | `sale-paid` | תשלום מתנה הצליח. |
 | `sale-failure` | תשלום מתנה נכשל. |
 | `refund` | מתנה זוכתה חזרה. |
 | `withdrawal-complete` | משיכת כספים לחשבון הבנק של בעל האירוע הושלמה. |
 
-ההרשמה נעשית על ידי מסירת רשימת `event_type` ל-Giftkal. השארה ריקה = "כל האירועים".
+השארה ריקה של `webhook_events` = "כל האירועים".
 
-### 5.2 פורמט משלוח
+### 6.2 פורמט משלוח
 
 ```
 POST <ה-webhook_url שלכם>
@@ -188,45 +350,33 @@ X-Giftkal-Signature: <hex HMAC-SHA256>
 {
   "event_type": "sale-paid",
   "delivered_at": "2026-07-01T12:34:56.789Z",
-  "data": {
-    "transaction_id": "b3d5...",
-    "event_id": "a12b...",
-    "payment_status": "completed",
-    "amount": 350,
-    "gift_amount": 347.70,
-    "fee_amount": 2.30,
-    "payer_name": "אבי לוי"
-  }
+  "data": { ... }
 }
 ```
 
-מבנה payload עבור סוגי אירועים נוספים:
+**Payload לפי סוג:**
 
-- **`seller-approve`** — `{ event_id, seller_payme_id, status: "approved" }`
-- **`withdrawal-complete`** — כולל `seller_payme_id`, `payme_payout_code`, `amount`
+- `sale-paid` / `sale-failure` / `refund`: `{ transaction_id, event_id, payment_status, amount, gift_amount, fee_amount, payer_name }`
+- `seller-approve`: `{ event_id, seller_payme_id, status: "approved" }`
+- `withdrawal-complete`: `{ event_id, seller_payme_id, payme_payout_code, amount }`
 
-### 5.3 אימות חתימה (חובה)
+### 6.3 אימות חתימה (חובה)
 
-כל משלוח חתום ב-**HMAC-SHA256** מעל גוף הבקשה הגולמי, באמצעות הסוד שקיבלתם פעם אחת בעת יצירת השותף.
+כל משלוח חתום ב-**HMAC-SHA256** מעל גוף הבקשה הגולמי, עם ה-`webhook_secret` שקיבלתם פעם אחת.
 
-**דוגמה ב-Node.js:**
+**Node.js:**
 ```js
 import crypto from "crypto";
-
 app.post("/webhooks/giftkal", express.raw({ type: "application/json" }), (req, res) => {
-  const secret = process.env.GIFTKAL_WEBHOOK_SECRET;
-  const signature = req.header("X-Giftkal-Signature");
-  const expected = crypto.createHmac("sha256", secret).update(req.body).digest("hex");
-
-  if (signature !== expected) return res.status(401).send("bad signature");
-
+  const expected = crypto.createHmac("sha256", process.env.GIFTKAL_WEBHOOK_SECRET)
+    .update(req.body).digest("hex");
+  if (req.header("X-Giftkal-Signature") !== expected) return res.status(401).send("bad signature");
   const payload = JSON.parse(req.body.toString());
-  // handle payload.event_type, payload.data ...
   res.status(200).send("ok");
 });
 ```
 
-**דוגמה ב-PHP:**
+**PHP:**
 ```php
 $secret = getenv('GIFTKAL_WEBHOOK_SECRET');
 $body = file_get_contents('php://input');
@@ -236,70 +386,41 @@ if (!hash_equals($expected, $_SERVER['HTTP_X_GIFTKAL_SIGNATURE'] ?? '')) {
 }
 ```
 
-### 5.4 ניסיונות חוזרים ויומן משלוחים
+### 6.4 ניסיונות חוזרים ויומן משלוחים
 
-- החזירו **HTTP 2xx** תוך 10 שניות לאישור קבלה. כל תשובה שאינה 2xx או timeout נרשמת ככשלון.
-- כרגע **אין ניסיונות חוזרים אוטומטיים**. Giftkal שומרת כל ניסיון משלוח (סטטוס + גוף התשובה) ומנהל המערכת יכול לשלוח מחדש משלוחים שנכשלו על פי בקשה.
-- דאגו לביטול כפילויות לפי `transaction_id` (או `event_id + delivered_at`) — התייחסו ל-webhooks כ-at-least-once.
-
----
-
-## 6. סביבת בדיקות
-
-Giftkal פועלת בסביבת **פרודקשן יחידה** — אין סביבת sandbox נפרדת. לבדיקות בטוחות:
-
-1. בקשו מ-Giftkal להנפיק **שותף + מפתח API ייעודי לבדיקות** כדי שנתוני הבדיקה שלכם יהיו מבודדים מלקוחות אמיתיים.
-2. הפנו את ה-`webhook_url` שלכם ל-[https://webhook.site](https://webhook.site) או לטאנל ngrok מקומי כדי לצפות ב-payloads בזמן אמת.
-3. לבדיקות end-to-end מלאות של תהליך המתנה ללא חיוב אמיתי — Giftkal תספק **קופון עוקף** (`GIFTKAL-TEST`) שמשלים תשלומים בלי לגעת ב-PayMe, ועדיין תקבלו את ה-webhook המלא.
-4. בסיום — מחיקת שותף הבדיקה מוחקת גם את כל מפתחות ה-API שלו.
+- החזירו **HTTP 2xx** תוך 10 שניות. כל תשובה שאינה 2xx או timeout נרשמת ככשלון.
+- כרגע **אין ניסיונות חוזרים אוטומטיים**. Giftkal שומרת כל ניסיון (סטטוס + גוף התשובה) ומנהל המערכת יכול לשלוח מחדש משלוחים שנכשלו.
+- דאגו לביטול כפילויות לפי `transaction_id` — התייחסו ל-webhooks כ-at-least-once.
 
 ---
 
 ## 7. Best Practices
 
-- **Idempotency:** בעת יצירת בעל אירוע, טפלו בשגיאת `email already registered` כאילו הוא כבר קיים — בלי ניסיונות חוזרים עיוורים.
-- **אל תשמרו סיסמאות משתמש** שאתם שולחים ל-`CreateEventOwner`. שלחו סיסמה אקראית באורך 16+ תווים והסתמכו על תהליך איפוס הסיסמה של Giftkal.
-- **צד שרת בלבד** — מפתח ה-API אינו מוגן ב-CORS, אך אין לחשוף אותו לדפדפן.
-- **תאריכים ושעות** בפורמט ISO 8601 UTC. תאריכים בלבד (`event_date`): `YYYY-MM-DD`.
-- **טקסט בעברית** — שלחו UTF-8; Giftkal שומרת שמות בעברית באופן טבעי.
+- **צד שרת בלבד** — מפתח ה-API אינו מוגן ב-CORS, אך לעולם אל תחשפו אותו לדפדפן.
+- **Idempotency** ב-`CreateEventOwner` — טפלו בשגיאת `email already registered` כאילו המשתמש קיים.
+- **סיסמאות** — שלחו סיסמה אקראית ארוכה ואל תשמרו אותה. המשתמש יאפס דרך Giftkal.
+- **קבצי KYC** — השתמשו ב-PDF < 5MB. שלחו רק Base64 של המידע (בלי `data:...;base64,`).
+- **תאריכים** — בכל ה-API בפורמט ISO 8601. **חריגים:** ב-`CreatePaymeSeller` השדות `birthdate` ו-`social_id_date` בפורמט `DD/MM/YYYY`.
+- **טקסט בעברית** — UTF-8 בלבד.
 
 ---
 
-## 8. רשימת פעולות מלאה
+## 8. Checklist להעלאה לאוויר
 
-**אירועים:** `GetEvent`, `ListEvents`, `UpdateEvent`, `CreateEvent`
-**מוזמנים:** `ListGuests`, `AddGuest`, `UpdateGuest`, `UpdateRSVP`, `DeleteGuest`, `BulkAddGuests`, `BulkUpdateRSVP`
-**תשלומים:** `GetTransactions`, `GetTransaction`, `CreateTransaction`
-**אולמות:** `GetVenue`, `ListVenues`, `UpdateVenue`, `CreateVenue`, `DeleteVenue`
-**לידים:** `ListLeads`, `GetLead`, `CreateLead`, `UpdateLead`, `DeleteLead`
-**משתמשים:** `ListProfiles`, `GetProfile`, `CreateEventOwner`, `CreateVenueOwner`, `ListUsers`, `UpdateProfile`
-**מסמכים:** `ListDocuments`, `AddDocument`, `DeleteDocument`
-**סטטיסטיקות:** `GetEventStats`, `GetSystemStats`
-**תמיכה:** `ListTickets`, `CreateTicket`, `UpdateTicket`
-**חשבוניות:** `ListInvoices`, `GetInvoice`, `CreateInvoice`, `UpdateInvoice`
-**מכשירים:** `ListDevices`, `CreateDevice`, `UpdateDevice`, `DeleteDevice`, `IdentifyDevice`
-**הערות:** `ListNotes`, `CreateNote`, `UpdateNote`, `DeleteNote`
-**משימות:** `ListTasks`, `CreateTask`, `UpdateTask`, `DeleteTask`
-**לידי דפי נחיתה:** `ListLandingLeads`, `CreateLandingLead`, `UpdateLandingLead`, `DeleteLandingLead`
-**הגדרות:** `GetSystemSettings`, `UpdateSystemSettings`, `GetRequiredDocuments`
+Giftkal תספק:
 
----
-
-## 9. Checklist להעלאה לאוויר
-
-לפני עלייה לאוויר, Giftkal תספק:
-
-- [ ] שם השותף שנרשם במערכת
-- [ ] ערך `x-api-key` (מוצג פעם אחת — שמרו במקום מאובטח)
-- [ ] ערך `webhook_secret` (מוצג פעם אחת — שמרו במקום מאובטח)
-- [ ] אישור ש-`webhook_url` נגיש מהאינטרנט
-- [ ] אישור על סוגי `webhook_events` הרלוונטיים
+- [ ] שם השותף
+- [ ] ערך `x-api-key` (מוצג פעם אחת)
+- [ ] ערך `webhook_secret` (מוצג פעם אחת)
+- [ ] רשימת `webhook_events` הרלוונטיים
 
 אתם צריכים להיות מסוגלים:
 
-- [ ] לבצע `CreateEventOwner` ולראות את הפרופיל ב-`ListProfiles`
-- [ ] לבצע `CreateEvent` לבעל האירוע הזה ולראות אותו ב-`ListEvents`
-- [ ] לקבל לפחות webhook אחד לבדיקה ולאמת את החתימה
+- [ ] לבצע `CreateEventOwner` ולראות ב-`ListProfiles`.
+- [ ] לבצע `CreateEvent` ולראות ב-`ListEvents`.
+- [ ] לבצע `CreatePaymeSeller` + `UploadSellerFile` × 2 ולראות `local_status = created` ב-`GetSellerStatus`.
+- [ ] לקבל webhook `seller-approve` ולאמת חתימה.
+- [ ] לקבל webhook `sale-paid` ולאמת חתימה.
 
 ---
 
