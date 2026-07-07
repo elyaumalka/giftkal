@@ -227,10 +227,7 @@ export default function Settings() {
       // Generate a 32-byte HMAC secret so the partner can verify webhook payloads.
       const secretBytes = crypto.getRandomValues(new Uint8Array(32));
       const secret = Array.from(secretBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-      const events = newPartnerEvents
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+      const events = newPartnerEvents;
       const { data, error } = await (supabase.from as any)("partners")
         .insert({
           name: newPartnerName,
