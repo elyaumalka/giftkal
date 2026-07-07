@@ -15,14 +15,56 @@
 import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts'
 
 export interface DispatchInput {
-  /** notify_type — e.g. 'sale-paid', 'seller-approve', 'withdrawal-complete'. */
+  /** Internal notify_type — e.g. 'sale-paid', 'seller-approve', 'withdrawal-complete'.
+   *  Gets translated to the partner-facing event name before sending. */
   eventType: string
   /** Optional event_id whose created_by_partner_id determines who gets notified. */
   eventId?: string | null
   /** Optional explicit partnerId — wins over eventId-based lookup. */
   partnerId?: string | null
-  /** Payload that gets serialized as the POST body. */
+  /** Payload — PayMe-specific fields are stripped automatically. */
   payload: Record<string, unknown>
+}
+
+/**
+ * Public webhook contract. Partners never see PayMe branding or IDs.
+ *  Internal name          → Public event name we send to partners.
+ */
+const INTERNAL_TO_PUBLIC: Record<string, string> = {
+  'seller-approve': 'payment-account-approved',
+  'sale-paid': 'sale-paid',
+  'sale-failure': 'sale-failure',
+  'sale-complete': 'sale-paid',
+  'charge-complete': 'sale-paid',
+  'sale-authorized': 'sale-authorized',
+  'refund': 'refund',
+  'sale-chargeback-refund': 'refund',
+  'sale-chargeback': 'chargeback',
+  'withdrawal-complete': 'withdrawal-complete',
+}
+
+/** Fields we must never expose to partners (they leak the processor identity). */
+const FORBIDDEN_KEYS = new Set([
+  'seller_payme_id',
+  'payme_payout_code',
+  'payme_transaction_id',
+  'payme_sale_id',
+  'payme_status',
+  'payme_client_key',
+])
+
+function sanitizeForPartner(payload: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(payload)) {
+    if (FORBIDDEN_KEYS.has(k)) continue
+    if (k.startsWith('payme_')) continue
+    out[k] = v
+  }
+  // Normalize a couple of processor-specific field names to neutral ones.
+  if (payload.payme_payout_code && !out.payout_reference) {
+    out.payout_reference = payload.payme_payout_code
+  }
+  return out
 }
 
 /**
