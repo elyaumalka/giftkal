@@ -272,7 +272,9 @@ Deno.serve(async (req) => {
       seller_bank_branch: body.bankBranch,
       seller_bank_account_number: body.bankAccountNumber,
       seller_inc: body.incType,
-      seller_inc_code: body.incCode || '',
+      // For עוסק פטור (incType=1) the business code IS the personal social ID.
+      // For עוסק מורשה / חברה בע"מ use the provided incCode, falling back to social ID.
+      seller_inc_code: body.incCode?.trim() || body.socialId,
       seller_merchant_name: body.merchantName.trim(),
       seller_merchant_name_en: /^[a-zA-Z0-9\s\-_]+$/.test((body.merchantNameEn || '').trim())
         ? body.merchantNameEn.trim()
