@@ -1032,6 +1032,43 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
             <div className="text-xs text-muted-foreground">
               <span className="font-medium">Seller ID:</span> <code className="ltr">{event.seller_payme_id}</code>
             </div>
+
+            {/* Live status check against PayMe */}
+            <div className="bg-white/70 border border-border rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-medium">בדיקת סטטוס מול PayMe</div>
+                <Button size="sm" onClick={checkPaymeStatus} disabled={checkingPaymeStatus}>
+                  {checkingPaymeStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : "בדוק ועדכן"}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                שולף את הסטטוס האמיתי מ-PayMe (אישור/דחייה/חסרים פרטים) ומסנכרן את האירוע. מומלץ לפני יידוע השותף.
+              </p>
+              {paymeStatusResult && (
+                <div className="text-xs bg-muted rounded-lg p-2 space-y-1">
+                  <div><span className="font-medium">סטטוס:</span> {paymeStatusResult.status}</div>
+                  <div><span className="font-medium">מאושר:</span> {paymeStatusResult.approved ? 'כן' : 'לא'}</div>
+                  <div><span className="font-medium">פעיל:</span> {paymeStatusResult.active ? 'כן' : 'לא'}</div>
+                  {paymeStatusResult.accountType && (
+                    <div><span className="font-medium">סוג חשבון:</span> {paymeStatusResult.accountType}</div>
+                  )}
+                  {paymeStatusResult.approvedDate && (
+                    <div><span className="font-medium">אושר בתאריך:</span> {paymeStatusResult.approvedDate}</div>
+                  )}
+                  {Array.isArray(paymeStatusResult.missingFields) && paymeStatusResult.missingFields.length > 0 && (
+                    <div>
+                      <span className="font-medium">שדות חסרים:</span>
+                      <ul className="list-disc pr-4 mt-1">
+                        {paymeStatusResult.missingFields.map((f: any, i: number) => (
+                          <li key={i} className={f.required ? 'text-red-700' : ''}>{f.label}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Input
                 value={hfApiKeyInput}
