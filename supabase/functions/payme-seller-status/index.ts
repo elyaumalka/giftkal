@@ -45,15 +45,29 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get event and verify ownership
+    // Get event and verify ownership (owner OR admin)
     const { data: event } = await supabase
       .from('events')
       .select('id, owner_id, seller_payme_id, payment_setup_status')
       .eq('id', eventId)
       .single()
 
-    if (!event || event.owner_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Event not found or unauthorized' }), {
+    if (!event) {
+      return new Response(JSON.stringify({ error: 'Event not found' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const { data: adminRole } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle()
+    const isAdmin = Boolean(adminRole)
+
+    if (event.owner_id !== user.id && !isAdmin) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
