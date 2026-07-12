@@ -54,6 +54,38 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [sweepNote, setSweepNote] = useState("");
   const [sweepingCommission, setSweepingCommission] = useState(false);
   const [withdrawingBalance, setWithdrawingBalance] = useState(false);
+  const [checkingPaymeStatus, setCheckingPaymeStatus] = useState(false);
+  const [paymeStatusResult, setPaymeStatusResult] = useState<any>(null);
+
+  const checkPaymeStatus = async () => {
+    setCheckingPaymeStatus(true);
+    setPaymeStatusResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('payme-seller-status', {
+        body: { eventId: event.id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setPaymeStatusResult(data);
+      const statusHe: Record<string, string> = {
+        approved: 'מאושר ✅',
+        pending: 'ממתין לבדיקת PayMe',
+        missing_info: 'חסרים פרטים',
+        rejected: 'נדחה',
+        created: 'נוצר, ממתין לאישור',
+      };
+      toast({
+        title: 'סטטוס PayMe עודכן',
+        description: statusHe[(data as any).status] || (data as any).status,
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] });
+    } catch (e: any) {
+      toast({ title: 'שגיאה בבדיקת PayMe', description: e?.message || 'שגיאה', variant: 'destructive' });
+    } finally {
+      setCheckingPaymeStatus(false);
+    }
+  };
 
   /**
    * Pull the wallet totals for this event:
