@@ -54,6 +54,38 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [sweepNote, setSweepNote] = useState("");
   const [sweepingCommission, setSweepingCommission] = useState(false);
   const [withdrawingBalance, setWithdrawingBalance] = useState(false);
+  const [checkingPaymeStatus, setCheckingPaymeStatus] = useState(false);
+  const [paymeStatusResult, setPaymeStatusResult] = useState<any>(null);
+
+  const checkPaymeStatus = async () => {
+    setCheckingPaymeStatus(true);
+    setPaymeStatusResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('payme-seller-status', {
+        body: { eventId: event.id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setPaymeStatusResult(data);
+      const statusHe: Record<string, string> = {
+        approved: 'מאושר ✅',
+        pending: 'ממתין לבדיקת PayMe',
+        missing_info: 'חסרים פרטים',
+        rejected: 'נדחה',
+        created: 'נוצר, ממתין לאישור',
+      };
+      toast({
+        title: 'סטטוס PayMe עודכן',
+        description: statusHe[(data as any).status] || (data as any).status,
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] });
+    } catch (e: any) {
+      toast({ title: 'שגיאה בבדיקת PayMe', description: e?.message || 'שגיאה', variant: 'destructive' });
+    } finally {
+      setCheckingPaymeStatus(false);
+    }
+  };
 
   /**
    * Pull the wallet totals for this event:
@@ -1000,6 +1032,43 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
             <div className="text-xs text-muted-foreground">
               <span className="font-medium">Seller ID:</span> <code className="ltr">{event.seller_payme_id}</code>
             </div>
+
+            {/* Live status check against PayMe */}
+            <div className="bg-white/70 border border-border rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-medium">בדיקת סטטוס מול PayMe</div>
+                <Button size="sm" onClick={checkPaymeStatus} disabled={checkingPaymeStatus}>
+                  {checkingPaymeStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : "בדוק ועדכן"}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                שולף את הסטטוס האמיתי מ-PayMe (אישור/דחייה/חסרים פרטים) ומסנכרן את האירוע. מומלץ לפני יידוע השותף.
+              </p>
+              {paymeStatusResult && (
+                <div className="text-xs bg-muted rounded-lg p-2 space-y-1">
+                  <div><span className="font-medium">סטטוס:</span> {paymeStatusResult.status}</div>
+                  <div><span className="font-medium">מאושר:</span> {paymeStatusResult.approved ? 'כן' : 'לא'}</div>
+                  <div><span className="font-medium">פעיל:</span> {paymeStatusResult.active ? 'כן' : 'לא'}</div>
+                  {paymeStatusResult.accountType && (
+                    <div><span className="font-medium">סוג חשבון:</span> {paymeStatusResult.accountType}</div>
+                  )}
+                  {paymeStatusResult.approvedDate && (
+                    <div><span className="font-medium">אושר בתאריך:</span> {paymeStatusResult.approvedDate}</div>
+                  )}
+                  {Array.isArray(paymeStatusResult.missingFields) && paymeStatusResult.missingFields.length > 0 && (
+                    <div>
+                      <span className="font-medium">שדות חסרים:</span>
+                      <ul className="list-disc pr-4 mt-1">
+                        {paymeStatusResult.missingFields.map((f: any, i: number) => (
+                          <li key={i} className={f.required ? 'text-red-700' : ''}>{f.label}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Input
                 value={hfApiKeyInput}
