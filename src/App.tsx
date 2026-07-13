@@ -17,6 +17,7 @@ import AccessPage from "./pages/auth/AccessPage";
 import HomePage from "./pages/landing/HomePage";
 import MarketingLayout from "./components/layout/MarketingLayout";
 import Contact from "./pages/marketing/Contact";
+import About from "./pages/marketing/About";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -95,6 +96,7 @@ function App() {
           <Route path="/testimonials-page" element={<Navigate to="/#faq" replace />} />
           <Route element={<MarketingLayout />}>
             <Route path="/contact" element={<Contact />} />
+            <Route path="/about" element={<About />} />
           </Route>
           <Route path="/access" element={<AccessPage />} />
           <Route path="/login" element={<Login />} />
