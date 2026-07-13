@@ -28,22 +28,17 @@ const MarketingNavbar = () => {
   return (
     <header className="pt-3 px-3 md:px-6 bg-[#F5F5F5]">
       <nav className="mx-auto max-w-[1402px] bg-[#051839] rounded-[30px] h-[72px] md:h-[93px] flex items-center justify-between px-4 md:px-6 gap-4">
-        {/* Phone chip (right in RTL) */}
-        <a
-          href="tel:02-3131700"
-          className="hidden sm:flex items-center gap-2 bg-[#ECEDF0] hover:bg-white transition-colors rounded-[20px] h-[46px] px-4 min-w-[180px] justify-center"
+        {/* Logo circle (RIGHT in RTL — first child) */}
+        <Link
+          to="/"
+          className="bg-white rounded-[30px] h-[56px] md:h-[69px] w-[110px] md:w-[129px] flex items-center justify-center shrink-0 shadow-sm"
         >
-          <Phone className="w-5 h-5 text-[#051839]" strokeWidth={2.2} />
-          <span className="text-[#051839] text-lg font-medium">02-3131700</span>
-        </a>
+          <img src={logoAsset.url} alt="Giftkal" className="max-h-[48px] md:max-h-[58px] w-auto object-contain" />
+        </Link>
 
         {/* Center nav (desktop) */}
         <div className="hidden lg:flex items-center gap-6 xl:gap-8 flex-1 justify-center">
-          <Link to="/access" className="flex items-center gap-1.5 text-white/90 hover:text-[#AE842D] text-[15px] transition-colors">
-            <User className="w-4 h-4" />
-            <span>כניסה למערכת</span>
-          </Link>
-          {NAV_LINKS.slice().reverse().map(item => (
+          {NAV_LINKS.map(item => (
             <Link
               key={item.href}
               to={item.href}
@@ -56,15 +51,20 @@ const MarketingNavbar = () => {
               {item.label}
             </Link>
           ))}
+          <Link to="/access" className="flex items-center gap-1.5 text-white/90 hover:text-[#AE842D] text-[15px] transition-colors">
+            <User className="w-4 h-4" />
+            <span>כניסה למערכת</span>
+          </Link>
         </div>
 
-        {/* Logo circle (left in RTL) */}
-        <Link
-          to="/"
-          className="bg-white rounded-[30px] h-[56px] md:h-[69px] w-[110px] md:w-[129px] flex items-center justify-center shrink-0 shadow-sm"
+        {/* Phone chip (LEFT in RTL — last child) */}
+        <a
+          href="tel:02-3131700"
+          className="hidden sm:flex items-center gap-2 bg-[#ECEDF0] hover:bg-white transition-colors rounded-[20px] h-[46px] px-4 min-w-[180px] justify-center"
         >
-          <img src={logoAsset.url} alt="Giftkal" className="max-h-[48px] md:max-h-[58px] w-auto object-contain" />
-        </Link>
+          <Phone className="w-5 h-5 text-[#051839]" strokeWidth={2.2} />
+          <span className="text-[#051839] text-lg font-medium">02-3131700</span>
+        </a>
 
         {/* Mobile menu button */}
         <button
@@ -109,42 +109,8 @@ const MarketingFooter = () => {
     <footer className="bg-[#F5F5F5] px-3 md:px-6 pt-8 pb-6">
       <div className="mx-auto max-w-[1408px] bg-[#051839] rounded-[30px] p-6 md:p-10 lg:p-12 text-white">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
-          {/* Newsletter column */}
-          <div className="lg:col-span-1 order-4 lg:order-1">
-            <h3 className="text-2xl md:text-3xl font-extrabold mb-3 leading-tight">
-              עדכונים וחדשות
-              <br />
-              בתחום האירועים
-            </h3>
-            <p className="text-white/80 text-base md:text-lg font-light mb-5">
-              הצטרפו עכשיו לרשימת התפוצה במייל
-            </p>
-            <div className="space-y-3 max-w-[320px]">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="מה כתובת המייל שלך?"
-                className="w-full h-[56px] rounded-full bg-white text-[#051839] placeholder:text-[#051839]/60 text-right px-6 outline-none focus:ring-2 focus:ring-[#AE842D]"
-              />
-              <button className="w-full h-[56px] rounded-full bg-[#AE842D] hover:bg-[#c69838] transition-colors text-white font-bold text-lg">
-                להצטרפות ←
-              </button>
-            </div>
-          </div>
-
-          {/* Useful links */}
-          <div className="text-right order-3 lg:order-2">
-            <h4 className="text-2xl md:text-3xl font-extrabold mb-6">קישורים שימושיים</h4>
-            <ul className="space-y-3 text-lg md:text-xl font-light">
-              <li><Link to="/accessibility" className="hover:text-[#AE842D] transition-colors">הצהרת נגישות</Link></li>
-              <li><Link to="/terms" className="hover:text-[#AE842D] transition-colors">תנאי שימוש</Link></li>
-              <li><Link to="/privacy" className="hover:text-[#AE842D] transition-colors">מדיניות פרטיות</Link></li>
-            </ul>
-          </div>
-
-          {/* Nav menu */}
-          <div className="text-right order-2 lg:order-3">
+          {/* Nav menu — RIGHT in RTL */}
+          <div className="text-right order-2 lg:order-1">
             <h4 className="text-2xl md:text-3xl font-extrabold mb-6">תפריט ניווט</h4>
             <ul className="space-y-3 text-lg md:text-xl font-light">
               {NAV_LINKS.map(item => (
@@ -162,7 +128,41 @@ const MarketingFooter = () => {
             </ul>
           </div>
 
-          {/* Contact card */}
+          {/* Useful links */}
+          <div className="text-right order-3 lg:order-2">
+            <h4 className="text-2xl md:text-3xl font-extrabold mb-6">קישורים שימושיים</h4>
+            <ul className="space-y-3 text-lg md:text-xl font-light">
+              <li><Link to="/accessibility" className="hover:text-[#AE842D] transition-colors">הצהרת נגישות</Link></li>
+              <li><Link to="/terms" className="hover:text-[#AE842D] transition-colors">תנאי שימוש</Link></li>
+              <li><Link to="/privacy" className="hover:text-[#AE842D] transition-colors">מדיניות פרטיות</Link></li>
+            </ul>
+          </div>
+
+          {/* Newsletter */}
+          <div className="text-right order-4 lg:order-3">
+            <h3 className="text-2xl md:text-3xl font-extrabold mb-3 leading-tight">
+              עדכונים וחדשות
+              <br />
+              בתחום האירועים
+            </h3>
+            <p className="text-white/80 text-base md:text-lg font-light mb-5">
+              הצטרפו עכשיו לרשימת התפוצה במייל
+            </p>
+            <div className="space-y-3 max-w-[320px] mr-auto">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="מה כתובת המייל שלך?"
+                className="w-full h-[56px] rounded-full bg-white text-[#051839] placeholder:text-[#051839]/60 text-right px-6 outline-none focus:ring-2 focus:ring-[#AE842D]"
+              />
+              <button className="w-full h-[56px] rounded-full bg-[#AE842D] hover:bg-[#c69838] transition-colors text-white font-bold text-lg">
+                להצטרפות ←
+              </button>
+            </div>
+          </div>
+
+          {/* Contact card — LEFT in RTL */}
           <div className="order-1 lg:order-4">
             <div className="bg-white text-[#051839] rounded-[24px] p-6 h-full flex flex-col">
               <Link to="/" className="mb-6 flex justify-center">
