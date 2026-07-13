@@ -15,6 +15,8 @@ import AccessPage from "./pages/auth/AccessPage";
 
 // Landing / Marketing
 import HomePage from "./pages/landing/HomePage";
+import MarketingLayout from "./components/layout/MarketingLayout";
+import Contact from "./pages/marketing/Contact";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
