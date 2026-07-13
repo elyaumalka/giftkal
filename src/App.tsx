@@ -15,6 +15,8 @@ import AccessPage from "./pages/auth/AccessPage";
 
 // Landing / Marketing
 import HomePage from "./pages/landing/HomePage";
+import MarketingLayout from "./components/layout/MarketingLayout";
+import Contact from "./pages/marketing/Contact";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -91,7 +93,9 @@ function App() {
           <Route path="/benefits" element={<Navigate to="/#features" replace />} />
           <Route path="/pricing" element={<Navigate to="/#contact" replace />} />
           <Route path="/testimonials-page" element={<Navigate to="/#faq" replace />} />
-          <Route path="/contact" element={<Navigate to="/#contact" replace />} />
+          <Route element={<MarketingLayout />}>
+            <Route path="/contact" element={<Contact />} />
+          </Route>
           <Route path="/access" element={<AccessPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/event" element={<EventLogin />} />
