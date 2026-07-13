@@ -52,9 +52,69 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div>
       {/* Title + description */}
-      <section className="pt-24 pb-10 md:pt-32 md:pb-14">
+      <section className="pt-10 md:pt-16 pb-10 md:pb-14">
+        <div className="container mx-auto px-4 text-center">
+          <h1
+            className="font-extrabold text-[#051839] leading-tight mb-6"
+            style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)" }}
+          >
+            יצירת קשר
+          </h1>
+          <p className="text-lg md:text-xl text-[#1E1E1E]/80 font-light max-w-3xl mx-auto leading-relaxed">
+            בין אם אתם לפני חתונה, בר מצווה, בת מצווה, ברית או כל אירוע משמח אחר
+            <br className="hidden md:block" />
+            נשמח להסביר איך המערכת עובדת,
+            <br className="hidden md:block" />
+            {" "}לעזור לכם בתהליך ההקמה ולוודא שהכול יהיה פשוט,
+            <br className="hidden md:block" />
+            {" "}מסודר ונוח עבורכם ועבור האורחים שלכם.
+          </p>
+        </div>
+      </section>
+
+      {/* --- placeholder to remove old duplicated hero --- */}
+      <section className="hidden">
+        <div className="container mx-auto px-4 text-center">
+          <h1
+            className="font-extrabold text-secondary leading-tight mb-6"
+            style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)" }}
+          >
+            יצירת קשר
+          </h1>
+          <p className="text-lg md:text-xl text-foreground/80 font-light max-w-3xl mx-auto leading-relaxed">
+            בין אם אתם לפני חתונה, בר מצווה, בת מצווה, ברית או כל אירוע משמח אחר
+            <br className="hidden md:block" />
+            נשמח להסביר איך המערכת עובדת,
+            <br className="hidden md:block" />
+            {" "}לעזור לכם בתהליך ההקמה ולוודא שהכול יהיה פשוט,
+            <br className="hidden md:block" />
+            {" "}מסודר ונוח עבורכם ועבור האורחים שלכם.
+          </p>
+        </div>
+      </section>
+
+      {/* Card */}
+      <section className="pb-16 md:pb-24">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto bg-white rounded-[30px] shadow-[0_20px_60px_-20px_rgba(11,31,74,0.15)] p-6 md:p-14">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              <div className="order-2 lg:order-1">
+                <img src="/placeholder.svg" alt="" className="hidden" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* OLD (kept below for now, will remove duplicate section wrapper) */}
+      <section className="hidden">
+        <div>ignore</div>
+      </section>
+      {/* real card below */}
+      <div className="hidden">
+        <section className="pt-24 pb-10 md:pt-32 md:pb-14">
         <div className="container mx-auto px-4 text-center">
           <h1
             className="font-extrabold text-secondary leading-tight mb-6"
