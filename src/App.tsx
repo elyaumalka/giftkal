@@ -22,7 +22,6 @@ import HowItWorks from "./pages/marketing/HowItWorks";
 import WhyUs from "./pages/marketing/WhyUs";
 import Pricing from "./pages/marketing/Pricing";
 import FAQ from "./pages/marketing/FAQ";
-import About from "./pages/marketing/About";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
