@@ -108,61 +108,8 @@ const MarketingFooter = () => {
     <footer className="bg-[#F5F5F5] px-3 md:px-6 pt-8 pb-6">
       <div className="mx-auto max-w-[1408px] bg-[#051839] rounded-[30px] p-6 md:p-10 lg:p-12 text-white">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
-          {/* Nav menu — RIGHT in RTL */}
-          <div className="text-right order-2 lg:order-1">
-            <h4 className="text-2xl md:text-3xl font-extrabold mb-6">תפריט ניווט</h4>
-            <ul className="space-y-3 text-lg md:text-xl font-light">
-              {NAV_LINKS.map(item => (
-                <li key={item.href}>
-                  <Link
-                    to={item.href}
-                    className={`hover:text-[#AE842D] transition-colors ${
-                      item.href === "/contact" ? "font-extrabold" : ""
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Useful links */}
-          <div className="text-right order-3 lg:order-2">
-            <h4 className="text-2xl md:text-3xl font-extrabold mb-6">קישורים שימושיים</h4>
-            <ul className="space-y-3 text-lg md:text-xl font-light">
-              <li><Link to="/accessibility" className="hover:text-[#AE842D] transition-colors">הצהרת נגישות</Link></li>
-              <li><Link to="/terms" className="hover:text-[#AE842D] transition-colors">תנאי שימוש</Link></li>
-              <li><Link to="/privacy" className="hover:text-[#AE842D] transition-colors">מדיניות פרטיות</Link></li>
-            </ul>
-          </div>
-
-          {/* Newsletter */}
-          <div className="text-right order-4 lg:order-3">
-            <h3 className="text-2xl md:text-3xl font-extrabold mb-3 leading-tight">
-              עדכונים וחדשות
-              <br />
-              בתחום האירועים
-            </h3>
-            <p className="text-white/80 text-base md:text-lg font-light mb-5">
-              הצטרפו עכשיו לרשימת התפוצה במייל
-            </p>
-            <div className="space-y-3 max-w-[320px] mr-auto">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="מה כתובת המייל שלך?"
-                className="w-full h-[56px] rounded-full bg-white text-[#051839] placeholder:text-[#051839]/60 text-right px-6 outline-none focus:ring-2 focus:ring-[#AE842D]"
-              />
-              <button className="w-full h-[56px] rounded-full bg-[#AE842D] hover:bg-[#c69838] transition-colors text-white font-bold text-lg">
-                להצטרפות ←
-              </button>
-            </div>
-          </div>
-
-          {/* Contact card — LEFT in RTL */}
-          <div className="order-1 lg:order-4">
+          {/* Contact card — RIGHT in RTL */}
+          <div className="order-1 lg:order-1">
             <div className="bg-white text-[#051839] rounded-[24px] p-6 h-full flex flex-col">
               <Link to="/" className="mb-6 flex justify-center">
                 <img src={logoAsset.url} alt="Giftkal" className="h-16 md:h-20 w-auto" />
@@ -189,6 +136,60 @@ const MarketingFooter = () => {
               </div>
             </div>
           </div>
+
+          {/* Nav menu */}
+          <div className="text-right order-2 lg:order-2">
+            <h4 className="text-2xl md:text-3xl font-extrabold mb-6">תפריט ניווט</h4>
+            <ul className="space-y-3 text-lg md:text-xl font-light">
+              {NAV_LINKS.map(item => (
+                <li key={item.href}>
+                  <Link
+                    to={item.href}
+                    className={`hover:text-[#AE842D] transition-colors ${
+                      item.href === "/contact" ? "font-extrabold" : ""
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Useful links */}
+          <div className="text-right order-3 lg:order-3">
+            <h4 className="text-2xl md:text-3xl font-extrabold mb-6">קישורים שימושיים</h4>
+            <ul className="space-y-3 text-lg md:text-xl font-light">
+              <li><Link to="/accessibility" className="hover:text-[#AE842D] transition-colors">הצהרת נגישות</Link></li>
+              <li><Link to="/terms" className="hover:text-[#AE842D] transition-colors">תנאי שימוש</Link></li>
+              <li><Link to="/privacy" className="hover:text-[#AE842D] transition-colors">מדיניות פרטיות</Link></li>
+            </ul>
+          </div>
+
+          {/* Newsletter */}
+          <div className="text-right order-4 lg:order-4">
+            <h3 className="text-2xl md:text-3xl font-extrabold mb-3 leading-tight">
+              עדכונים וחדשות
+              <br />
+              בתחום האירועים
+            </h3>
+            <p className="text-white/80 text-base md:text-lg font-light mb-5">
+              הצטרפו עכשיו לרשימת התפוצה במייל
+            </p>
+            <div className="space-y-3 max-w-[320px] mr-auto">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="מה כתובת המייל שלך?"
+                className="w-full h-[56px] rounded-full bg-white text-[#051839] placeholder:text-[#051839]/60 text-right px-6 outline-none focus:ring-2 focus:ring-[#AE842D]"
+              />
+              <button className="w-full h-[56px] rounded-full bg-[#AE842D] hover:bg-[#c69838] transition-colors text-white font-bold text-lg">
+                להצטרפות ←
+              </button>
+            </div>
+          </div>
+
         </div>
 
         <div className="border-t border-white/10 mt-10 pt-6 text-center text-white/50 text-sm">
