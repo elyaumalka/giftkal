@@ -108,8 +108,37 @@ const MarketingFooter = () => {
     <footer className="bg-[#F5F5F5] px-3 md:px-6 pt-8 pb-6">
       <div className="mx-auto max-w-[1408px] bg-[#051839] rounded-[30px] p-6 md:p-10 lg:p-12 text-white">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
-          {/* Nav menu — RIGHT in RTL */}
-          <div className="text-right order-2 lg:order-1">
+          {/* Contact card — RIGHT in RTL */}
+          <div className="order-1 lg:order-1">
+            <div className="bg-white text-[#051839] rounded-[24px] p-6 h-full flex flex-col">
+              <Link to="/" className="mb-6 flex justify-center">
+                <img src={logoAsset.url} alt="Giftkal" className="h-16 md:h-20 w-auto" />
+              </Link>
+              <div className="space-y-4">
+                <a href="tel:02-3131700" className="flex items-center justify-between gap-3 hover:text-[#AE842D] transition-colors">
+                  <span className="text-lg font-medium">02-3131700</span>
+                  <span className="w-10 h-10 rounded-full bg-[#F2F0EB] flex items-center justify-center shrink-0">
+                    <Phone className="w-5 h-5" />
+                  </span>
+                </a>
+                <a href="mailto:g023131700@gmail.com" className="flex items-center justify-between gap-3 hover:text-[#AE842D] transition-colors">
+                  <span className="text-base md:text-lg font-medium break-all">g023131700@gmail.com</span>
+                  <span className="w-10 h-10 rounded-full bg-[#F2F0EB] flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5" />
+                  </span>
+                </a>
+                <a href="https://wa.me/97223131700" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-3 hover:text-[#AE842D] transition-colors">
+                  <span className="text-lg font-medium">02-3131700</span>
+                  <span className="w-10 h-10 rounded-full bg-[#F2F0EB] flex items-center justify-center shrink-0">
+                    <MessageCircle className="w-5 h-5" />
+                  </span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Nav menu */}
+          <div className="text-right order-2 lg:order-2">
             <h4 className="text-2xl md:text-3xl font-extrabold mb-6">תפריט ניווט</h4>
             <ul className="space-y-3 text-lg md:text-xl font-light">
               {NAV_LINKS.map(item => (
@@ -128,7 +157,7 @@ const MarketingFooter = () => {
           </div>
 
           {/* Useful links */}
-          <div className="text-right order-3 lg:order-2">
+          <div className="text-right order-3 lg:order-3">
             <h4 className="text-2xl md:text-3xl font-extrabold mb-6">קישורים שימושיים</h4>
             <ul className="space-y-3 text-lg md:text-xl font-light">
               <li><Link to="/accessibility" className="hover:text-[#AE842D] transition-colors">הצהרת נגישות</Link></li>
@@ -138,7 +167,7 @@ const MarketingFooter = () => {
           </div>
 
           {/* Newsletter */}
-          <div className="text-right order-4 lg:order-3">
+          <div className="text-right order-4 lg:order-4">
             <h3 className="text-2xl md:text-3xl font-extrabold mb-3 leading-tight">
               עדכונים וחדשות
               <br />
@@ -161,8 +190,8 @@ const MarketingFooter = () => {
             </div>
           </div>
 
-          {/* Contact card — LEFT in RTL */}
-          <div className="order-1 lg:order-4">
+          {/* Placeholder to keep closing div aligned */}
+          <div className="hidden">
             <div className="bg-white text-[#051839] rounded-[24px] p-6 h-full flex flex-col">
               <Link to="/" className="mb-6 flex justify-center">
                 <img src={logoAsset.url} alt="Giftkal" className="h-16 md:h-20 w-auto" />
