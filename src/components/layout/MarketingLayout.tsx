@@ -5,10 +5,10 @@ import logoAsset from "@/assets/logo.png.asset.json";
 
 const NAV_LINKS = [
   { label: "דף הבית", href: "/" },
-  { label: "איך זה עובד?", href: "/#how" },
-  { label: "למה דווקא אנחנו?", href: "/#features" },
-  { label: "מחירון", href: "/#pricing" },
-  { label: "שאלות ותשובות", href: "/#faq" },
+  { label: "איך זה עובד?", href: "/how-it-works" },
+  { label: "למה דווקא אנחנו?", href: "/why-us" },
+  { label: "מחירון", href: "/pricing" },
+  { label: "שאלות ותשובות", href: "/faq" },
   { label: "אודות", href: "/about" },
   { label: "יצירת קשר", href: "/contact" },
 ];
@@ -22,8 +22,7 @@ const MarketingNavbar = () => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  const isActive = (href: string) =>
-    href.startsWith("/") && !href.includes("#") ? location.pathname === href : false;
+  const isActive = (href: string) => location.pathname === href;
 
   return (
     <header className="pt-3 px-3 md:px-6 bg-[#F5F5F5]">

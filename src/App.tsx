@@ -14,9 +14,14 @@ import Signup from "./pages/auth/Signup";
 import AccessPage from "./pages/auth/AccessPage";
 
 // Landing / Marketing
-import HomePage from "./pages/landing/HomePage";
 import MarketingLayout from "./components/layout/MarketingLayout";
+import Home from "./pages/marketing/Home";
 import Contact from "./pages/marketing/Contact";
+import About from "./pages/marketing/About";
+import HowItWorks from "./pages/marketing/HowItWorks";
+import WhyUs from "./pages/marketing/WhyUs";
+import Pricing from "./pages/marketing/Pricing";
+import FAQ from "./pages/marketing/FAQ";
 import About from "./pages/marketing/About";
 
 // Admin
@@ -87,17 +92,21 @@ function App() {
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Single one-page marketing site. Old marketing routes redirect to the relevant section. */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/venues-page" element={<Navigate to="/#venues" replace />} />
-          <Route path="/event-owners" element={<Navigate to="/#how" replace />} />
-          <Route path="/benefits" element={<Navigate to="/#features" replace />} />
-          <Route path="/pricing" element={<Navigate to="/#contact" replace />} />
-          <Route path="/testimonials-page" element={<Navigate to="/#faq" replace />} />
+          {/* Marketing site (multi-page) */}
           <Route element={<MarketingLayout />}>
-            <Route path="/contact" element={<Contact />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/why-us" element={<WhyUs />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
           </Route>
+          {/* Legacy redirects */}
+          <Route path="/venues-page" element={<Navigate to="/why-us" replace />} />
+          <Route path="/event-owners" element={<Navigate to="/how-it-works" replace />} />
+          <Route path="/benefits" element={<Navigate to="/why-us" replace />} />
+          <Route path="/testimonials-page" element={<Navigate to="/why-us" replace />} />
           <Route path="/access" element={<AccessPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/event" element={<EventLogin />} />
