@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { label: "למה דווקא אנחנו?", href: "/#features" },
   { label: "מחירון", href: "/#pricing" },
   { label: "שאלות ותשובות", href: "/#faq" },
-  { label: "אודות", href: "/#about" },
+  { label: "אודות", href: "/about" },
   { label: "יצירת קשר", href: "/contact" },
 ];
 
@@ -23,7 +23,7 @@ const MarketingNavbar = () => {
   }, [location.pathname]);
 
   const isActive = (href: string) =>
-    href === "/contact" ? location.pathname === "/contact" : false;
+    href.startsWith("/") && !href.includes("#") ? location.pathname === href : false;
 
   return (
     <header className="pt-3 px-3 md:px-6 bg-[#F5F5F5]">
