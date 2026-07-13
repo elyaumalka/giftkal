@@ -1,56 +1,17 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Phone, Mail, MessageCircle, MapPin, Clock, Send, CheckCircle2, Sparkles
-} from "lucide-react";
-
-const useInView = (threshold = 0.15) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setInView(true); },
-      { threshold }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [threshold]);
-  return { ref, inView };
-};
-
-const contactMethods = [
-  {
-    icon: Phone,
-    title: "טלפון",
-    value: "02-3131700",
-    href: "tel:+97223131700",
-    description: "ימים א׳–ה׳, 9:00–18:00",
-  },
-  {
-    icon: MessageCircle,
-    title: "WhatsApp",
-    value: "שלחו הודעה",
-    href: "https://wa.me/97223131700",
-    description: "מענה מהיר תוך דקות",
-  },
-  {
-    icon: Mail,
-    title: "אימייל",
-    value: "g023131700@gmail.com",
-    href: "mailto:g023131700@gmail.com",
-    description: "מענה תוך 24 שעות",
-  },
-];
+import { CheckCircle2 } from "lucide-react";
+import contactIllustration from "@/assets/contact-illustration.jpg";
 
 const Contact = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-  const [form, setForm] = useState({ full_name: "", phone: "", email: "", message: "" });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", message: "" });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -58,7 +19,6 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!form.full_name.trim() || form.full_name.trim().length > 100) {
       toast({ title: "שם מלא נדרש (עד 100 תווים)", variant: "destructive" });
       return;
@@ -91,176 +51,115 @@ const Contact = () => {
     }
   };
 
-  const heroRef = useInView();
-  const formRef = useInView();
-  const methodsRef = useInView();
-
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      {/* HERO */}
-      <section className="relative pt-32 pb-16 overflow-hidden bg-gradient-to-b from-secondary via-secondary/95 to-secondary/90">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(149,116,47,0.15),transparent_60%)]" />
-        <div
-          ref={heroRef.ref}
-          className={`container mx-auto px-4 text-center relative z-10 transition-all duration-700 ${heroRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-        >
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-            נשמח לשמוע <span className="text-primary">מכם</span>
+      {/* Title + description */}
+      <section className="pt-24 pb-10 md:pt-32 md:pb-14">
+        <div className="container mx-auto px-4 text-center">
+          <h1
+            className="font-extrabold text-secondary leading-tight mb-6"
+            style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)" }}
+          >
+            יצירת קשר
           </h1>
-          <p className="text-xl text-white/60 max-w-2xl mx-auto">
-            יש שאלה? רוצים הדגמה? השאירו פרטים ונחזור אליכם בהקדם
+          <p className="text-lg md:text-xl text-foreground/80 font-light max-w-3xl mx-auto leading-relaxed">
+            בין אם אתם לפני חתונה, בר מצווה, בת מצווה, ברית או כל אירוע משמח אחר
+            <br className="hidden md:block" />
+            נשמח להסביר איך המערכת עובדת,
+            <br className="hidden md:block" />
+            {" "}לעזור לכם בתהליך ההקמה ולוודא שהכול יהיה פשוט,
+            <br className="hidden md:block" />
+            {" "}מסודר ונוח עבורכם ועבור האורחים שלכם.
           </p>
         </div>
       </section>
 
-      {/* תוכן ראשי */}
-      <section className="py-20 bg-background">
+      {/* Card */}
+      <section className="pb-24">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 max-w-6xl mx-auto">
-            {/* טופס */}
-            <div
-              ref={formRef.ref}
-              className={`transition-all duration-700 ${formRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            >
-              <h2 className="text-2xl font-bold text-secondary mb-2">השאירו פרטים</h2>
-              <p className="text-muted-foreground mb-8">ונחזור אליכם עם כל המידע שתצטרכו</p>
-
-              {sent ? (
-                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-12 text-center">
-                  <CheckCircle2 className="w-16 h-16 text-primary mx-auto mb-6" />
-                  <h3 className="text-2xl font-bold text-secondary mb-3">תודה רבה! 🎉</h3>
-                  <p className="text-muted-foreground text-lg">קיבלנו את הפנייה שלכם ונחזור אליכם בהקדם.</p>
+          <div className="max-w-6xl mx-auto bg-white rounded-[30px] shadow-[0_10px_40px_-15px_rgba(5,24,57,0.15)] p-6 md:p-14">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              {/* Illustration */}
+              <div className="order-2 lg:order-1">
+                <div className="rounded-3xl overflow-hidden">
+                  <img
+                    src={contactIllustration}
+                    alt="יצירת קשר"
+                    className="w-full h-auto object-contain"
+                    loading="lazy"
+                  />
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">שם מלא *</label>
-                    <Input
-                      name="full_name"
-                      value={form.full_name}
-                      onChange={handleChange}
-                      placeholder="הכניסו את שמכם"
-                      className="h-12 text-base"
-                      maxLength={100}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">טלפון *</label>
-                    <Input
-                      name="phone"
-                      value={form.phone}
-                      onChange={handleChange}
-                      placeholder="02-3131700"
-                      className="h-12 text-base"
-                      maxLength={15}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">אימייל</label>
-                    <Input
-                      name="email"
-                      type="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="your@email.com"
-                      className="h-12 text-base"
-                      maxLength={255}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1.5">הודעה</label>
-                    <Textarea
-                      name="message"
-                      value={form.message}
-                      onChange={handleChange}
-                      placeholder="ספרו לנו במה נוכל לעזור..."
-                      className="min-h-[120px] text-base resize-none"
-                      maxLength={1000}
-                    />
-                  </div>
-                  <Button type="submit" variant="gold" size="lg" className="w-full text-lg py-6" disabled={loading}>
-                    {loading ? (
-                      <span className="flex items-center gap-2"><Sparkles className="w-5 h-5 animate-spin" /> שולח...</span>
-                    ) : (
-                      <span className="flex items-center gap-2"><Send className="w-5 h-5" /> שלחו פנייה</span>
-                    )}
-                  </Button>
-                </form>
-              )}
-            </div>
-
-            {/* דרכי יצירת קשר */}
-            <div
-              ref={methodsRef.ref}
-              className={`transition-all duration-700 delay-200 ${methodsRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-            >
-              <h2 className="text-2xl font-bold text-secondary mb-2">דרכים נוספות ליצירת קשר</h2>
-              <p className="text-muted-foreground mb-8">בחרו את הדרך הנוחה לכם</p>
-
-              <div className="space-y-5">
-                {contactMethods.map((method, i) => (
-                  <a
-                    key={i}
-                    href={method.href}
-                    target={method.href.startsWith("http") ? "_blank" : undefined}
-                    rel={method.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                    className="flex items-center gap-5 bg-card rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group"
-                  >
-                    <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                      <method.icon className="w-7 h-7 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-secondary text-lg">{method.title}</h3>
-                      <p className="text-primary font-medium">{method.value}</p>
-                      <p className="text-muted-foreground text-sm">{method.description}</p>
-                    </div>
-                  </a>
-                ))}
               </div>
 
-              {/* שעות פעילות */}
-              <div className="mt-8 bg-secondary/5 rounded-2xl p-6 border border-secondary/10">
-                <div className="flex items-center gap-3 mb-4">
-                  <Clock className="w-6 h-6 text-primary" />
-                  <h3 className="font-bold text-secondary text-lg">שעות פעילות</h3>
-                </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>ימים א׳–ה׳</span>
-                    <span className="font-medium text-foreground">9:00 – 18:00</span>
+              {/* Form */}
+              <div className="order-1 lg:order-2">
+                {sent ? (
+                  <div className="bg-primary/5 border border-primary/20 rounded-2xl p-10 text-center">
+                    <CheckCircle2 className="w-14 h-14 text-primary mx-auto mb-5" />
+                    <h3 className="text-2xl font-bold text-secondary mb-2">תודה רבה! 🎉</h3>
+                    <p className="text-muted-foreground">קיבלנו את הפנייה ונחזור אליכם בהקדם.</p>
                   </div>
-                  <div className="flex justify-between">
-                    <span>יום ו׳</span>
-                    <span className="font-medium text-foreground">9:00 – 13:00</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>שבת</span>
-                    <span className="text-muted-foreground">סגור</span>
-                  </div>
-                </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-lg font-semibold text-[#374151] mb-2">שם מלא</label>
+                      <Input
+                        name="full_name"
+                        value={form.full_name}
+                        onChange={handleChange}
+                        placeholder="הכנס את שמך"
+                        maxLength={100}
+                        required
+                        className="h-12 rounded-full bg-[#F2F0EB] border-0 px-5 text-right placeholder:text-[#9CA3AF] focus-visible:ring-2 focus-visible:ring-primary/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-lg font-semibold text-[#374151] mb-2">אימייל</label>
+                      <Input
+                        name="email"
+                        type="email"
+                        value={form.email}
+                        onChange={handleChange}
+                        placeholder="הכנס אימייל"
+                        maxLength={255}
+                        className="h-12 rounded-full bg-[#F2F0EB] border-0 px-5 text-right placeholder:text-[#9CA3AF] focus-visible:ring-2 focus-visible:ring-primary/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-lg font-semibold text-[#374151] mb-2">טלפון</label>
+                      <Input
+                        name="phone"
+                        value={form.phone}
+                        onChange={handleChange}
+                        placeholder="הכנס מספר טלפון"
+                        maxLength={15}
+                        required
+                        className="h-12 rounded-full bg-[#F2F0EB] border-0 px-5 text-right placeholder:text-[#9CA3AF] focus-visible:ring-2 focus-visible:ring-primary/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-lg font-semibold text-[#374151] mb-2">הודעה</label>
+                      <Textarea
+                        name="message"
+                        value={form.message}
+                        onChange={handleChange}
+                        placeholder="כתוב לנו מה אתה צריך...."
+                        maxLength={1000}
+                        className="min-h-[140px] rounded-3xl bg-[#F2F0EB] border-0 p-4 text-right placeholder:text-[#9CA3AF] resize-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full h-[52px] rounded-xl bg-primary hover:bg-primary/90 text-white text-xl font-bold"
+                    >
+                      {loading ? "שולח..." : "שליחה ←"}
+                    </Button>
+                  </form>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* CTA תחתון */}
-      <section className="py-16 bg-gradient-to-b from-secondary to-secondary/95">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-            מעדיפים לדבר? <span className="text-primary">אנחנו כאן</span>
-          </h2>
-          <p className="text-white/60 mb-8 max-w-lg mx-auto">
-            צרו קשר בוואטסאפ ונחזור אליכם תוך דקות
-          </p>
-          <a href="https://wa.me/97223131700" target="_blank" rel="noopener noreferrer">
-            <Button variant="gold" size="lg" className="text-lg px-10 py-6">
-              <MessageCircle className="w-5 h-5 ml-2" />
-              שלחו הודעה בוואטסאפ
-            </Button>
-          </a>
         </div>
       </section>
     </div>
