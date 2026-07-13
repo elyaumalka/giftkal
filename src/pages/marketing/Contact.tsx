@@ -147,13 +147,15 @@ const Contact = () => {
                         className="w-full min-h-[140px] rounded-3xl bg-[#F2F0EB] p-4 text-right placeholder:text-[#9CA3AF] text-sm outline-none focus:ring-2 focus:ring-[#AE842D]/40 border-0 resize-none"
                       />
                     </div>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full h-[52px] rounded-xl bg-[#AE842D] hover:bg-[#c69838] transition-colors text-white text-xl font-bold disabled:opacity-60"
-                    >
-                      {loading ? "שולח..." : "שליחה ←"}
-                    </button>
+                    <div className="flex justify-start">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full sm:w-auto px-8 h-[52px] rounded-xl bg-[#AE842D] hover:bg-[#c69838] transition-colors text-white text-xl font-bold disabled:opacity-60"
+                      >
+                        {loading ? "שולח..." : "שליחה ←"}
+                      </button>
+                    </div>
                   </form>
                 )}
               </div>

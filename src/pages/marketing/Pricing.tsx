@@ -88,17 +88,17 @@ export default function Pricing() {
               </ul>
             </div>
 
-            <div className="mt-10 flex flex-col sm:flex-row-reverse gap-3">
+            <div className="mt-10 flex flex-col sm:flex-row gap-3 sm:justify-start">
               <Link
                 to="/signup"
-                className="flex-1 text-center rounded-[12px] px-8 py-4 text-[16px] font-bold text-white transition hover:opacity-90"
+                className="flex-1 sm:flex-initial text-center rounded-[12px] px-8 py-4 text-[16px] font-bold text-white transition hover:opacity-90"
                 style={{ background: GOLD }}
               >
                 פתחו אירוע עכשיו ←
               </Link>
               <Link
                 to="/contact"
-                className="flex-1 text-center rounded-[12px] border-2 px-7 py-4 text-[16px] font-semibold transition hover:bg-[#ae842d]/5"
+                className="flex-1 sm:flex-initial text-center rounded-[12px] border-2 px-7 py-4 text-[16px] font-semibold transition hover:bg-[#ae842d]/5"
                 style={{ borderColor: GOLD, color: GOLD }}
               >
                 דברו איתנו
