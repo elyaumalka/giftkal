@@ -184,9 +184,11 @@ const MarketingFooter = () => {
                 placeholder="מה כתובת המייל שלך?"
                 className="w-full h-[56px] rounded-full bg-white text-[#051839] placeholder:text-[#051839]/60 text-right px-6 outline-none focus:ring-2 focus:ring-[#AE842D]"
               />
-              <button className="w-full h-[56px] rounded-full bg-[#AE842D] hover:bg-[#c69838] transition-colors text-white font-bold text-lg">
-                להצטרפות ←
-              </button>
+              <div className="flex justify-start">
+                <button className="w-full sm:w-auto sm:ms-auto px-8 h-[56px] rounded-full bg-[#AE842D] hover:bg-[#c69838] transition-colors text-white font-bold text-lg">
+                  להצטרפות ←
+                </button>
+              </div>
             </div>
           </div>
 
