@@ -82,20 +82,20 @@ export default function About() {
           <p className="text-[17px] leading-[1.65] font-light" style={{ color: NAVY }}>
             בשמחות פלוס נולדה כדי להפוך את תהליך הענקת וקבלת המתנות באירועים לפשוט, נוח ומתקדם יותר.
           </p>
-          <div className="flex gap-4 items-center justify-end">
-            <Link
-              to="/contact"
-              className="rounded-[12px] border-2 px-7 py-3.5 text-[16px] font-semibold transition hover:bg-[#ae842d]/5"
-              style={{ borderColor: GOLD, color: GOLD }}
-            >
-              למידע נוסף
-            </Link>
+          <div className="flex gap-4 items-center justify-start">
             <Link
               to="/signup"
               className="rounded-[12px] px-8 py-3.5 text-[16px] font-bold text-white transition hover:opacity-90"
               style={{ background: GOLD }}
             >
               פתחו אירוע עכשיו ←
+            </Link>
+            <Link
+              to="/contact"
+              className="rounded-[12px] border-2 px-7 py-3.5 text-[16px] font-semibold transition hover:bg-[#ae842d]/5"
+              style={{ borderColor: GOLD, color: GOLD }}
+            >
+              למידע נוסף
             </Link>
           </div>
         </div>
