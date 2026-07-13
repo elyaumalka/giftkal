@@ -190,34 +190,6 @@ const MarketingFooter = () => {
             </div>
           </div>
 
-          {/* Placeholder to keep closing div aligned */}
-          <div className="hidden">
-            <div className="bg-white text-[#051839] rounded-[24px] p-6 h-full flex flex-col">
-              <Link to="/" className="mb-6 flex justify-center">
-                <img src={logoAsset.url} alt="Giftkal" className="h-16 md:h-20 w-auto" />
-              </Link>
-              <div className="space-y-4">
-                <a href="tel:02-3131700" className="flex items-center justify-between gap-3 hover:text-[#AE842D] transition-colors">
-                  <span className="text-lg font-medium">02-3131700</span>
-                  <span className="w-10 h-10 rounded-full bg-[#F2F0EB] flex items-center justify-center shrink-0">
-                    <Phone className="w-5 h-5" />
-                  </span>
-                </a>
-                <a href="mailto:g023131700@gmail.com" className="flex items-center justify-between gap-3 hover:text-[#AE842D] transition-colors">
-                  <span className="text-base md:text-lg font-medium break-all">g023131700@gmail.com</span>
-                  <span className="w-10 h-10 rounded-full bg-[#F2F0EB] flex items-center justify-center shrink-0">
-                    <Mail className="w-5 h-5" />
-                  </span>
-                </a>
-                <a href="https://wa.me/97223131700" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-3 hover:text-[#AE842D] transition-colors">
-                  <span className="text-lg font-medium">02-3131700</span>
-                  <span className="w-10 h-10 rounded-full bg-[#F2F0EB] flex items-center justify-center shrink-0">
-                    <MessageCircle className="w-5 h-5" />
-                  </span>
-                </a>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="border-t border-white/10 mt-10 pt-6 text-center text-white/50 text-sm">
