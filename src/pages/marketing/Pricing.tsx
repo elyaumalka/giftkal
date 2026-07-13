@@ -1,175 +1,123 @@
-import { useRef, useState, useEffect } from "react";
+import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import {
-  CreditCard, Monitor, Send, BarChart3, CheckCircle2, Gift,
-  MessageCircle
-} from "lucide-react";
+import PageHero from "@/components/marketing/PageHero";
+import ClosingCTA from "@/components/marketing/ClosingCTA";
+import pricingImg from "@/assets/pricing-hero.jpg";
 
-const useInView = (threshold = 0.15) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setInView(true); },
-      { threshold }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [threshold]);
-  return { ref, inView };
-};
+const NAVY = "#051839";
+const GOLD = "#AE842D";
 
-const plans = [
-  {
-    icon: CreditCard, title: "מתנות באשראי", price: "₪199", period: "לכל האירוע", badge: null,
-    features: ["קבלת מתנות באשראי מכל מקום", "קישור אישי לשליחה לאורחים", "צפייה בעסקאות ובברכות בזמן אמת"],
-    gradient: "from-primary/10 to-primary/5", borderColor: "border-primary/30",
-  },
-  {
-    icon: Monitor, title: "עמדת מתנות באולם", price: "₪99", period: "חד פעמי", badge: "🔥 מומלץ",
-    features: ["עמדת טאץ' באירוע עצמו", "אפשרות לשלוח מתנות במקום", "הגדלת משמעותית של כמות המתנות"],
-    gradient: "from-yellow-500/15 to-primary/10", borderColor: "border-primary",
-  },
-  {
-    icon: Send, title: "הזמנות + אישורי הגעה", price: "₪199", period: "חד פעמי", badge: null,
-    features: ["שליחה מרוכזת בוואטסאפ ובמייל", "מעקב אחרי אישורי הגעה", "סדר מלא ברשימת האורחים"],
-    gradient: "from-blue-500/10 to-secondary/5", borderColor: "border-secondary/30",
-  },
-  {
-    icon: BarChart3, title: "ניהול תקציב", price: "חינם", period: "", badge: "🎁",
-    features: ["ניהול הוצאות מלא", "מעקב תקציב והשוואה", "שליטה מלאה על הכספים"],
-    gradient: "from-green-500/10 to-green-500/5", borderColor: "border-green-500/30",
-  },
+const included = [
+  "עמוד מתנות אישי מעוצב לאירוע",
+  "קישור אישי ו־QR לשיתוף באולם",
+  "סליקה מאובטחת ברמה בנקאית",
+  "התראות בזמן אמת לכל מתנה",
+  "אזור אישי לניהול המתנות והאורחים",
+  "ייצוא לאקסל של כל הנתונים",
+  "ניהול RSVP ורשימת מוזמנים",
+  "תמיכה 24/7 בעברית",
 ];
 
-const faqs = [
-  { q: "מתי מקבלים את הכסף?", a: "בהתאם לתנאי הסליקה — בדרך כלל תוך מספר ימי עסקים." },
-  { q: "חייב לקחת את כל השירותים?", a: "לא, בוחרים רק מה שמתאים. כל שירות עומד בפני עצמו." },
-  { q: "אפשר להתחיל בלי לשלם?", a: "כן! ניהול תקציב ללא עלות. אפשר להוסיף שירותים בכל שלב." },
-  { q: "איך עובדת העמדה באולם?", a: "עמדת טאבלט שמוצבת באולם. האורחים ניגשים ושולחים מתנה תוך שניות." },
-  { q: "יש התחייבות?", a: "ללא התחייבות. משלמים חד פעמי לכל אירוע." },
+const notIncluded = [
+  "עמלות סליקה של חברת האשראי (חלות על האורח)",
+  "השכרת עמדות קיוסק פיזיות באולם (בתשלום נפרד)",
 ];
 
-const PlanCard = ({ plan, delay }: { plan: typeof plans[0]; delay: number }) => {
-  const { ref, inView } = useInView();
+export default function Pricing() {
   return (
-    <div
-      ref={ref}
-      className={`relative bg-gradient-to-b ${plan.gradient} rounded-2xl p-8 border-2 ${plan.borderColor} shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 ${inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      {plan.badge && (
-        <div className="absolute -top-3 right-4 bg-primary text-primary-foreground text-sm font-bold px-4 py-1 rounded-full shadow-lg">
-          {plan.badge}
+    <div dir="rtl" className="bg-[#f5f5f5]">
+      <PageHero
+        badge="מחירון"
+        title="199 ₪ לאירוע"
+        subtitle="מחיר קבוע. ללא הפתעות. ללא דמי מנוי."
+        description="משלמים פעם אחת ומקבלים גישה מלאה למערכת עד סיום האירוע. אין דמי הקמה, אין דמי שימוש חודשיים ואין עמלות סמויות בסוף הדרך."
+        image={pricingImg}
+        imageAlt="מחירון"
+        primaryCta={{ label: "פתחו אירוע עכשיו ←", to: "/signup" }}
+        secondaryCta={{ label: "יש שאלות?", to: "/faq" }}
+        imageContain
+      />
+
+      {/* Big price card */}
+      <section className="max-w-[900px] mx-auto px-6 py-12 lg:py-20">
+        <div className="bg-white rounded-[30px] shadow-[0px_20px_60px_-20px_rgba(11,31,74,0.15)] overflow-hidden">
+          <div
+            className="px-8 lg:px-14 py-10 text-center text-white"
+            style={{ background: NAVY }}
+          >
+            <p className="text-[14px] font-semibold uppercase tracking-wide" style={{ color: GOLD }}>
+              חבילת אירוע מלאה
+            </p>
+            <div className="mt-4 flex items-baseline justify-center gap-2">
+              <span className="font-extrabold text-[80px] lg:text-[100px] leading-none" style={{ color: GOLD }}>
+                199
+              </span>
+              <span className="text-[28px] font-light">₪</span>
+            </div>
+            <p className="mt-2 text-white/80 font-light">חד־פעמי לאירוע, ללא חידוש</p>
+          </div>
+
+          <div className="px-8 lg:px-14 py-10">
+            <p className="font-bold text-[20px] text-right mb-6" style={{ color: NAVY }}>
+              מה כלול?
+            </p>
+            <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+              {included.map((item) => (
+                <li key={item} className="flex gap-3 items-start text-right">
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                    style={{ background: GOLD }}
+                  >
+                    <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                  </span>
+                  <span className="text-[15px] font-light" style={{ color: NAVY }}>
+                    {item}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-8 pt-6 border-t border-[#eee] text-right">
+              <p className="text-[14px] font-semibold text-[#888] mb-3">מה לא כלול?</p>
+              <ul className="space-y-1.5">
+                {notIncluded.map((item) => (
+                  <li key={item} className="text-[13px] font-light text-[#888]">
+                    • {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-10 flex flex-col sm:flex-row-reverse gap-3">
+              <Link
+                to="/signup"
+                className="flex-1 text-center rounded-[12px] px-8 py-4 text-[16px] font-bold text-white transition hover:opacity-90"
+                style={{ background: GOLD }}
+              >
+                פתחו אירוע עכשיו ←
+              </Link>
+              <Link
+                to="/contact"
+                className="flex-1 text-center rounded-[12px] border-2 px-7 py-4 text-[16px] font-semibold transition hover:bg-[#ae842d]/5"
+                style={{ borderColor: GOLD, color: GOLD }}
+              >
+                דברו איתנו
+              </Link>
+            </div>
+          </div>
         </div>
-      )}
-      <div className="w-14 h-14 rounded-xl bg-card flex items-center justify-center mb-6 shadow-sm">
-        <plan.icon className="w-7 h-7 text-primary" />
-      </div>
-      <h3 className="text-xl font-bold text-secondary mb-2">{plan.title}</h3>
-      <div className="mb-6">
-        <span className="text-4xl font-black text-secondary">{plan.price}</span>
-        {plan.period && <span className="text-muted-foreground text-sm mr-2">{plan.period}</span>}
-      </div>
-      <ul className="space-y-3 mb-8">
-        {plan.features.map((f, j) => (
-          <li key={j} className="flex items-start gap-2 text-sm text-foreground/80">
-            <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            {f}
-          </li>
-        ))}
-      </ul>
-      <Link to={`/signup?plan=${encodeURIComponent(plan.title)}`}>
-        <Button variant={plan.badge === "🔥 מומלץ" ? "gold" : "outline"} className="w-full">
-          בחירה
-        </Button>
-      </Link>
+
+        <p className="text-center text-[13px] text-[#888] mt-6 font-light">
+          יש לכם קוד קופון? תוכלו להזין אותו בעת פתיחת האירוע.
+        </p>
+      </section>
+
+      <ClosingCTA
+        title="עוד שאלות לפני שמתחילים?"
+        subtitle="ריכזנו את כל השאלות הנפוצות בעמוד השאלות והתשובות."
+        primary={{ label: "לשאלות נפוצות ←", to: "/faq" }}
+        secondary={{ label: "דברו איתנו", to: "/contact" }}
+      />
     </div>
   );
-};
-
-const Pricing = () => {
-  return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      {/* HERO */}
-      <section className="relative pt-32 pb-20 overflow-hidden bg-gradient-to-b from-secondary via-secondary/95 to-secondary/90">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(149,116,47,0.15),transparent_60%)]" />
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-            משלמים רק על מה שצריך —<br />
-            <span className="text-primary">ומתחילים להרוויח</span>
-          </h1>
-          <p className="text-xl text-white/60 max-w-2xl mx-auto">
-            ללא התחייבות • ללא עלויות נסתרות
-          </p>
-        </div>
-      </section>
-
-      {/* כרטיסי מחירים */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-            {plans.map((plan, i) => (
-              <PlanCard key={i} plan={plan} delay={i * 100} />
-            ))}
-          </div>
-          <div className="text-center mt-10">
-            <p className="text-lg font-bold text-primary">💡 מספיק תוספת של מתנה אחת–שתיים כדי להחזיר את העלות</p>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="py-20 bg-secondary/5">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="text-center mb-12">
-            <span className="text-4xl mb-4 block">❓</span>
-            <h2 className="text-3xl font-bold text-secondary">שאלות נפוצות</h2>
-          </div>
-          <Accordion type="single" collapsible className="space-y-3">
-            {faqs.map((faq, i) => (
-              <AccordionItem key={i} value={`faq-${i}`} className="bg-card rounded-xl border border-border/50 px-6 shadow-sm">
-                <AccordionTrigger className="text-right text-secondary font-medium hover:no-underline">
-                  {faq.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground text-right">
-                  {faq.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20 bg-gradient-to-b from-secondary to-secondary/95">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            מוכנים להתחיל?
-          </h2>
-          <p className="text-xl text-white/60 mb-10 max-w-xl mx-auto">
-            פתחו אירוע עכשיו או דברו עם נציג
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup">
-              <Button variant="gold" size="lg" className="text-lg px-12 py-6">
-                <Gift className="w-5 h-5 ml-2" />
-                פתחו אירוע עכשיו
-              </Button>
-            </Link>
-            <a href="https://wa.me/97223131700" target="_blank" rel="noopener noreferrer">
-              <Button size="lg" className="text-lg px-12 py-6 bg-white/10 border-2 border-white/30 text-white hover:bg-white/20">
-                <MessageCircle className="w-5 h-5 ml-2" />
-                דברו עם נציג
-              </Button>
-            </a>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-};
-
-export default Pricing;
+}
