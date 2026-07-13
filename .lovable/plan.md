@@ -1,164 +1,60 @@
+# Multi-page marketing site
 
+Take the visual language from `/about` and `/contact` (cream background `#F5F5F5`, dark-navy pill navbar, gold `#AE842D` accents, white rounded cards, right-aligned RTL) and roll it out across a full marketing site with real navigation. Replace the current one-page `HomePage` with a proper home page + dedicated pages for each nav item.
 
-# תוכנית: דף נחיתה ראשי לאתר Giftkal
+## New route map
 
-## סקירה כללית
-יצירת דף נחיתה מודרני ומרשים (One-Page) שישמש כעמוד הראשי של giftkal.com. הדף יציג את השירות, יעודד השארת פרטים (לידים), ויפנה משתמשים קיימים למערכת.
+All pages sit under `MarketingLayout` (navbar + footer already built).
 
----
-
-## מבנה הדף - סקשנים
-
-### 1. Hero Section - אזור ראשי
-**מיקום**: חלק עליון, מסך מלא
-
-**אלמנטים**:
-- רקע: גרדיאנט מכחול כהה (#051839) לזהב (#C4A35A) עם אפקטי Glassmorphism
-- לוגו Giftkal מרכזי עם אנימציית נצנוץ
-- כותרת ראשית: "המתנה המושלמת לכל אירוע"
-- תת-כותרת: "מערכת חכמה לגביית מתנות דיגיטליות באירועים - פשוט, מאובטח, אלגנטי"
-- כפתור CTA ראשי: "התחל עכשיו" (גולל לטופס לידים)
-- כפתור משני: "כניסה למערכת" (מפנה ל-/login)
-- אנימציות: אייקונים צפים (מתנות, לבבות, נצנוצים)
-
----
-
-### 2. Features Section - יתרונות השירות
-**מיקום**: מתחת ל-Hero
-
-**אלמנטים** (4 כרטיסים):
-| אייקון | כותרת | תיאור |
-|--------|--------|--------|
-| 💳 | תשלום מאובטח | גבייה מאובטחת בתקן PCI עם PayMe |
-| 📱 | חוויה דיגיטלית | הזמנות וברכות דיגיטליות מרהיבות |
-| 📊 | ניהול חכם | דשבורד מתקדם לניהול האירוע והמתנות |
-| 🎁 | ברכות אישיות | אורחים שולחים ברכות עם עיצובים מרהיבים |
-
-**עיצוב**: כרטיסים עם Glassmorphism, אפקט hover עם גלו זהוב
-
----
-
-### 3. How It Works - איך זה עובד
-**מיקום**: אמצע הדף
-
-**אלמנטים** (3 שלבים):
-```text
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│   שלב 1     │  →   │   שלב 2     │  →   │   שלב 3     │
-│  נרשמים     │      │ משתפים קישור │      │ מקבלים מתנות│
-│  למערכת     │      │   לאורחים   │      │   בקלות     │
-└─────────────┘      └─────────────┘      └─────────────┘
+```
+/                → Home            (short teaser home, links out to sub-pages)
+/how-it-works    → איך זה עובד?    (extended 3-step flow + visual)
+/why-us          → למה דווקא אנחנו? (feature grid, comparison, testimonial)
+/pricing         → מחירון           (199₪ plan + add-ons + coupon note)
+/faq             → שאלות ותשובות   (accordion grouped by topic)
+/about           → אודות            (exists)
+/contact         → יצירת קשר        (exists)
 ```
 
-**טקסטים**:
-1. **נרשמים למערכת** - "פותחים חשבון בקלות ומגדירים את פרטי האירוע"
-2. **משתפים את הקישור** - "שולחים לאורחים קישור מותאם אישית לשליחת מתנות"
-3. **מקבלים מתנות** - "המתנות מתקבלות ישירות לחשבון הבנק שלכם"
+Update nav links in `MarketingLayout.tsx` from `/#how`, `/#features`, `/#pricing`, `/#faq` to the real routes above.
 
----
+## Pages to build
 
-### 4. For Who Section - למי זה מתאים
-**מיקום**: לפני טופס הלידים
+Each page follows the same structural template as `/about`:
+1. Hero band — badge chip, H1 (navy), gold sub-line, description, 2 CTAs, image on the opposite side
+2. 1–2 supporting sections in white or cream cards with `rounded-[24px]` and soft shadow
+3. Closing CTA band linking to `/contact` or `/signup`
 
-**אלמנטים** (3 קטגוריות):
+**Home (`/`)** — Hero with tagline "המתנות המושלמות לאירוע שלך", 4-stat strip (reuse from About), 3 feature teasers linking to `/how-it-works`, `/why-us`, `/pricing`, closing "פתחו אירוע" CTA.
 
-| 👫 זוגות | 🏛️ בעלי אולמות | 🎉 מארגני אירועים |
-|----------|-----------------|-------------------|
-| חתונות, אירוסין, | ניהול אירועים, | Bar/Bat Mitzvah, |
-| ימי הולדת | דוחות ועמלות | אירועי חברה |
+**How it works (`/how-it-works`)** — 3 numbered step cards (עמוד מתנות אישי / האורחים משלימים / סדר ושליטה) with expanded copy, side illustration, "מה קורה אחרי האירוע?" secondary block.
 
----
+**Why us (`/why-us`)** — Feature grid (6 cards: מחיר קבוע, שקיפות, נוחות, ליווי אישי, אבטחה, איזור אישי), simple compare block vs. traditional gift envelopes, single testimonial quote card.
 
-### 5. Social Proof - הוכחה חברתית
-**מיקום**: אזור אמצע-תחתון
+**Pricing (`/pricing`)** — Single big price card "199 ₪ לאירוע" with bullet list of what's included, small "מה לא כלול" note, coupon input hint, FAQ mini-link.
 
-**אלמנטים**:
-- מספרים מרשימים (אנימציה ספירה):
-  - "1,000+ אירועים" 
-  - "₪10,000,000+ גבייה"
-  - "50,000+ אורחים מרוצים"
-- לוגואים של אולמות/שותפים (אופציונלי לעתיד)
-- ציטוט מלקוח: "המערכת פשוט עובדת! קיבלנו את כל המתנות ישירות לחשבון" - ישראל ושרה, חתונה 2024
+**FAQ (`/faq`)** — Accordion (`@/components/ui/accordion`) grouped: כללי / תשלום / אורחים / בעלי אירוע. ~10–12 questions total.
 
----
+## Design tokens (reused verbatim from About)
 
-### 6. Lead Capture Form - טופס השארת פרטים
-**מיקום**: אזור בולט לפני הפוטר
+- Background `#F5F5F5`, white cards, `#f9f7f3` soft-cream, `#f2f0eb` chip
+- Navy `#051839` for headings, Gold `#AE842D` for accents/CTAs
+- Radii `24px`/`30px`/`32px`, shadow `0 8px 16px rgba(0,0,0,0.06)`
+- All content `dir="rtl"`, `text-right`, using lucide-react icons
 
-**אלמנטים**:
-- כותרת: "מעוניינים לשמוע עוד?"
-- תת-כותרת: "השאירו פרטים ונחזור אליכם בהקדם"
-- שדות:
-  - שם מלא (חובה)
-  - טלפון (חובה)
-  - אימייל
-  - סוג לקוח (בחירה: זוג מתחתן / בעל אולם / מארגן אירועים / אחר)
-  - תאריך אירוע משוער (אופציונלי)
-  - הודעה חופשית
-- כפתור שליחה: "שלח פרטים"
-- הודעת הצלחה עם אנימציה
+## Cleanup
 
-**שמירה**: הלידים יישמרו בטבלת `leads` הקיימת
+- Change `/` route to render a new `Home.tsx` under `MarketingLayout` (replacing the old `HomePage`)
+- Delete/deprecate: `src/pages/landing/HomePage.tsx` and unused landing sub-components (`FinalCTA`, feature/how/faq/etc. one-page sections) if they are no longer imported anywhere else
+- Remove the legacy `Navigate` redirects (`/pricing → /#contact`, `/benefits → /#features`, etc.) and point them to the new real routes
+- Update in-page anchors (`href="#faq"`, `#pricing`, etc.) inside the new pages to real `/faq`, `/pricing` routes
 
----
+## Images
 
-### 7. CTA Section - קריאה לפעולה סופית
-**מיקום**: לפני הפוטר
+I'll generate hero illustrations for each new page in the same navy+gold style as the ones on About/Contact (event hall, gift box, price tag, question-mark cluster). If you want to use Figma assets instead, export them and drop them in the chat and I'll swap them in.
 
-**אלמנטים**:
-- רקע גרדיאנט זהב
-- כותרת: "מוכנים להתחיל?"
-- כפתורים:
-  - "כניסה למערכת" → /login
-  - "צור קשר" → גלילה לטופס / WhatsApp
+## Not doing (unless you ask)
 
----
-
-### 8. Footer - פוטר
-**מיקום**: תחתית הדף
-
-**אלמנטים**:
-- לוגו Giftkal
-- קישורים:
-  - כניסה למערכת
-  - תנאי שימוש
-  - מדיניות פרטיות
-  - צור קשר
-- פרטי יצירת קשר:
-  - טלפון
-  - אימייל
-  - WhatsApp
-- זכויות יוצרים: "© 2024 Giftkal. כל הזכויות שמורות"
-- אייקונים לרשתות חברתיות (אופציונלי)
-
----
-
-## שינויים טכניים נדרשים
-
-### קבצים חדשים
-1. `src/pages/landing/HomePage.tsx` - הקומפוננטה הראשית
-
-### קבצים לעדכון
-1. `src/App.tsx` - עדכון הנתיב הראשי (/) להפנות לדף הנחיתה החדש
-
-### התאמות נוספות
-- שימוש בשפת העיצוב הקיימת (צבעים, פונטים, אנימציות)
-- תמיכה מלאה ב-RTL
-- רספונסיביות מלאה (Mobile-first)
-- אופטימיזציה לטעינה מהירה
-
----
-
-## סיכום אזורים
-
-| מספר | אזור | מטרה |
-|------|------|------|
-| 1 | Hero | משיכת תשומת לב, הכוונה ראשונית |
-| 2 | Features | הצגת יתרונות |
-| 3 | How It Works | הסבר התהליך |
-| 4 | For Who | פילוח קהלי יעד |
-| 5 | Social Proof | בניית אמון |
-| 6 | Lead Form | גביית לידים |
-| 7 | CTA | המרה סופית |
-| 8 | Footer | מידע ונווטיות |
-
+- No changes to backend, leads table, or auth flows
+- No changes to logged-in areas (event/venue/admin)
+- No new copy translations — Hebrew RTL only, matching existing tone
