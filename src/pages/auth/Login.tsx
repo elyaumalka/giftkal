@@ -228,7 +228,7 @@ export default function Login() {
 
                 <Button
                   type="submit"
-                  className="w-full h-14 text-white rounded-2xl font-bold text-lg shadow-lg transition-all hover:opacity-95 hover:scale-[1.01]"
+                  className="w-full sm:w-auto sm:ms-auto px-8 h-14 text-white rounded-2xl font-bold text-lg shadow-lg transition-all hover:opacity-95 hover:scale-[1.01]"
                   style={{ background: GOLD }}
                   disabled={loading}
                 >
