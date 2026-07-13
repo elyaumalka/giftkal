@@ -91,7 +91,9 @@ function App() {
           <Route path="/benefits" element={<Navigate to="/#features" replace />} />
           <Route path="/pricing" element={<Navigate to="/#contact" replace />} />
           <Route path="/testimonials-page" element={<Navigate to="/#faq" replace />} />
-          <Route path="/contact" element={<Navigate to="/#contact" replace />} />
+          <Route element={<MarketingLayout />}>
+            <Route path="/contact" element={<Contact />} />
+          </Route>
           <Route path="/access" element={<AccessPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/event" element={<EventLogin />} />
