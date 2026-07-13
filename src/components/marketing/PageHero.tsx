@@ -50,16 +50,7 @@ export default function PageHero({
           {description}
         </p>
         {(primaryCta || secondaryCta) && (
-          <div className="flex flex-wrap gap-4 items-center justify-end">
-            {secondaryCta && (
-              <Link
-                to={secondaryCta.to}
-                className="rounded-[12px] border-2 px-7 py-3.5 text-[16px] font-semibold transition hover:bg-[#ae842d]/5"
-                style={{ borderColor: GOLD, color: GOLD }}
-              >
-                {secondaryCta.label}
-              </Link>
-            )}
+          <div className="flex flex-wrap gap-4 items-center justify-start">
             {primaryCta && (
               <Link
                 to={primaryCta.to}
@@ -67,6 +58,15 @@ export default function PageHero({
                 style={{ background: GOLD }}
               >
                 {primaryCta.label}
+              </Link>
+            )}
+            {secondaryCta && (
+              <Link
+                to={secondaryCta.to}
+                className="rounded-[12px] border-2 px-7 py-3.5 text-[16px] font-semibold transition hover:bg-[#ae842d]/5"
+                style={{ borderColor: GOLD, color: GOLD }}
+              >
+                {secondaryCta.label}
               </Link>
             )}
           </div>
