@@ -10,10 +10,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import logoAsset from "@/assets/logo.png.asset.json";
-import contactIllustration from "@/assets/contact-illustration.jpg";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2 } from "lucide-react";
 
 const BRAND = {
   cream: "#F8F2E4",      // candlelight base
