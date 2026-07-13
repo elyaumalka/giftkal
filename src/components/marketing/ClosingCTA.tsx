@@ -18,18 +18,18 @@ export default function ClosingCTA({
           <h2 className="text-[28px] lg:text-[36px] font-extrabold">{title}</h2>
           <p className="mt-3 text-white/80 font-light text-[16px] lg:text-[18px]">{subtitle}</p>
         </div>
-        <div className="flex gap-3 flex-wrap justify-end">
-          <Link
-            to={secondary.to}
-            className="rounded-[12px] border-2 border-white/40 text-white px-6 py-3.5 font-semibold hover:bg-white/10 transition"
-          >
-            {secondary.label}
-          </Link>
+        <div className="flex gap-3 flex-wrap justify-start">
           <Link
             to={primary.to}
             className="rounded-[12px] bg-[#AE842D] hover:opacity-90 transition text-white px-8 py-3.5 font-bold"
           >
             {primary.label}
+          </Link>
+          <Link
+            to={secondary.to}
+            className="rounded-[12px] border-2 border-white/40 text-white px-6 py-3.5 font-semibold hover:bg-white/10 transition"
+          >
+            {secondary.label}
           </Link>
         </div>
       </div>
