@@ -131,6 +131,9 @@ Deno.serve(async (req) => {
           testMode: false,
           sellerApproved: false,
           blocked: true,
+          partnerId,
+          partnerCommissionPct,
+          platformPartnerPct,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -143,6 +146,9 @@ Deno.serve(async (req) => {
           testMode: false,
           sellerApproved: true,
           fallbackToRedirect: true,
+          partnerId,
+          partnerCommissionPct,
+          platformPartnerPct,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -153,6 +159,9 @@ Deno.serve(async (req) => {
         clientKey,
         testMode: false,
         sellerApproved: true,
+        partnerId,
+        partnerCommissionPct,
+        platformPartnerPct,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
