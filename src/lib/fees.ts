@@ -34,6 +34,10 @@ export interface FeeConfig {
   primeRate: number;
   /** PayMe installment surcharge constant: monthly rate = (prime + 4.4) / 12. */
   installmentSurchargeBase: number;
+  /** Partner's cut, %. Only applied when the event was created by a partner. */
+  partnerCommissionPct?: number;
+  /** Giftkal's cut of the partner-referral markup, %. */
+  platformPartnerPct?: number;
 }
 
 /** Platform-wide defaults. Overridden per-seller once Phase C ships fee config. */
@@ -47,13 +51,15 @@ export const DEFAULT_FEE_CONFIG: FeeConfig = {
 /**
  * Compute the total fee rate (as a percent) for a transaction.
  * For installments > 1, includes the monthly surcharge × number of installments.
+ * Partner-referral markup is added on top when the event has a partner.
  */
 export function feeRatePct(installments: number, cfg: FeeConfig = DEFAULT_FEE_CONFIG): number {
   const installmentRatePct =
     installments > 1
       ? ((cfg.primeRate + cfg.installmentSurchargeBase) / 12) * installments
       : 0;
-  return cfg.paymePct + cfg.platformPct + installmentRatePct;
+  const partnerRatePct = (cfg.partnerCommissionPct ?? 0) + (cfg.platformPartnerPct ?? 0);
+  return cfg.paymePct + cfg.platformPct + installmentRatePct + partnerRatePct;
 }
 
 export interface FeeBreakdown {
