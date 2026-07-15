@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
     const { data: event, error } = await supabase
       .from('events')
-      .select('hf_api_key, seller_payme_id, payment_setup_status')
+      .select('hf_api_key, seller_payme_id, payment_setup_status, created_by_partner_id')
       .eq('id', eventId)
       .single();
 
@@ -42,6 +42,25 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Event not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Partner-referral markup. When present, guest is charged extra:
+    //   partnerCommissionPct → paid to partner
+    //   platformPartnerPct   → paid to giftkal
+    let partnerId: string | null = null;
+    let partnerCommissionPct = 0;
+    let platformPartnerPct = 0;
+    if (event.created_by_partner_id) {
+      const { data: partner } = await supabase
+        .from('partners')
+        .select('id, partner_commission_pct, platform_commission_pct, is_active')
+        .eq('id', event.created_by_partner_id)
+        .maybeSingle();
+      if (partner?.is_active) {
+        partnerId = partner.id;
+        partnerCommissionPct = Number(partner.partner_commission_pct) || 0;
+        platformPartnerPct = Number(partner.platform_commission_pct) || 0;
+      }
     }
 
     if (!event.seller_payme_id) {
