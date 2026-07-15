@@ -23,6 +23,7 @@ import { formatILS } from "@/lib/fees";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@radix-ui/react-dialog";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 interface EventDetailsDialogProps {
   event: any;
