@@ -233,6 +233,22 @@ export default function EventOwners() {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">שותף:</label>
+            <Select value={filterPartnerId} onValueChange={setFilterPartnerId}>
+              <SelectTrigger className="w-44 h-8 text-sm">
+                <SelectValue placeholder="הכל" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="any">רק אירועים משותף</SelectItem>
+                <SelectItem value="none">ללא שותף</SelectItem>
+                {partnerOptions.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       )}
 
