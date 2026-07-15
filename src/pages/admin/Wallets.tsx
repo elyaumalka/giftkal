@@ -190,7 +190,30 @@ export default function Wallets() {
         };
       });
 
-      return { events: eventRows, transfers, payouts };
+      // Roll up per-partner aggregates so the admin can see how much is owed to each partner.
+      const partnersList = (partnersRes ?? []) as any[];
+      const partnerAgg = new Map<string, { partnerShare: number; platformShare: number; txCount: number; gifts: number }>();
+      for (const t of completedTx) {
+        if (!t.partner_id) continue;
+        const cur = partnerAgg.get(t.partner_id) ?? { partnerShare: 0, platformShare: 0, txCount: 0, gifts: 0 };
+        cur.partnerShare += Number(t.partner_share) || 0;
+        cur.platformShare += Number(t.platform_partner_share) || 0;
+        cur.gifts += Number(t.gift_amount) || Number(t.amount) || 0;
+        cur.txCount += 1;
+        partnerAgg.set(t.partner_id, cur);
+      }
+      const partnerRows = partnersList.map((p) => {
+        const agg = partnerAgg.get(p.id) ?? { partnerShare: 0, platformShare: 0, txCount: 0, gifts: 0 };
+        return {
+          id: p.id,
+          name: p.name as string,
+          partner_pct: Number(p.partner_commission_pct) || 0,
+          platform_pct: Number(p.platform_commission_pct) || 0,
+          ...agg,
+        };
+      });
+
+      return { events: eventRows, transfers, payouts, partners: partnerRows };
     },
   });
 
