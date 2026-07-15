@@ -172,6 +172,37 @@ Deno.serve(async (req) => {
         console.error('Failed to sync local payment_setup_status:', syncErr.message)
       } else {
         console.log(`Synced event ${eventId} status: ${event.payment_setup_status} → ${status}`)
+
+        // Notify the partner (if any) about the meaningful transition. PayMe
+        // isn't reliable about firing seller-approve, so this manual sync is
+        // often the first (and only) time the partner learns about approval.
+        // Only fire for terminal-ish transitions to avoid noise.
+        let notifyType: string | null = null
+        if (status === 'approved' && event.payment_setup_status !== 'approved') {
+          notifyType = 'seller-approve'
+        } else if (status === 'missing_info' && event.payment_setup_status !== 'missing_info') {
+          notifyType = 'seller-reject'
+        }
+        if (notifyType) {
+          try {
+            await dispatchPartnerWebhooks(supabase, {
+              eventType: notifyType,
+              eventId,
+              payload: {
+                event_id: eventId,
+                status,
+                ...(notifyType === 'seller-reject'
+                  ? { missing_fields: missingFields.map((f) => f.label) }
+                  : {}),
+              },
+            })
+          } catch (e) {
+            console.error(
+              `partner webhook (${notifyType}) failed (non-fatal):`,
+              e instanceof Error ? e.message : 'unknown',
+            )
+          }
+        }
       }
     }
 
