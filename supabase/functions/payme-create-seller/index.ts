@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { dispatchPartnerWebhooks } from '../_shared/partner-webhooks.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -421,6 +422,21 @@ Deno.serve(async (req) => {
       }
     } catch (fileError) {
       console.error('Error uploading seller files (non-fatal):', fileError instanceof Error ? fileError.message : 'unknown');
+    }
+
+    // Notify the partner (if any) that a payment account was created and is now
+    // pending KYC review. This is best-effort; failures don't block the response.
+    try {
+      await dispatchPartnerWebhooks(supabase, {
+        eventType: 'seller-created',
+        eventId: body.eventId,
+        payload: {
+          event_id: body.eventId,
+          status: 'pending',
+        },
+      });
+    } catch (e) {
+      console.error('partner webhook (seller-created) failed (non-fatal):', e instanceof Error ? e.message : 'unknown');
     }
 
     return new Response(
