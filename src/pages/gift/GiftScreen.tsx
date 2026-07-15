@@ -118,6 +118,11 @@ export default function GiftScreen() {
         });
         if (!error && data) {
           setSellerApproved(data.sellerApproved ?? false);
+          setPartnerConfig({
+            partnerId: data.partnerId ?? null,
+            partnerPct: Number(data.partnerCommissionPct) || 0,
+            platformPct: Number(data.platformPartnerPct) || 0,
+          });
           if (data.clientKey) {
             setPaymeApiKey(data.clientKey);
             setPaymeTestMode(data.testMode ?? true);
