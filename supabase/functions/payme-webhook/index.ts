@@ -89,6 +89,14 @@ async function handleSellerApprove(supabase: SupabaseClient, payload: Payload) {
     return json({ error: 'Missing seller_payme_id' }, 400)
   }
 
+  // Grab prior status so we only notify the partner on the actual transition
+  // to approved. The admin's manual "בדוק ועדכן" may have already flipped this
+  // to approved and dispatched — we don't want a duplicate here.
+  const { data: prior } = await supabase
+    .from('events')
+    .select('id, payment_setup_status')
+    .eq('seller_payme_id', sellerPaymeId)
+
   const { data: events, error: findErr } = await supabase
     .from('events')
     .update({ payment_setup_status: 'approved' })
@@ -102,8 +110,16 @@ async function handleSellerApprove(supabase: SupabaseClient, payload: Payload) {
 
   console.log(`seller-approve: ${sellerPaymeId} → approved (${events?.length ?? 0} event(s) updated)`)
 
-  // Notify any partner that created this event.
+  const priorByEvent: Record<string, string | null> = {}
+  for (const p of prior ?? []) priorByEvent[p.id] = p.payment_setup_status ?? null
+
+  // Notify any partner that created this event — but only if this is the
+  // first time we're marking it approved.
   for (const ev of events ?? []) {
+    if (priorByEvent[ev.id] === 'approved') {
+      console.log(`seller-approve: event ${ev.id} already approved, skipping partner notify`)
+      continue
+    }
     await dispatchPartnerWebhooks(supabase, {
       eventType: 'seller-approve',
       eventId: ev.id,
