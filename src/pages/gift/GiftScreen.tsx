@@ -94,6 +94,7 @@ export default function GiftScreen() {
   const [paymeSaleUrl, setPaymeSaleUrl] = useState<string | null>(null);
   const [sellerApproved, setSellerApproved] = useState<boolean | null>(null);
   const [paymeLoading, setPaymeLoading] = useState(true);
+  const [partnerConfig, setPartnerConfig] = useState<{ partnerId: string | null; partnerPct: number; platformPct: number }>({ partnerId: null, partnerPct: 0, platformPct: 0 });
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
