@@ -23,6 +23,7 @@ import { formatILS } from "@/lib/fees";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { DialogClose } from "@radix-ui/react-dialog";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 interface EventDetailsDialogProps {
   event: any;
@@ -49,6 +50,12 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [rejectReason, setRejectReason] = useState("");
   const [approvingSeller, setApprovingSeller] = useState(false);
   const [hfApiKeyInput, setHfApiKeyInput] = useState(event.hf_api_key || "");
+  // Editable bank details (admin can correct before sending to PayMe).
+  const initialSetup = (event.payment_setup_data as any) || {};
+  const [editBankCode, setEditBankCode] = useState<string>(String(initialSetup.bankCode ?? ""));
+  const [editBankBranch, setEditBankBranch] = useState<string>(String(initialSetup.bankBranch ?? ""));
+  const [editBankAccount, setEditBankAccount] = useState<string>(String(initialSetup.bankAccountNumber ?? ""));
+  const [approvalError, setApprovalError] = useState<string | null>(null);
   // Phase C wallet ops state
   const [sweepAmount, setSweepAmount] = useState("");
   const [sweepNote, setSweepNote] = useState("");
@@ -480,13 +487,59 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
 
   const handleApproveSeller = async () => {
     setApprovingSeller(true);
+    setApprovalError(null);
     try {
       if (!setupData) throw new Error('אין נתוני הקמה');
+
+      // Client-side sanity checks on the (possibly edited) bank fields.
+      const bankCodeNum = parseInt(editBankCode, 10);
+      const bankBranchNum = parseInt(editBankBranch, 10);
+      const bankAcct = (editBankAccount || "").replace(/\D/g, "");
+      if (!Number.isFinite(bankCodeNum) || !BANKS[String(bankCodeNum)]) {
+        throw new Error('קוד בנק לא תקין');
+      }
+      if (!Number.isFinite(bankBranchNum) || bankBranchNum <= 0) {
+        throw new Error('מספר סניף לא תקין');
+      }
+      if (bankAcct.length < 4 || bankAcct.length > 12) {
+        throw new Error('מספר חשבון בנק לא תקין (4–12 ספרות)');
+      }
+
+      // Merge edits back into the setup payload sent to the edge function AND
+      // persist them on the event, so a retry uses the corrected values.
+      const correctedSetup = {
+        ...setupData,
+        bankCode: bankCodeNum,
+        bankBranch: bankBranchNum,
+        bankAccountNumber: bankAcct,
+      };
+      if (
+        setupData.bankCode !== correctedSetup.bankCode ||
+        setupData.bankBranch !== correctedSetup.bankBranch ||
+        setupData.bankAccountNumber !== correctedSetup.bankAccountNumber
+      ) {
+        await supabase
+          .from('events')
+          .update({ payment_setup_data: correctedSetup } as any)
+          .eq('id', event.id);
+      }
+
       const response = await supabase.functions.invoke('payme-create-seller', {
-        body: { eventId: event.id, ...setupData, gender: 0 },
+        body: { eventId: event.id, ...correctedSetup, gender: 0 },
       });
-      if (response.error) throw new Error(response.error.message);
-      if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה');
+      if (response.error) {
+        // supabase.functions.invoke masks non-2xx as a generic message; read the
+        // real PayMe error out of the response body.
+        let details = response.error.message;
+        if (response.error instanceof FunctionsHttpError) {
+          try {
+            const body = await response.error.context.json();
+            details = body?.details || body?.error || details;
+          } catch { /* ignore */ }
+        }
+        throw new Error(details);
+      }
+      if (!response.data?.success) throw new Error(response.data?.error || response.data?.details || 'שגיאה');
       await supabase.from('events').update({ payment_setup_status: 'approved' } as any).eq('id', event.id);
       queryClient.invalidateQueries({ queryKey: ['event-owners'] });
       queryClient.invalidateQueries({ queryKey: ['events-list'] });
@@ -494,7 +547,9 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       toast({ title: "חשבון סליקה הוקם בהצלחה ב-PayMe ✅" });
       onClose();
     } catch (err: any) {
-      toast({ title: "שגיאה ביצירת חשבון סליקה", description: err.message, variant: "destructive" });
+      const msg = err?.message || 'שגיאה לא ידועה';
+      setApprovalError(msg);
+      toast({ title: "שגיאה ביצירת חשבון סליקה", description: msg, variant: "destructive" });
     } finally {
       setApprovingSeller(false);
     }
@@ -913,24 +968,45 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
               </div>
             </div>
 
-            {/* Bank Details */}
+            {/* Bank Details — editable so admin can fix rejections from PayMe */}
             <div className="bg-white rounded-xl p-4 border shadow-sm">
-              <h4 className="text-sm font-bold text-secondary mb-3">פרטי חשבון בנק</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold text-secondary">פרטי חשבון בנק</h4>
+                <span className="text-[11px] text-muted-foreground">ניתן לערוך לפני שליחה ל-PayMe</span>
+              </div>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">בנק</p>
-                  <p className="font-medium">{BANKS[String(setupData.bankCode)] || `בנק ${setupData.bankCode}` || '—'}</p>
+                  <Label className="text-xs text-muted-foreground">בנק</Label>
+                  <Select value={editBankCode} onValueChange={setEditBankCode}>
+                    <SelectTrigger className="h-9 mt-1"><SelectValue placeholder="בחר בנק" /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(BANKS).map(([code, name]) => (
+                        <SelectItem key={code} value={code}>{name} ({code})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">סניף</p>
-                  <p className="font-medium font-mono">{setupData.bankBranch || '—'}</p>
+                  <Label className="text-xs text-muted-foreground">סניף</Label>
+                  <Input
+                    inputMode="numeric"
+                    className="h-9 mt-1 font-mono"
+                    value={editBankBranch}
+                    onChange={(e) => setEditBankBranch(e.target.value.replace(/\D/g, ""))}
+                  />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">מספר חשבון</p>
-                  <p className="font-medium font-mono">{setupData.bankAccountNumber || '—'}</p>
+                  <Label className="text-xs text-muted-foreground">מספר חשבון</Label>
+                  <Input
+                    inputMode="numeric"
+                    className="h-9 mt-1 font-mono"
+                    value={editBankAccount}
+                    onChange={(e) => setEditBankAccount(e.target.value.replace(/\D/g, ""))}
+                  />
                 </div>
               </div>
             </div>
+
 
             {/* KYC Files for review */}
             <div className="bg-white rounded-xl p-4 border shadow-sm">
@@ -996,6 +1072,17 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                 </div>
               </div>
             </div>
+
+            {/* Inline error from the last approval attempt (e.g. PayMe details) */}
+            {approvalError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 text-sm flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-semibold mb-0.5">השליחה ל-PayMe נכשלה</div>
+                  <div className="text-red-700">{approvalError}</div>
+                </div>
+              </div>
+            )}
 
             {/* Approve / Reject Buttons */}
             <div className="flex gap-3 pt-2">
