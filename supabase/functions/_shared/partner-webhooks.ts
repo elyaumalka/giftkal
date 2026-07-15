@@ -31,7 +31,9 @@ export interface DispatchInput {
  *  Internal name          → Public event name we send to partners.
  */
 const INTERNAL_TO_PUBLIC: Record<string, string> = {
+  'seller-created': 'payment-account-pending',
   'seller-approve': 'payment-account-approved',
+  'seller-reject': 'payment-account-rejected',
   'sale-paid': 'sale-paid',
   'sale-failure': 'sale-failure',
   'sale-complete': 'sale-paid',
