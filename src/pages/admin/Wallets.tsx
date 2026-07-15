@@ -42,7 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { formatILS } from "@/lib/fees";
 
-type TabKey = "events" | "sweeps" | "payouts";
+type TabKey = "events" | "sweeps" | "payouts" | "partners";
 
 interface EventRow {
   event_id: string;
