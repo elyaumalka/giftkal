@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     // Get event and seller info
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, seller_payme_id, groom_name, bride_name, venue_id, venues(name)')
+      .select('id, seller_payme_id, groom_name, bride_name, venue_id, created_by_partner_id, venues(name)')
       .eq('id', eventId)
       .single();
 
@@ -67,6 +67,26 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Server-authoritative partner share (extra 3%+2% markup for partner-referred events).
+    let partnerId: string | null = null;
+    let partnerShare = 0;
+    let platformPartnerShare = 0;
+    if (event.created_by_partner_id) {
+      const { data: partner } = await supabase
+        .from('partners')
+        .select('id, partner_commission_pct, platform_commission_pct, is_active')
+        .eq('id', event.created_by_partner_id)
+        .maybeSingle();
+      if (partner?.is_active) {
+        partnerId = partner.id;
+        const partnerPct = Number(partner.partner_commission_pct) || 0;
+        const platformPct = Number(partner.platform_commission_pct) || 0;
+        // Best-effort: baseline gift = amount (redirect flow doesn't split fees).
+        partnerShare = Math.round(amount * partnerPct) / 100;
+        platformPartnerShare = Math.round(amount * platformPct) / 100;
+      }
+    }
+
     // Create transaction record first (pending)
     const { data: transaction, error: transactionError } = await supabase
       .from('transactions')
@@ -81,6 +101,9 @@ Deno.serve(async (req) => {
         blessing_text: blessing || null,
         receipt_url: blessingImageUrl || null, // Store the blessing image URL
         payment_status: 'pending',
+        partner_id: partnerId,
+        partner_share: partnerShare,
+        platform_partner_share: platformPartnerShare,
       })
       .select()
       .single();

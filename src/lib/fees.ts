@@ -34,6 +34,10 @@ export interface FeeConfig {
   primeRate: number;
   /** PayMe installment surcharge constant: monthly rate = (prime + 4.4) / 12. */
   installmentSurchargeBase: number;
+  /** Partner's cut, %. Only applied when the event was created by a partner. */
+  partnerCommissionPct?: number;
+  /** Giftkal's cut of the partner-referral markup, %. */
+  platformPartnerPct?: number;
 }
 
 /** Platform-wide defaults. Overridden per-seller once Phase C ships fee config. */
@@ -47,13 +51,15 @@ export const DEFAULT_FEE_CONFIG: FeeConfig = {
 /**
  * Compute the total fee rate (as a percent) for a transaction.
  * For installments > 1, includes the monthly surcharge × number of installments.
+ * Partner-referral markup is added on top when the event has a partner.
  */
 export function feeRatePct(installments: number, cfg: FeeConfig = DEFAULT_FEE_CONFIG): number {
   const installmentRatePct =
     installments > 1
       ? ((cfg.primeRate + cfg.installmentSurchargeBase) / 12) * installments
       : 0;
-  return cfg.paymePct + cfg.platformPct + installmentRatePct;
+  const partnerRatePct = (cfg.partnerCommissionPct ?? 0) + (cfg.platformPartnerPct ?? 0);
+  return cfg.paymePct + cfg.platformPct + installmentRatePct + partnerRatePct;
 }
 
 export interface FeeBreakdown {
@@ -68,6 +74,8 @@ export interface FeeBreakdown {
     payme: number;
     platform: number;
     installments: number;
+    partner: number;
+    platformPartner: number;
   };
   /** Effective fee rate (totalCharge / giftAmount - 1), as percent. */
   effectiveRatePct: number;
@@ -104,10 +112,14 @@ export function computeBreakdown(
   const feeAmount = roundAgorot(totalCharge - giftAmount);
   const paymeFee = roundAgorot(giftAmount * (cfg.paymePct / 100));
   const platformFee = roundAgorot(giftAmount * (cfg.platformPct / 100));
-  // Whatever is left over after PayMe + platform components is the installment portion.
+  const partnerFee = roundAgorot(giftAmount * ((cfg.partnerCommissionPct ?? 0) / 100));
+  const platformPartnerFee = roundAgorot(giftAmount * ((cfg.platformPartnerPct ?? 0) / 100));
+  // Whatever is left over after the other components is the installment portion.
   // Computing it as the residual avoids the cumulative rounding error of computing
   // each rate independently.
-  const installmentFee = roundAgorot(Math.max(0, feeAmount - paymeFee - platformFee));
+  const installmentFee = roundAgorot(
+    Math.max(0, feeAmount - paymeFee - platformFee - partnerFee - platformPartnerFee),
+  );
 
   return {
     giftAmount,
@@ -117,6 +129,8 @@ export function computeBreakdown(
       payme: paymeFee,
       platform: platformFee,
       installments: installmentFee,
+      partner: partnerFee,
+      platformPartner: platformPartnerFee,
     },
     effectiveRatePct:
       giftAmount > 0 ? ((totalCharge - giftAmount) / giftAmount) * 100 : 0,

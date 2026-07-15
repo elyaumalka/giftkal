@@ -42,7 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { formatILS } from "@/lib/fees";
 
-type TabKey = "events" | "sweeps" | "payouts";
+type TabKey = "events" | "sweeps" | "payouts" | "partners";
 
 interface EventRow {
   event_id: string;
@@ -112,7 +112,7 @@ export default function Wallets() {
   // huge (one row per event/transaction/transfer/payout) so we don't bother
   // with pagination yet; if it grows past a few thousand rows we'll add a
   // server-side aggregation RPC.
-  const { data: rows = { events: [], transfers: [], payouts: [] }, isLoading } = useQuery({
+  const { data: rows = { events: [], transfers: [], payouts: [], partners: [] as any[] }, isLoading } = useQuery({
     queryKey: ["wallets-dashboard"],
     refetchInterval: 60_000,
     queryFn: async () => {
@@ -123,7 +123,7 @@ export default function Wallets() {
           .order("event_date", { ascending: false }),
         supabase
           .from("transactions")
-          .select("event_id, amount, gift_amount, fee_amount, payment_status, installments")
+          .select("event_id, amount, gift_amount, fee_amount, payment_status, installments, partner_id, partner_share, platform_partner_share")
           .eq("payment_status", "completed"),
         (supabase.from as any)("platform_commission_transfers")
           .select("id, event_id, amount, status, submitted_at, completed_at")
@@ -132,6 +132,9 @@ export default function Wallets() {
           .select("id, event_id, amount, status, submitted_at, completed_at, seller_payme_id")
           .order("submitted_at", { ascending: false }),
       ]);
+      const { data: partnersRes } = await supabase
+        .from("partners")
+        .select("id, name, partner_commission_pct, platform_commission_pct");
 
       const events = (evRes.data ?? []) as any[];
       const completedTx = (txRes.data ?? []) as any[];
@@ -187,7 +190,30 @@ export default function Wallets() {
         };
       });
 
-      return { events: eventRows, transfers, payouts };
+      // Roll up per-partner aggregates so the admin can see how much is owed to each partner.
+      const partnersList = (partnersRes ?? []) as any[];
+      const partnerAgg = new Map<string, { partnerShare: number; platformShare: number; txCount: number; gifts: number }>();
+      for (const t of completedTx) {
+        if (!t.partner_id) continue;
+        const cur = partnerAgg.get(t.partner_id) ?? { partnerShare: 0, platformShare: 0, txCount: 0, gifts: 0 };
+        cur.partnerShare += Number(t.partner_share) || 0;
+        cur.platformShare += Number(t.platform_partner_share) || 0;
+        cur.gifts += Number(t.gift_amount) || Number(t.amount) || 0;
+        cur.txCount += 1;
+        partnerAgg.set(t.partner_id, cur);
+      }
+      const partnerRows = partnersList.map((p) => {
+        const agg = partnerAgg.get(p.id) ?? { partnerShare: 0, platformShare: 0, txCount: 0, gifts: 0 };
+        return {
+          id: p.id,
+          name: p.name as string,
+          partner_pct: Number(p.partner_commission_pct) || 0,
+          platform_pct: Number(p.platform_commission_pct) || 0,
+          ...agg,
+        };
+      });
+
+      return { events: eventRows, transfers, payouts, partners: partnerRows };
     },
   });
 
@@ -279,6 +305,9 @@ export default function Wallets() {
         <TabButton active={tab === "payouts"} onClick={() => setTab("payouts")} icon={<ArrowDownToLine className="w-4 h-4" />}>
           משיכות לבנק ({rows.payouts.length})
         </TabButton>
+        <TabButton active={tab === "partners"} onClick={() => setTab("partners")} icon={<Wallet className="w-4 h-4" />}>
+          שותפים ({rows.partners.length})
+        </TabButton>
 
         <div className="relative ml-auto w-64">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -301,8 +330,10 @@ export default function Wallets() {
           <EventsTable rows={filteredEvents} onTransfer={openTransfer} />
         ) : tab === "sweeps" ? (
           <SweepsTable rows={rows.transfers} eventLabel={eventLabelById} />
-        ) : (
+        ) : tab === "payouts" ? (
           <PayoutsTable rows={rows.payouts} eventLabel={eventLabelById} />
+        ) : (
+          <PartnersTable rows={rows.partners} />
         )}
       </div>
 
@@ -533,6 +564,40 @@ function SweepsTable({ rows, eventLabel }: { rows: any[]; eventLabel: Map<string
             <Td align="right">{formatILS(Number(r.amount) || 0)}</Td>
             <Td><StatusPill value={r.status} /></Td>
             <Td muted>{r.completed_at ? formatRowDate(r.completed_at) : "—"}</Td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function PartnersTable({ rows }: { rows: Array<{ id: string; name: string; partner_pct: number; platform_pct: number; partnerShare: number; platformShare: number; txCount: number; gifts: number }> }) {
+  if (rows.length === 0) {
+    return <div className="p-12 text-center text-muted-foreground">אין שותפים במערכת.</div>;
+  }
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/40">
+        <tr>
+          <Th>שותף</Th>
+          <Th align="right">% שותף</Th>
+          <Th align="right">% פלטפורמה</Th>
+          <Th align="right">עסקאות</Th>
+          <Th align="right">סה״כ מתנות דרכו</Th>
+          <Th align="right">מגיע לשותף</Th>
+          <Th align="right">מגיע לפלטפורמה</Th>
+        </tr>
+      </thead>
+      <tbody className="divide-y">
+        {rows.map((r) => (
+          <tr key={r.id} className="hover:bg-muted/30">
+            <Td>{r.name}</Td>
+            <Td align="right" muted>{r.partner_pct}%</Td>
+            <Td align="right" muted>{r.platform_pct}%</Td>
+            <Td align="right">{r.txCount}</Td>
+            <Td align="right">{formatILS(r.gifts)}</Td>
+            <Td align="right" className="font-bold text-purple-700">{formatILS(r.partnerShare)}</Td>
+            <Td align="right" className="font-bold text-emerald-700">{formatILS(r.platformShare)}</Td>
           </tr>
         ))}
       </tbody>

@@ -784,6 +784,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          partner_commission_pct: number
+          platform_commission_pct: number
           updated_at: string
           webhook_events: string[]
           webhook_secret: string | null
@@ -795,6 +797,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          partner_commission_pct?: number
+          platform_commission_pct?: number
           updated_at?: string
           webhook_events?: string[]
           webhook_secret?: string | null
@@ -806,6 +810,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          partner_commission_pct?: number
+          platform_commission_pct?: number
           updated_at?: string
           webhook_events?: string[]
           webhook_secret?: string | null
@@ -987,12 +993,15 @@ export type Database = {
           gift_amount: number | null
           id: string
           installments: number | null
+          partner_id: string | null
+          partner_share: number
           payer_email: string | null
           payer_name: string
           payer_phone: string | null
           payme_sale_id: string | null
           payme_transaction_id: string | null
           payment_status: string | null
+          platform_partner_share: number
           receipt_url: string | null
           relationship: string | null
           side: string | null
@@ -1009,12 +1018,15 @@ export type Database = {
           gift_amount?: number | null
           id?: string
           installments?: number | null
+          partner_id?: string | null
+          partner_share?: number
           payer_email?: string | null
           payer_name: string
           payer_phone?: string | null
           payme_sale_id?: string | null
           payme_transaction_id?: string | null
           payment_status?: string | null
+          platform_partner_share?: number
           receipt_url?: string | null
           relationship?: string | null
           side?: string | null
@@ -1031,12 +1043,15 @@ export type Database = {
           gift_amount?: number | null
           id?: string
           installments?: number | null
+          partner_id?: string | null
+          partner_share?: number
           payer_email?: string | null
           payer_name?: string
           payer_phone?: string | null
           payme_sale_id?: string | null
           payme_transaction_id?: string | null
           payment_status?: string | null
+          platform_partner_share?: number
           receipt_url?: string | null
           relationship?: string | null
           side?: string | null
@@ -1056,6 +1071,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
             referencedColumns: ["id"]
           },
           {

@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { dispatchPartnerWebhooks } from '../_shared/partner-webhooks.ts'
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +17,9 @@ interface ChargeTokenRequest {
   giftAmount?: number;
   /** Fee surcharge collected on top of the gift amount. Defaults to 0. */
   feeAmount?: number;
+  /** Client-computed partner share (informational — recomputed server-side). */
+  partnerShare?: number;
+  platformPartnerShare?: number;
   payerName: string;
   payerEmail?: string;
   payerPhone?: string;
@@ -71,7 +76,7 @@ Deno.serve(async (req) => {
     // Get event and seller info
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('id, seller_payme_id, groom_name, bride_name, venue_id, venues(name)')
+      .select('id, seller_payme_id, groom_name, bride_name, venue_id, created_by_partner_id, venues(name)')
       .eq('id', eventId)
       .single();
 
@@ -87,6 +92,25 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Event not configured for payments - missing seller_payme_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Server-authoritative partner share computation: never trust the client.
+    let partnerId: string | null = null;
+    let partnerShare = 0;
+    let platformPartnerShare = 0;
+    if (event.created_by_partner_id) {
+      const { data: partner } = await supabase
+        .from('partners')
+        .select('id, partner_commission_pct, platform_commission_pct, is_active')
+        .eq('id', event.created_by_partner_id)
+        .maybeSingle();
+      if (partner?.is_active) {
+        partnerId = partner.id;
+        const partnerPct = Number(partner.partner_commission_pct) || 0;
+        const platformPct = Number(partner.platform_commission_pct) || 0;
+        partnerShare = Math.round(giftPart * partnerPct) / 100;
+        platformPartnerShare = Math.round(giftPart * platformPct) / 100;
+      }
     }
 
     // Create transaction record first (pending)
@@ -107,6 +131,9 @@ Deno.serve(async (req) => {
         receipt_url: blessingImageUrl || null,
         blessing_video_url: blessingVideoUrl || null,
         payment_status: 'pending',
+        partner_id: partnerId,
+        partner_share: partnerShare,
+        platform_partner_share: platformPartnerShare,
       })
       .select()
       .single();
@@ -186,6 +213,27 @@ Deno.serve(async (req) => {
         payme_transaction_id: paymeResult.payme_transaction_id,
       })
       .eq('id', transaction.id);
+
+    // Notify the referring partner (if any) that a sale was paid.
+    if (partnerId) {
+      await dispatchPartnerWebhooks(supabase, {
+        eventType: 'sale-paid',
+        eventId,
+        partnerId,
+        payload: {
+          transaction_id: transaction.id,
+          event_id: eventId,
+          payment_status: 'completed',
+          amount,
+          gift_amount: giftPart,
+          fee_amount: feePart,
+          partner_share: partnerShare,
+          platform_partner_share: platformPartnerShare,
+          payer_name: payerName,
+          installments,
+        },
+      });
+    }
 
     return new Response(
       JSON.stringify({

@@ -94,6 +94,7 @@ export default function GiftScreen() {
   const [paymeSaleUrl, setPaymeSaleUrl] = useState<string | null>(null);
   const [sellerApproved, setSellerApproved] = useState<boolean | null>(null);
   const [paymeLoading, setPaymeLoading] = useState(true);
+  const [partnerConfig, setPartnerConfig] = useState<{ partnerId: string | null; partnerPct: number; platformPct: number }>({ partnerId: null, partnerPct: 0, platformPct: 0 });
   const { toast } = useToast();
   const blessingCardRef = useRef<HTMLDivElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -117,6 +118,11 @@ export default function GiftScreen() {
         });
         if (!error && data) {
           setSellerApproved(data.sellerApproved ?? false);
+          setPartnerConfig({
+            partnerId: data.partnerId ?? null,
+            partnerPct: Number(data.partnerCommissionPct) || 0,
+            platformPct: Number(data.platformPartnerPct) || 0,
+          });
           if (data.clientKey) {
             setPaymeApiKey(data.clientKey);
             setPaymeTestMode(data.testMode ?? true);
@@ -209,7 +215,14 @@ export default function GiftScreen() {
    * PayMe charge. The card is debited `breakdown.totalCharge`; the couple
    * eventually receives `breakdown.giftAmount`.
    */
-  const breakdown = computeBreakdown(rawInputAmount || 0, feeMode, selectedInstallments);
+  const breakdown = computeBreakdown(rawInputAmount || 0, feeMode, selectedInstallments, {
+    paymePct: 0.9,
+    platformPct: 1.1,
+    primeRate: 6.0,
+    installmentSurchargeBase: 4.4,
+    partnerCommissionPct: partnerConfig.partnerPct,
+    platformPartnerPct: partnerConfig.platformPct,
+  });
 
   const chargeToken = useMutation({
     mutationFn: async (token: string) => {
@@ -222,6 +235,8 @@ export default function GiftScreen() {
           // For our own records: what the couple receives, and the fee math.
           giftAmount: breakdown.giftAmount,
           feeAmount: breakdown.feeAmount,
+          partnerShare: breakdown.components.partner,
+          platformPartnerShare: breakdown.components.platformPartner,
           payerName,
           payerEmail: payerEmail || undefined,
           payerPhone: payerPhone || undefined,
