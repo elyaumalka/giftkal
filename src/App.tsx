@@ -68,6 +68,7 @@ import GiftSearch from "./pages/gift/GiftSearch";
 import PublicRSVP from "./pages/rsvp/PublicRSVP";
 import VenueLanding from "./pages/landing/VenueLanding";
 import EmbedGift from "./pages/embed/EmbedGift";
+import PartnerGift from "./pages/gift/PartnerGift";
 
 // Kiosk
 import KioskPage from "./pages/kiosk/KioskPage";
