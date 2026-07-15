@@ -968,24 +968,45 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
               </div>
             </div>
 
-            {/* Bank Details */}
+            {/* Bank Details — editable so admin can fix rejections from PayMe */}
             <div className="bg-white rounded-xl p-4 border shadow-sm">
-              <h4 className="text-sm font-bold text-secondary mb-3">פרטי חשבון בנק</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold text-secondary">פרטי חשבון בנק</h4>
+                <span className="text-[11px] text-muted-foreground">ניתן לערוך לפני שליחה ל-PayMe</span>
+              </div>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">בנק</p>
-                  <p className="font-medium">{BANKS[String(setupData.bankCode)] || `בנק ${setupData.bankCode}` || '—'}</p>
+                  <Label className="text-xs text-muted-foreground">בנק</Label>
+                  <Select value={editBankCode} onValueChange={setEditBankCode}>
+                    <SelectTrigger className="h-9 mt-1"><SelectValue placeholder="בחר בנק" /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(BANKS).map(([code, name]) => (
+                        <SelectItem key={code} value={code}>{name} ({code})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">סניף</p>
-                  <p className="font-medium font-mono">{setupData.bankBranch || '—'}</p>
+                  <Label className="text-xs text-muted-foreground">סניף</Label>
+                  <Input
+                    inputMode="numeric"
+                    className="h-9 mt-1 font-mono"
+                    value={editBankBranch}
+                    onChange={(e) => setEditBankBranch(e.target.value.replace(/\D/g, ""))}
+                  />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">מספר חשבון</p>
-                  <p className="font-medium font-mono">{setupData.bankAccountNumber || '—'}</p>
+                  <Label className="text-xs text-muted-foreground">מספר חשבון</Label>
+                  <Input
+                    inputMode="numeric"
+                    className="h-9 mt-1 font-mono"
+                    value={editBankAccount}
+                    onChange={(e) => setEditBankAccount(e.target.value.replace(/\D/g, ""))}
+                  />
                 </div>
               </div>
             </div>
+
 
             {/* KYC Files for review */}
             <div className="bg-white rounded-xl p-4 border shadow-sm">
