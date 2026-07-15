@@ -571,6 +571,40 @@ function SweepsTable({ rows, eventLabel }: { rows: any[]; eventLabel: Map<string
   );
 }
 
+function PartnersTable({ rows }: { rows: Array<{ id: string; name: string; partner_pct: number; platform_pct: number; partnerShare: number; platformShare: number; txCount: number; gifts: number }> }) {
+  if (rows.length === 0) {
+    return <div className="p-12 text-center text-muted-foreground">אין שותפים במערכת.</div>;
+  }
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/40">
+        <tr>
+          <Th>שותף</Th>
+          <Th align="right">% שותף</Th>
+          <Th align="right">% פלטפורמה</Th>
+          <Th align="right">עסקאות</Th>
+          <Th align="right">סה״כ מתנות דרכו</Th>
+          <Th align="right">מגיע לשותף</Th>
+          <Th align="right">מגיע לפלטפורמה</Th>
+        </tr>
+      </thead>
+      <tbody className="divide-y">
+        {rows.map((r) => (
+          <tr key={r.id} className="hover:bg-muted/30">
+            <Td>{r.name}</Td>
+            <Td align="right" muted>{r.partner_pct}%</Td>
+            <Td align="right" muted>{r.platform_pct}%</Td>
+            <Td align="right">{r.txCount}</Td>
+            <Td align="right">{formatILS(r.gifts)}</Td>
+            <Td align="right" className="font-bold text-purple-700">{formatILS(r.partnerShare)}</Td>
+            <Td align="right" className="font-bold text-emerald-700">{formatILS(r.platformShare)}</Td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 function PayoutsTable({ rows, eventLabel }: { rows: any[]; eventLabel: Map<string, string> }) {
   if (rows.length === 0) {
     return <div className="p-12 text-center text-muted-foreground">עדיין לא בוצעו משיכות לבנק.</div>;
