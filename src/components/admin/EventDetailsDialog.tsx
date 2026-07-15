@@ -50,6 +50,12 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [rejectReason, setRejectReason] = useState("");
   const [approvingSeller, setApprovingSeller] = useState(false);
   const [hfApiKeyInput, setHfApiKeyInput] = useState(event.hf_api_key || "");
+  // Editable bank details (admin can correct before sending to PayMe).
+  const initialSetup = (event.payment_setup_data as any) || {};
+  const [editBankCode, setEditBankCode] = useState<string>(String(initialSetup.bankCode ?? ""));
+  const [editBankBranch, setEditBankBranch] = useState<string>(String(initialSetup.bankBranch ?? ""));
+  const [editBankAccount, setEditBankAccount] = useState<string>(String(initialSetup.bankAccountNumber ?? ""));
+  const [approvalError, setApprovalError] = useState<string | null>(null);
   // Phase C wallet ops state
   const [sweepAmount, setSweepAmount] = useState("");
   const [sweepNote, setSweepNote] = useState("");
