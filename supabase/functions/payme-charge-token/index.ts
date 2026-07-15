@@ -17,6 +17,9 @@ interface ChargeTokenRequest {
   giftAmount?: number;
   /** Fee surcharge collected on top of the gift amount. Defaults to 0. */
   feeAmount?: number;
+  /** Client-computed partner share (informational — recomputed server-side). */
+  partnerShare?: number;
+  platformPartnerShare?: number;
   payerName: string;
   payerEmail?: string;
   payerPhone?: string;
