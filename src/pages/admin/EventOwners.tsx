@@ -32,6 +32,7 @@ export default function EventOwners() {
   const [filterVenueId, setFilterVenueId] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [filterPartnerId, setFilterPartnerId] = useState<string>("all");
   const { data: eventOwners } = useQuery({
     queryKey: ["event-owners"],
     queryFn: async () => {
@@ -58,6 +59,21 @@ export default function EventOwners() {
         .select("event_id, amount, created_at")
         .in("event_id", eventIds);
 
+      // Fetch partners (for events created via a partner)
+      const partnerIds = [...new Set(
+        (events || [])
+          .map((e: any) => e.created_by_partner_id)
+          .filter(Boolean)
+      )] as string[];
+      const { data: partners } = partnerIds.length
+        ? await supabase
+            .from("partners" as any)
+            .select("id, name")
+            .in("id", partnerIds)
+        : { data: [] as any[] };
+      const partnerMap = new Map<string, string>();
+      (partners || []).forEach((p: any) => partnerMap.set(p.id, p.name));
+
       const chargeMap = new Map<string, any>();
       (charges || []).forEach((c: any) => {
         if (!chargeMap.has(c.event_id) || new Date(c.created_at) > new Date(chargeMap.get(c.event_id).created_at)) {
@@ -78,6 +94,7 @@ export default function EventOwners() {
           transactionCount: event.transactions?.length || 0,
           totalAmount: event.transactions?.reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0,
           charge,
+          partnerName: event.created_by_partner_id ? partnerMap.get(event.created_by_partner_id) ?? null : null,
         };
       }) || [];
     },
@@ -114,20 +131,34 @@ export default function EventOwners() {
       (filterPaymentStatus === "paid" && e.charge) ||
       (filterPaymentStatus === "unpaid" && !e.charge);
     const matchesVenue = filterVenueId === "all" || e.venue_id === filterVenueId;
-    return matchesSearch && matchesDateFrom && matchesDateTo && matchesPayment && matchesVenue;
+    const matchesPartner =
+      filterPartnerId === "all" ||
+      (filterPartnerId === "any" && !!e.created_by_partner_id) ||
+      (filterPartnerId === "none" && !e.created_by_partner_id) ||
+      e.created_by_partner_id === filterPartnerId;
+    return matchesSearch && matchesDateFrom && matchesDateTo && matchesPayment && matchesVenue && matchesPartner;
   });
 
   const venueOptions = eventOwners
     ? [...new Map(eventOwners.filter(e => e.venues?.name).map(e => [e.venue_id, e.venues?.name])).entries()].map(([id, name]) => ({ id, name }))
     : [];
 
-  const hasActiveFilters = filterDateFrom || filterDateTo || filterPaymentStatus !== "all" || filterVenueId !== "all";
+  const partnerOptions = eventOwners
+    ? [...new Map(
+        eventOwners
+          .filter((e) => e.created_by_partner_id && e.partnerName)
+          .map((e) => [e.created_by_partner_id, e.partnerName])
+      ).entries()].map(([id, name]) => ({ id: id as string, name: name as string }))
+    : [];
+
+  const hasActiveFilters = filterDateFrom || filterDateTo || filterPaymentStatus !== "all" || filterVenueId !== "all" || filterPartnerId !== "all";
 
   const clearFilters = () => {
     setFilterDateFrom("");
     setFilterDateTo("");
     setFilterPaymentStatus("all");
     setFilterVenueId("all");
+    setFilterPartnerId("all");
   };
 
   const copyEmail = (email: string) => {
@@ -202,6 +233,22 @@ export default function EventOwners() {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-muted-foreground">שותף:</label>
+            <Select value={filterPartnerId} onValueChange={setFilterPartnerId}>
+              <SelectTrigger className="w-44 h-8 text-sm">
+                <SelectValue placeholder="הכל" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="any">רק אירועים משותף</SelectItem>
+                <SelectItem value="none">ללא שותף</SelectItem>
+                {partnerOptions.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       )}
 
@@ -234,8 +281,13 @@ export default function EventOwners() {
             </span>
             
             {/* בעל האירוע */}
-            <span className="text-center font-bold">
-              {event.ownerName}
+            <span className="text-center font-bold flex flex-col items-center gap-1">
+              <span>{event.ownerName}</span>
+              {event.partnerName && (
+                <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 text-[10px] font-medium">
+                  שותף: {event.partnerName}
+                </Badge>
+              )}
             </span>
             
             {/* טלפון */}

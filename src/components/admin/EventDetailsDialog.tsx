@@ -63,6 +63,70 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [withdrawingBalance, setWithdrawingBalance] = useState(false);
   const [checkingPaymeStatus, setCheckingPaymeStatus] = useState(false);
   const [paymeStatusResult, setPaymeStatusResult] = useState<any>(null);
+  const [resendingWebhook, setResendingWebhook] = useState<string | null>(null);
+  const [resendResult, setResendResult] = useState<any>(null);
+
+  // Fetch partner info (if the event was created via a partner) so we can show
+  // the admin who to notify and let them re-fire the webhook manually.
+  const { data: partnerInfo } = useQuery({
+    queryKey: ['event-partner', event.created_by_partner_id],
+    queryFn: async () => {
+      if (!event.created_by_partner_id) return null;
+      const { data } = await supabase
+        .from('partners' as any)
+        .select('id, name, webhook_url, webhook_events, is_active')
+        .eq('id', event.created_by_partner_id)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: Boolean(event.created_by_partner_id),
+  });
+
+  // Latest webhook deliveries for this partner (any event) — good enough
+  // to prove that the last resend actually reached them.
+  const { data: recentDeliveries, refetch: refetchDeliveries } = useQuery({
+    queryKey: ['partner-deliveries', event.created_by_partner_id, event.id],
+    queryFn: async () => {
+      if (!event.created_by_partner_id) return [];
+      const { data } = await supabase
+        .from('partner_webhook_deliveries' as any)
+        .select('id, event_type, response_status, response_body, created_at, payload')
+        .eq('partner_id', event.created_by_partner_id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      return (data as any[]) || [];
+    },
+    enabled: Boolean(event.created_by_partner_id),
+  });
+
+  const resendPartnerWebhook = async (eventType: 'seller-created' | 'seller-approve' | 'seller-reject') => {
+    setResendingWebhook(eventType);
+    setResendResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-resend-partner-webhook', {
+        body: { eventId: event.id, eventType },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setResendResult(data);
+      await refetchDeliveries();
+      const status = (data as any)?.delivery?.response_status;
+      const ok = typeof status === 'number' && status >= 200 && status < 300;
+      toast({
+        title: ok ? 'הוובהוק נשלח לשותף ✅' : 'הוובהוק נשלח אך התגובה לא תקינה',
+        description: `סטטוס תגובה: ${status ?? 'ללא'} · אירוע: ${eventType}`,
+        variant: ok ? 'default' : 'destructive',
+      });
+    } catch (err: any) {
+      toast({
+        title: 'שליחת הוובהוק נכשלה',
+        description: err?.message || 'שגיאה לא ידועה',
+        variant: 'destructive',
+      });
+    } finally {
+      setResendingWebhook(null);
+    }
+  };
 
   const checkPaymeStatus = async () => {
     setCheckingPaymeStatus(true);
@@ -1173,6 +1237,116 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                 {savingHfKey ? <Loader2 className="w-4 h-4 animate-spin" /> : "שמור"}
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Partner webhook — visible whenever the event was created via a partner. */}
+        {event.created_by_partner_id && (
+          <div className="mt-6 bg-gradient-to-br from-purple-50 to-purple-100/40 border border-purple-200 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <h3 className="text-lg font-semibold text-purple-900">שותף שיצר את האירוע</h3>
+                <div className="text-xs text-purple-800/70 mt-0.5">
+                  {partnerInfo ? partnerInfo.name : 'טוען...'}
+                  {partnerInfo?.webhook_url && (
+                    <span className="ltr inline-block ml-2 text-[10px] bg-white/60 px-1.5 py-0.5 rounded">
+                      {partnerInfo.webhook_url}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {partnerInfo && !partnerInfo.webhook_url && (
+                <span className="text-[11px] text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">
+                  לשותף לא מוגדר webhook_url
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => resendPartnerWebhook('seller-approve')}
+                disabled={!partnerInfo?.webhook_url || resendingWebhook !== null}
+              >
+                {resendingWebhook === 'seller-approve' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'שלח: חשבון אושר'
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => resendPartnerWebhook('seller-created')}
+                disabled={!partnerInfo?.webhook_url || resendingWebhook !== null}
+              >
+                {resendingWebhook === 'seller-created' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'שלח: חשבון בהמתנה'
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => resendPartnerWebhook('seller-reject')}
+                disabled={!partnerInfo?.webhook_url || resendingWebhook !== null}
+              >
+                {resendingWebhook === 'seller-reject' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'שלח: חשבון נדחה'
+                )}
+              </Button>
+            </div>
+
+            {resendResult?.delivery && (
+              <div className="text-xs bg-white/70 border border-purple-200 rounded-xl p-3 space-y-1">
+                <div className="font-medium text-purple-900">תוצאת השליחה האחרונה</div>
+                <div><span className="font-medium">אירוע:</span> {resendResult.delivery.event_type}</div>
+                <div>
+                  <span className="font-medium">סטטוס HTTP:</span>{' '}
+                  <span className={
+                    typeof resendResult.delivery.response_status === 'number' &&
+                    resendResult.delivery.response_status >= 200 &&
+                    resendResult.delivery.response_status < 300
+                      ? 'text-green-700 font-bold'
+                      : 'text-red-700 font-bold'
+                  }>
+                    {resendResult.delivery.response_status ?? 'ללא'}
+                  </span>
+                </div>
+                {resendResult.delivery.response_body && (
+                  <div className="ltr text-[11px] bg-muted rounded p-2 max-h-24 overflow-auto">
+                    {String(resendResult.delivery.response_body).slice(0, 400)}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {Array.isArray(recentDeliveries) && recentDeliveries.length > 0 && (
+              <div className="text-xs">
+                <div className="font-medium text-purple-900 mb-1">היסטוריית שליחות אחרונות לשותף</div>
+                <div className="space-y-1">
+                  {recentDeliveries.map((d: any) => (
+                    <div key={d.id} className="flex items-center justify-between gap-2 bg-white/60 rounded px-2 py-1">
+                      <span className="text-[11px] text-muted-foreground">
+                        {new Date(d.created_at).toLocaleString('he-IL')}
+                      </span>
+                      <span className="font-medium">{d.event_type}</span>
+                      <span className={
+                        typeof d.response_status === 'number' && d.response_status >= 200 && d.response_status < 300
+                          ? 'text-green-700 font-bold'
+                          : 'text-red-700 font-bold'
+                      }>
+                        {d.response_status ?? '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
