@@ -74,6 +74,8 @@ export interface FeeBreakdown {
     payme: number;
     platform: number;
     installments: number;
+    partner: number;
+    platformPartner: number;
   };
   /** Effective fee rate (totalCharge / giftAmount - 1), as percent. */
   effectiveRatePct: number;
@@ -110,10 +112,14 @@ export function computeBreakdown(
   const feeAmount = roundAgorot(totalCharge - giftAmount);
   const paymeFee = roundAgorot(giftAmount * (cfg.paymePct / 100));
   const platformFee = roundAgorot(giftAmount * (cfg.platformPct / 100));
-  // Whatever is left over after PayMe + platform components is the installment portion.
+  const partnerFee = roundAgorot(giftAmount * ((cfg.partnerCommissionPct ?? 0) / 100));
+  const platformPartnerFee = roundAgorot(giftAmount * ((cfg.platformPartnerPct ?? 0) / 100));
+  // Whatever is left over after the other components is the installment portion.
   // Computing it as the residual avoids the cumulative rounding error of computing
   // each rate independently.
-  const installmentFee = roundAgorot(Math.max(0, feeAmount - paymeFee - platformFee));
+  const installmentFee = roundAgorot(
+    Math.max(0, feeAmount - paymeFee - platformFee - partnerFee - platformPartnerFee),
+  );
 
   return {
     giftAmount,
@@ -123,6 +129,8 @@ export function computeBreakdown(
       payme: paymeFee,
       platform: platformFee,
       installments: installmentFee,
+      partner: partnerFee,
+      platformPartner: platformPartnerFee,
     },
     effectiveRatePct:
       giftAmount > 0 ? ((totalCharge - giftAmount) / giftAmount) * 100 : 0,
