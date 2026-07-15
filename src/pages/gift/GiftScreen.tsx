@@ -215,7 +215,14 @@ export default function GiftScreen() {
    * PayMe charge. The card is debited `breakdown.totalCharge`; the couple
    * eventually receives `breakdown.giftAmount`.
    */
-  const breakdown = computeBreakdown(rawInputAmount || 0, feeMode, selectedInstallments);
+  const breakdown = computeBreakdown(rawInputAmount || 0, feeMode, selectedInstallments, {
+    paymePct: 0.9,
+    platformPct: 1.1,
+    primeRate: 6.0,
+    installmentSurchargeBase: 4.4,
+    partnerCommissionPct: partnerConfig.partnerPct,
+    platformPartnerPct: partnerConfig.platformPct,
+  });
 
   const chargeToken = useMutation({
     mutationFn: async (token: string) => {
