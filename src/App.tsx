@@ -68,6 +68,7 @@ import GiftSearch from "./pages/gift/GiftSearch";
 import PublicRSVP from "./pages/rsvp/PublicRSVP";
 import VenueLanding from "./pages/landing/VenueLanding";
 import EmbedGift from "./pages/embed/EmbedGift";
+import PartnerGift from "./pages/gift/PartnerGift";
 
 // Kiosk
 import KioskPage from "./pages/kiosk/KioskPage";
@@ -116,6 +117,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/gift/:eventId" element={<EventWelcome />} />
           <Route path="/gift/:eventId/send" element={<GiftScreen />} />
+          <Route path="/gift/:eventId/partner" element={<PartnerGift />} />
           <Route path="/embed/gift/:eventId" element={<EmbedGift />} />
           <Route path="/event/:eventId/payme-setup" element={<PaymeSetup />} />
            <Route path="/landing/:venueId" element={<VenueLanding />} />

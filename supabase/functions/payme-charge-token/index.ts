@@ -166,6 +166,8 @@ Deno.serve(async (req) => {
       sale_callback_url: callbackUrl,
       sale_name: payerName,
       language: 'he',
+      // Send PayMe's built-in receipt email to the payer.
+      sale_send_notification: true,
     };
 
     // Add optional fields
