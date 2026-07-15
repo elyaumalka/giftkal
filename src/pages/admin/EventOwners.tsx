@@ -281,8 +281,13 @@ export default function EventOwners() {
             </span>
             
             {/* בעל האירוע */}
-            <span className="text-center font-bold">
-              {event.ownerName}
+            <span className="text-center font-bold flex flex-col items-center gap-1">
+              <span>{event.ownerName}</span>
+              {event.partnerName && (
+                <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 text-[10px] font-medium">
+                  שותף: {event.partnerName}
+                </Badge>
+              )}
             </span>
             
             {/* טלפון */}
