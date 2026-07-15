@@ -112,7 +112,7 @@ export default function Wallets() {
   // huge (one row per event/transaction/transfer/payout) so we don't bother
   // with pagination yet; if it grows past a few thousand rows we'll add a
   // server-side aggregation RPC.
-  const { data: rows = { events: [], transfers: [], payouts: [] }, isLoading } = useQuery({
+  const { data: rows = { events: [], transfers: [], payouts: [], partners: [] as any[] }, isLoading } = useQuery({
     queryKey: ["wallets-dashboard"],
     refetchInterval: 60_000,
     queryFn: async () => {
