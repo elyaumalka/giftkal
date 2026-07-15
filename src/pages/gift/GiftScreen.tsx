@@ -235,6 +235,8 @@ export default function GiftScreen() {
           // For our own records: what the couple receives, and the fee math.
           giftAmount: breakdown.giftAmount,
           feeAmount: breakdown.feeAmount,
+          partnerShare: breakdown.components.partner,
+          platformPartnerShare: breakdown.components.platformPartner,
           payerName,
           payerEmail: payerEmail || undefined,
           payerPhone: payerPhone || undefined,
