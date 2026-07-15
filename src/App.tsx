@@ -117,6 +117,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/gift/:eventId" element={<EventWelcome />} />
           <Route path="/gift/:eventId/send" element={<GiftScreen />} />
+          <Route path="/gift/:eventId/partner" element={<PartnerGift />} />
           <Route path="/embed/gift/:eventId" element={<EmbedGift />} />
           <Route path="/event/:eventId/payme-setup" element={<PaymeSetup />} />
            <Route path="/landing/:venueId" element={<VenueLanding />} />
