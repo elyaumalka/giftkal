@@ -63,6 +63,70 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [withdrawingBalance, setWithdrawingBalance] = useState(false);
   const [checkingPaymeStatus, setCheckingPaymeStatus] = useState(false);
   const [paymeStatusResult, setPaymeStatusResult] = useState<any>(null);
+  const [resendingWebhook, setResendingWebhook] = useState<string | null>(null);
+  const [resendResult, setResendResult] = useState<any>(null);
+
+  // Fetch partner info (if the event was created via a partner) so we can show
+  // the admin who to notify and let them re-fire the webhook manually.
+  const { data: partnerInfo } = useQuery({
+    queryKey: ['event-partner', event.created_by_partner_id],
+    queryFn: async () => {
+      if (!event.created_by_partner_id) return null;
+      const { data } = await supabase
+        .from('partners' as any)
+        .select('id, name, webhook_url, webhook_events, is_active')
+        .eq('id', event.created_by_partner_id)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: Boolean(event.created_by_partner_id),
+  });
+
+  // Latest webhook deliveries for this partner (any event) — good enough
+  // to prove that the last resend actually reached them.
+  const { data: recentDeliveries, refetch: refetchDeliveries } = useQuery({
+    queryKey: ['partner-deliveries', event.created_by_partner_id, event.id],
+    queryFn: async () => {
+      if (!event.created_by_partner_id) return [];
+      const { data } = await supabase
+        .from('partner_webhook_deliveries' as any)
+        .select('id, event_type, response_status, response_body, created_at, payload')
+        .eq('partner_id', event.created_by_partner_id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      return (data as any[]) || [];
+    },
+    enabled: Boolean(event.created_by_partner_id),
+  });
+
+  const resendPartnerWebhook = async (eventType: 'seller-created' | 'seller-approve' | 'seller-reject') => {
+    setResendingWebhook(eventType);
+    setResendResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-resend-partner-webhook', {
+        body: { eventId: event.id, eventType },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setResendResult(data);
+      await refetchDeliveries();
+      const status = (data as any)?.delivery?.response_status;
+      const ok = typeof status === 'number' && status >= 200 && status < 300;
+      toast({
+        title: ok ? 'הוובהוק נשלח לשותף ✅' : 'הוובהוק נשלח אך התגובה לא תקינה',
+        description: `סטטוס תגובה: ${status ?? 'ללא'} · אירוע: ${eventType}`,
+        variant: ok ? 'default' : 'destructive',
+      });
+    } catch (err: any) {
+      toast({
+        title: 'שליחת הוובהוק נכשלה',
+        description: err?.message || 'שגיאה לא ידועה',
+        variant: 'destructive',
+      });
+    } finally {
+      setResendingWebhook(null);
+    }
+  };
 
   const checkPaymeStatus = async () => {
     setCheckingPaymeStatus(true);
