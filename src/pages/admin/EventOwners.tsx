@@ -131,20 +131,34 @@ export default function EventOwners() {
       (filterPaymentStatus === "paid" && e.charge) ||
       (filterPaymentStatus === "unpaid" && !e.charge);
     const matchesVenue = filterVenueId === "all" || e.venue_id === filterVenueId;
-    return matchesSearch && matchesDateFrom && matchesDateTo && matchesPayment && matchesVenue;
+    const matchesPartner =
+      filterPartnerId === "all" ||
+      (filterPartnerId === "any" && !!e.created_by_partner_id) ||
+      (filterPartnerId === "none" && !e.created_by_partner_id) ||
+      e.created_by_partner_id === filterPartnerId;
+    return matchesSearch && matchesDateFrom && matchesDateTo && matchesPayment && matchesVenue && matchesPartner;
   });
 
   const venueOptions = eventOwners
     ? [...new Map(eventOwners.filter(e => e.venues?.name).map(e => [e.venue_id, e.venues?.name])).entries()].map(([id, name]) => ({ id, name }))
     : [];
 
-  const hasActiveFilters = filterDateFrom || filterDateTo || filterPaymentStatus !== "all" || filterVenueId !== "all";
+  const partnerOptions = eventOwners
+    ? [...new Map(
+        eventOwners
+          .filter((e) => e.created_by_partner_id && e.partnerName)
+          .map((e) => [e.created_by_partner_id, e.partnerName])
+      ).entries()].map(([id, name]) => ({ id: id as string, name: name as string }))
+    : [];
+
+  const hasActiveFilters = filterDateFrom || filterDateTo || filterPaymentStatus !== "all" || filterVenueId !== "all" || filterPartnerId !== "all";
 
   const clearFilters = () => {
     setFilterDateFrom("");
     setFilterDateTo("");
     setFilterPaymentStatus("all");
     setFilterVenueId("all");
+    setFilterPartnerId("all");
   };
 
   const copyEmail = (email: string) => {
