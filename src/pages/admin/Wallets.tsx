@@ -330,8 +330,10 @@ export default function Wallets() {
           <EventsTable rows={filteredEvents} onTransfer={openTransfer} />
         ) : tab === "sweeps" ? (
           <SweepsTable rows={rows.transfers} eventLabel={eventLabelById} />
-        ) : (
+        ) : tab === "payouts" ? (
           <PayoutsTable rows={rows.payouts} eventLabel={eventLabelById} />
+        ) : (
+          <PartnersTable rows={rows.partners} />
         )}
       </div>
 
