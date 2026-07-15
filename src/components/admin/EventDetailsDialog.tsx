@@ -487,13 +487,59 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
 
   const handleApproveSeller = async () => {
     setApprovingSeller(true);
+    setApprovalError(null);
     try {
       if (!setupData) throw new Error('אין נתוני הקמה');
+
+      // Client-side sanity checks on the (possibly edited) bank fields.
+      const bankCodeNum = parseInt(editBankCode, 10);
+      const bankBranchNum = parseInt(editBankBranch, 10);
+      const bankAcct = (editBankAccount || "").replace(/\D/g, "");
+      if (!Number.isFinite(bankCodeNum) || !BANKS[String(bankCodeNum)]) {
+        throw new Error('קוד בנק לא תקין');
+      }
+      if (!Number.isFinite(bankBranchNum) || bankBranchNum <= 0) {
+        throw new Error('מספר סניף לא תקין');
+      }
+      if (bankAcct.length < 4 || bankAcct.length > 12) {
+        throw new Error('מספר חשבון בנק לא תקין (4–12 ספרות)');
+      }
+
+      // Merge edits back into the setup payload sent to the edge function AND
+      // persist them on the event, so a retry uses the corrected values.
+      const correctedSetup = {
+        ...setupData,
+        bankCode: bankCodeNum,
+        bankBranch: bankBranchNum,
+        bankAccountNumber: bankAcct,
+      };
+      if (
+        setupData.bankCode !== correctedSetup.bankCode ||
+        setupData.bankBranch !== correctedSetup.bankBranch ||
+        setupData.bankAccountNumber !== correctedSetup.bankAccountNumber
+      ) {
+        await supabase
+          .from('events')
+          .update({ payment_setup_data: correctedSetup } as any)
+          .eq('id', event.id);
+      }
+
       const response = await supabase.functions.invoke('payme-create-seller', {
-        body: { eventId: event.id, ...setupData, gender: 0 },
+        body: { eventId: event.id, ...correctedSetup, gender: 0 },
       });
-      if (response.error) throw new Error(response.error.message);
-      if (!response.data?.success) throw new Error(response.data?.error || 'שגיאה');
+      if (response.error) {
+        // supabase.functions.invoke masks non-2xx as a generic message; read the
+        // real PayMe error out of the response body.
+        let details = response.error.message;
+        if (response.error instanceof FunctionsHttpError) {
+          try {
+            const body = await response.error.context.json();
+            details = body?.details || body?.error || details;
+          } catch { /* ignore */ }
+        }
+        throw new Error(details);
+      }
+      if (!response.data?.success) throw new Error(response.data?.error || response.data?.details || 'שגיאה');
       await supabase.from('events').update({ payment_setup_status: 'approved' } as any).eq('id', event.id);
       queryClient.invalidateQueries({ queryKey: ['event-owners'] });
       queryClient.invalidateQueries({ queryKey: ['events-list'] });
@@ -501,7 +547,9 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       toast({ title: "חשבון סליקה הוקם בהצלחה ב-PayMe ✅" });
       onClose();
     } catch (err: any) {
-      toast({ title: "שגיאה ביצירת חשבון סליקה", description: err.message, variant: "destructive" });
+      const msg = err?.message || 'שגיאה לא ידועה';
+      setApprovalError(msg);
+      toast({ title: "שגיאה ביצירת חשבון סליקה", description: msg, variant: "destructive" });
     } finally {
       setApprovingSeller(false);
     }
