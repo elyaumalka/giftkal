@@ -32,6 +32,7 @@ export default function EventOwners() {
   const [filterVenueId, setFilterVenueId] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [filterPartnerId, setFilterPartnerId] = useState<string>("all");
   const { data: eventOwners } = useQuery({
     queryKey: ["event-owners"],
     queryFn: async () => {
@@ -58,6 +59,21 @@ export default function EventOwners() {
         .select("event_id, amount, created_at")
         .in("event_id", eventIds);
 
+      // Fetch partners (for events created via a partner)
+      const partnerIds = [...new Set(
+        (events || [])
+          .map((e: any) => e.created_by_partner_id)
+          .filter(Boolean)
+      )] as string[];
+      const { data: partners } = partnerIds.length
+        ? await supabase
+            .from("partners" as any)
+            .select("id, name")
+            .in("id", partnerIds)
+        : { data: [] as any[] };
+      const partnerMap = new Map<string, string>();
+      (partners || []).forEach((p: any) => partnerMap.set(p.id, p.name));
+
       const chargeMap = new Map<string, any>();
       (charges || []).forEach((c: any) => {
         if (!chargeMap.has(c.event_id) || new Date(c.created_at) > new Date(chargeMap.get(c.event_id).created_at)) {
@@ -78,6 +94,7 @@ export default function EventOwners() {
           transactionCount: event.transactions?.length || 0,
           totalAmount: event.transactions?.reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0,
           charge,
+          partnerName: event.created_by_partner_id ? partnerMap.get(event.created_by_partner_id) ?? null : null,
         };
       }) || [];
     },
