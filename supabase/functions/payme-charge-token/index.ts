@@ -214,6 +214,27 @@ Deno.serve(async (req) => {
       })
       .eq('id', transaction.id);
 
+    // Notify the referring partner (if any) that a sale was paid.
+    if (partnerId) {
+      await dispatchPartnerWebhooks(supabase, {
+        eventType: 'sale-paid',
+        eventId,
+        partnerId,
+        payload: {
+          transaction_id: transaction.id,
+          event_id: eventId,
+          payment_status: 'completed',
+          amount,
+          gift_amount: giftPart,
+          fee_amount: feePart,
+          partner_share: partnerShare,
+          platform_partner_share: platformPartnerShare,
+          payer_name: payerName,
+          installments,
+        },
+      });
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
