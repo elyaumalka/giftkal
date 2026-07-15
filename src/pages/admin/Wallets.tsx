@@ -123,7 +123,7 @@ export default function Wallets() {
           .order("event_date", { ascending: false }),
         supabase
           .from("transactions")
-          .select("event_id, amount, gift_amount, fee_amount, payment_status, installments")
+          .select("event_id, amount, gift_amount, fee_amount, payment_status, installments, partner_id, partner_share, platform_partner_share")
           .eq("payment_status", "completed"),
         (supabase.from as any)("platform_commission_transfers")
           .select("id, event_id, amount, status, submitted_at, completed_at")
@@ -132,6 +132,9 @@ export default function Wallets() {
           .select("id, event_id, amount, status, submitted_at, completed_at, seller_payme_id")
           .order("submitted_at", { ascending: false }),
       ]);
+      const { data: partnersRes } = await supabase
+        .from("partners")
+        .select("id, name, partner_commission_pct, platform_commission_pct");
 
       const events = (evRes.data ?? []) as any[];
       const completedTx = (txRes.data ?? []) as any[];
