@@ -305,6 +305,9 @@ export default function Wallets() {
         <TabButton active={tab === "payouts"} onClick={() => setTab("payouts")} icon={<ArrowDownToLine className="w-4 h-4" />}>
           משיכות לבנק ({rows.payouts.length})
         </TabButton>
+        <TabButton active={tab === "partners"} onClick={() => setTab("partners")} icon={<Wallet className="w-4 h-4" />}>
+          שותפים ({rows.partners.length})
+        </TabButton>
 
         <div className="relative ml-auto w-64">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
