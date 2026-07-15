@@ -518,7 +518,12 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
     '12': 'בנק הפועלים', '13': 'בנק אגוד', '14': 'בנק אוצר החייל', '17': 'מרכנתיל דיסקונט',
     '20': 'בנק מזרחי טפחות', '31': 'בנק הבינלאומי', '46': 'בנק מסד', '52': 'פועלי אגודת ישראל', '54': 'בנק ירושלים',
   };
-  const isPendingSellerApproval = event.payment_setup_status === 'pending_approval' && !event.seller_payme_id && setupData;
+  // Show approval UI for both new pending requests AND previously-rejected ones
+  // that still have their KYC data (admin can re-open a rejection).
+  const isPendingSellerApproval =
+    (event.payment_setup_status === 'pending_approval' || event.payment_setup_status === 'rejected') &&
+    !event.seller_payme_id &&
+    Boolean(setupData);
 
   return (
     <div className="flex flex-col max-h-[85vh]" dir="rtl">
