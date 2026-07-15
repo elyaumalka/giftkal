@@ -1073,6 +1073,17 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
               </div>
             </div>
 
+            {/* Inline error from the last approval attempt (e.g. PayMe details) */}
+            {approvalError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-3 text-sm flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-semibold mb-0.5">השליחה ל-PayMe נכשלה</div>
+                  <div className="text-red-700">{approvalError}</div>
+                </div>
+              </div>
+            )}
+
             {/* Approve / Reject Buttons */}
             <div className="flex gap-3 pt-2">
               <Button
