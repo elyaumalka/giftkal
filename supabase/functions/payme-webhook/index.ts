@@ -268,6 +268,7 @@ async function handleSaleEvent(supabase: SupabaseClient, payload: Payload, type:
     await dispatchPartnerWebhooks(supabase, {
       eventType: type ?? 'sale-event',
       eventId: transaction.event_id,
+      partnerId: transaction.partner_id ?? undefined,
       payload: {
         transaction_id: transaction.id,
         event_id: transaction.event_id,
@@ -275,7 +276,10 @@ async function handleSaleEvent(supabase: SupabaseClient, payload: Payload, type:
         amount: transaction.amount,
         gift_amount: transaction.gift_amount,
         fee_amount: transaction.fee_amount,
+        partner_share: transaction.partner_share,
+        platform_partner_share: transaction.platform_partner_share,
         payer_name: transaction.payer_name,
+        installments: transaction.installments,
       },
     })
   }
