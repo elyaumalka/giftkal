@@ -1,0 +1,1 @@
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS gift_amount numeric, ADD COLUMN IF NOT EXISTS fee_amount numeric NOT NULL DEFAULT 0;

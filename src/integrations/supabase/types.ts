@@ -983,6 +983,8 @@ export type Database = {
           blessing_video_url: string | null
           created_at: string
           event_id: string
+          fee_amount: number
+          gift_amount: number | null
           id: string
           installments: number | null
           payer_email: string | null
@@ -1003,6 +1005,8 @@ export type Database = {
           blessing_video_url?: string | null
           created_at?: string
           event_id: string
+          fee_amount?: number
+          gift_amount?: number | null
           id?: string
           installments?: number | null
           payer_email?: string | null
@@ -1023,6 +1027,8 @@ export type Database = {
           blessing_video_url?: string | null
           created_at?: string
           event_id?: string
+          fee_amount?: number
+          gift_amount?: number | null
           id?: string
           installments?: number | null
           payer_email?: string | null
