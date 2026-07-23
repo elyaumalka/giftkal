@@ -212,7 +212,14 @@ const MarketingFooter = () => {
             <p className="text-white/80 text-base md:text-lg font-light mb-5">
               הצטרפו עכשיו לרשימת התפוצה במייל
             </p>
-            <div className="space-y-3 max-w-[320px] mr-auto">
+            <form onSubmit={handleSubscribe} className="space-y-3 max-w-[320px] mr-auto">
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="מה השם שלך?"
+                className="w-full h-[56px] rounded-full bg-white text-[#051839] placeholder:text-[#051839]/60 text-right px-6 outline-none focus:ring-2 focus:ring-[#AE842D]"
+              />
               <input
                 type="email"
                 value={email}
@@ -221,11 +228,15 @@ const MarketingFooter = () => {
                 className="w-full h-[56px] rounded-full bg-white text-[#051839] placeholder:text-[#051839]/60 text-right px-6 outline-none focus:ring-2 focus:ring-[#AE842D]"
               />
               <div className="flex justify-start">
-                <button className="w-full sm:w-auto sm:ms-auto px-8 h-[56px] rounded-full bg-[#AE842D] hover:bg-[#c69838] transition-colors text-white font-bold text-lg">
-                  להצטרפות ←
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full sm:w-auto sm:ms-auto px-8 h-[56px] rounded-full bg-[#AE842D] hover:bg-[#c69838] disabled:opacity-60 transition-colors text-white font-bold text-lg"
+                >
+                  {submitting ? "שולח..." : "להצטרפות ←"}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
 
         </div>
