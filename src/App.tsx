@@ -149,6 +149,7 @@ function App() {
             <Route path="billing" element={<AdminBilling />} />
             <Route path="coupons" element={<AdminCoupons />} />
             <Route path="seed" element={<SeedData />} />
+            <Route path="newsletter" element={<NewsletterSubscribers />} />
           </Route>
 
           {/* Venue owner routes */}
