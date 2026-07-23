@@ -104,7 +104,41 @@ const MarketingNavbar = () => {
 };
 
 const MarketingFooter = () => {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = fullName.trim();
+    const mail = email.trim();
+    if (!name) {
+      toast({ title: "נא להזין שם", variant: "destructive" });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+      toast({ title: "נא להזין כתובת מייל תקינה", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase
+      .from("newsletter_subscribers")
+      .insert({ full_name: name, email: mail });
+    setSubmitting(false);
+    if (error) {
+      if ((error as any).code === "23505") {
+        toast({ title: "כתובת המייל כבר רשומה ברשימת התפוצה" });
+      } else {
+        toast({ title: "אירעה שגיאה, נסו שוב", variant: "destructive" });
+      }
+      return;
+    }
+    toast({ title: "נרשמת בהצלחה לרשימת התפוצה!" });
+    setFullName("");
+    setEmail("");
+  };
+
 
   return (
     <footer className="bg-[#F5F5F5] px-3 md:px-6 pt-8 pb-6">
