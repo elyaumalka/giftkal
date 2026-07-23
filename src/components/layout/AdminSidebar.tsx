@@ -30,6 +30,7 @@ const menuItems = [
   { title: "חיוב לקוחות", icon: TransactionsIcon, path: "/admin/billing" },
   { title: "קופונים", icon: SettingsIcon, path: "/admin/coupons" },
   { title: "פניות ותקלות", icon: ToolsIcon, path: "/admin/support" },
+  { title: "רשימת תפוצה", icon: LeadsIcon, path: "/admin/newsletter" },
 ];
 
 interface AdminSidebarProps {

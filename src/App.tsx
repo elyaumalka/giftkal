@@ -38,6 +38,7 @@ import AdminHallsDevices from "./pages/admin/HallsDevices";
 import AdminBilling from "./pages/admin/Billing";
 import AdminCoupons from "./pages/admin/Coupons";
 import AdminWallets from "./pages/admin/Wallets";
+import NewsletterSubscribers from "./pages/admin/NewsletterSubscribers";
 
 // Venue
 import { VenueLayout } from "./components/layout/VenueLayout";
@@ -148,6 +149,7 @@ function App() {
             <Route path="billing" element={<AdminBilling />} />
             <Route path="coupons" element={<AdminCoupons />} />
             <Route path="seed" element={<SeedData />} />
+            <Route path="newsletter" element={<NewsletterSubscribers />} />
           </Route>
 
           {/* Venue owner routes */}
