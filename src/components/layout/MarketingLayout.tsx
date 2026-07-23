@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { Phone, Mail, MessageCircle, User, Menu, X } from "lucide-react";
 import logoAsset from "@/assets/logo.png.asset.json";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const NAV_LINKS = [
   { label: "דף הבית", href: "/" },
