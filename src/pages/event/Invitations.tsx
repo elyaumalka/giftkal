@@ -211,78 +211,60 @@ export default function EventInvitations() {
     }
   };
 
-  const downloadInvitation = async () => {
-    if (selectedTemplate === null) { toast({ title: "נא לבחור תבנית הזמנה", variant: "destructive" }); return; }
-    const templateRef = templateRefs.current[selectedTemplate];
-    if (!templateRef) return;
+  const sanitizeFilename = (name: string) =>
+    name.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+  const handleInvitationUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !event?.id) return;
+    setUploadingInvitation(true);
     try {
-      const canvas = await html2canvas(templateRef, { scale: 2, backgroundColor: null, useCORS: true });
-      const link = document.createElement("a");
-      link.download = `הזמנה.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-      toast({ title: "ההזמנה הורדה בהצלחה!" });
-    } catch (error) {
-      console.error("Error downloading invitation:", error);
-      toast({ title: "שגיאה בהורדת ההזמנה", variant: "destructive" });
+      const ext = file.name.split(".").pop() || "png";
+      const path = `invitations/${event.id}/${Date.now()}-${sanitizeFilename(file.name.replace(/\.[^.]+$/, ""))}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("documents").getPublicUrl(path);
+      const url = pub.publicUrl;
+      const { error: updErr } = await supabase
+        .from("events")
+        .update({ invitation_design_url: url } as any)
+        .eq("id", event.id);
+      if (updErr) throw updErr;
+      setInvitationImageUrl(url);
+      queryClient.invalidateQueries({ queryKey: ["event-invitations"] });
+      toast({ title: "ההזמנה הועלתה בהצלחה!" });
+    } catch (err: any) {
+      toast({ title: "שגיאה בהעלאת ההזמנה", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingInvitation(false);
+    }
+  };
+
+  const handleRemoveInvitation = async () => {
+    if (!event?.id) return;
+    try {
+      await supabase.from("events").update({ invitation_design_url: null } as any).eq("id", event.id);
+      setInvitationImageUrl(null);
+      queryClient.invalidateQueries({ queryKey: ["event-invitations"] });
+      toast({ title: "ההזמנה הוסרה" });
+    } catch (err: any) {
+      toast({ title: "שגיאה", description: err.message, variant: "destructive" });
     }
   };
 
   const handleSendInvitations = () => {
-    if (selectedTemplate === null && selectedAiIndex === null) { toast({ title: "נא לבחור תבנית הזמנה", variant: "destructive" }); return; }
+    if (!invitationImageUrl) { toast({ title: "נא להעלות קובץ הזמנה", variant: "destructive" }); return; }
     toast({ title: "ההזמנות נשלחו בהצלחה!", description: `נשלחו ${guests?.length || 0} הזמנות` });
-  };
-
-  const toHebrewDateClient = (rawDate?: string): string => {
-    if (!rawDate) return "";
-    try {
-      const date = new Date(rawDate);
-      if (isNaN(date.getTime())) return "";
-      return new Intl.DateTimeFormat("he-IL-u-ca-hebrew", { day: "numeric", month: "long", year: "numeric" }).format(date);
-    } catch { return ""; }
-  };
-
-  const handleGenerateAI = async () => {
-    setIsGeneratingAI(true);
-    setAiInvitations([]);
-    setSelectedAiIndex(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-invitations", {
-        body: {
-          eventType, groomName, brideName, childName, familyName, groomParents, brideParents, introText,
-          eventDate: event?.event_date ? new Date(event.event_date).toLocaleDateString("he-IL") : "",
-          hebrewDate: toHebrewDateClient(event?.event_date),
-          receptionTime, ceremonyTime, venueName, venueLocation, notes,
-        },
-      });
-      if (error) throw error;
-      if (data?.error) { toast({ title: data.error, variant: "destructive" }); return; }
-      setAiInvitations(data.invitations || []);
-      if (data.invitations?.length > 0) toast({ title: `נוצרו ${data.invitations.length} הזמנות מעוצבות!` });
-    } catch (err: any) {
-      console.error("AI generation error:", err);
-      toast({ title: "שגיאה ביצירת הזמנות", description: err.message || "נסה שוב", variant: "destructive" });
-    } finally {
-      setIsGeneratingAI(false);
-    }
   };
 
   const isWeddingType = eventType === "חתונה" || eventType === "אירוסין";
   const isBarBatMitzvah = eventType === "בר מצווה" || eventType === "בת מצווה";
 
-  const templateData = {
-    eventType, groomName, brideName, childName, familyName, groomParents, brideParents,
-    groomGrandparents: "", brideGrandparents: "",
-    receptionTime, ceremonyTime,
-    eventDate: event?.event_date ? new Date(event.event_date).toLocaleDateString("he-IL") : "",
-    eventDateRaw: event?.event_date || "",
-    introText, notes, venueName, venueLocation,
-  };
-
   const steps = [
     { id: 1, label: "שלב א:", title: "פרטי האירוע" },
     { id: 2, label: "שלב ב:", title: "ניהול מוזמנים" },
-    { id: 3, label: "שלב ג:", title: "בחירת עיצוב ושליחה" },
+    { id: 3, label: "שלב ג:", title: "העלאת הזמנה ושליחה" },
   ];
 
   const eventTypes: { value: EventType; label: string }[] = [
