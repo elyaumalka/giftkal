@@ -454,6 +454,34 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
     },
   });
 
+  // Generic feature toggle (gifts / invitations / rsvp) — lets admin grant access
+  // even if the customer hasn't paid.
+  const toggleFeature = useMutation({
+    mutationFn: async (params: { field: 'gifts_enabled' | 'invitations_enabled' | 'rsvp_enabled'; next: boolean }) => {
+      const { error } = await supabase
+        .from('events')
+        .update({ [params.field]: params.next } as any)
+        .eq('id', event.id);
+      if (error) throw error;
+      return params;
+    },
+    onSuccess: ({ field, next }) => {
+      if (field === 'gifts_enabled') setLocalGiftsEnabled(next);
+      if (field === 'invitations_enabled') setLocalInvitationsEnabled(next);
+      if (field === 'rsvp_enabled') setLocalRsvpEnabled(next);
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      const labels: Record<string, string> = {
+        gifts_enabled: 'מתנות באשראי',
+        invitations_enabled: 'הזמנות דיגיטליות',
+        rsvp_enabled: 'אישורי הגעה',
+      };
+      toast({ title: `${labels[field]} ${next ? 'הופעלו' : 'כובו'}` });
+    },
+    onError: (err: any) => {
+      toast({ title: 'שגיאה בעדכון גישה', description: err.message, variant: 'destructive' });
+    },
+  });
+
   const handleFileUpload = async (file: File, docType: string) => {
     setUploadingDocType(docType);
     try {
