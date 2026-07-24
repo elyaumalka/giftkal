@@ -645,109 +645,95 @@ export default function EventInvitations() {
 
       {/* Step 3: בחירת עיצוב */}
       {currentStep === 3 && (
-        <div className="space-y-4">
-          {/* AI Generation */}
-          <div className="bg-gradient-to-l from-secondary to-secondary/80 rounded-xl p-5 text-white" dir="rtl">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-6 h-6 text-primary" />
-                <div>
-                  <h3 className="font-bold text-base">יצירת הזמנה עם AI</h3>
-                  <p className="text-xs text-white/60 mt-0.5">צור 4 עיצובים מרהיבים ומותאמים אישית</p>
-                </div>
-              </div>
-              <button
-                onClick={handleGenerateAI}
-                disabled={isGeneratingAI}
-                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-bold rounded-lg py-2.5 px-6 text-sm flex items-center gap-2 transition-colors"
-              >
-                {isGeneratingAI ? <><Loader2 className="w-4 h-4 animate-spin" />יוצר הזמנות...</> : <><Sparkles className="w-4 h-4" />צור הזמנות עם AI</>}
-              </button>
+        <div className="space-y-4" dir="rtl">
+          <div className="bg-card rounded-xl shadow-sm p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Upload className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-secondary text-base">העלאת קובץ הזמנה</h3>
             </div>
-            {isGeneratingAI && (
-              <div className="mt-4 text-center">
-                <div className="flex items-center justify-center gap-2 text-sm text-white/60">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <span>מייצר 4 עיצובים מותאמים אישית, זה עלול לקחת כחצי דקה...</span>
-                </div>
-              </div>
-            )}
-          </div>
+            <p className="text-sm text-muted-foreground">
+              העלו את קובץ ההזמנה המעוצב שלכם (תמונה או PDF). הקובץ יישמר וישמש לשליחת ההזמנות למוזמנים.
+            </p>
 
-          {/* AI Results */}
-          {aiInvitations.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-secondary font-bold text-base text-right" dir="rtl">🎨 הזמנות שנוצרו עם AI</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3" dir="rtl">
-                {aiInvitations.map((inv, idx) => (
-                  <div
-                    key={inv.id}
-                    onClick={() => { setSelectedAiIndex(idx); setSelectedTemplate(null); }}
-                    className={`relative bg-card rounded-xl shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-md ${selectedAiIndex === idx ? "ring-2 ring-primary" : ""}`}
+            <input
+              ref={invitationInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={handleInvitationUpload}
+              className="hidden"
+            />
+
+            {invitationImageUrl ? (
+              <div className="space-y-3">
+                <div className="border border-border rounded-xl overflow-hidden bg-muted/30 flex items-center justify-center p-4">
+                  {invitationImageUrl.toLowerCase().endsWith(".pdf") ? (
+                    <a href={invitationImageUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                      פתיחת קובץ ההזמנה (PDF)
+                    </a>
+                  ) : (
+                    <img src={invitationImageUrl} alt="הזמנה שהועלתה" className="max-h-[500px] object-contain rounded-lg" />
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 justify-end">
+                  <button
+                    onClick={() => invitationInputRef.current?.click()}
+                    disabled={uploadingInvitation}
+                    className="bg-card border border-border text-secondary rounded-lg py-2 px-4 text-sm flex items-center gap-2 hover:bg-muted transition-colors"
                   >
-                    <div className={`absolute top-3 left-3 w-5 h-5 rounded border-2 flex items-center justify-center z-10 ${selectedAiIndex === idx ? "bg-primary border-primary" : "border-border bg-card"}`}>
-                      {selectedAiIndex === idx && <Check className="w-3 h-3 text-white" />}
-                    </div>
-                    <img src={inv.imageUrl} alt={inv.style} className="w-full aspect-[5/7] object-cover" />
-                    <div className="p-2 bg-card border-t border-border">
-                      <h3 className="font-medium text-secondary text-center text-xs">{inv.style}</h3>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Templates */}
-          <h3 className="text-secondary font-bold text-base text-right pt-2" dir="rtl">📋 תבניות מוכנות</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto p-1" dir="rtl">
-            {templates.map((template, index) => {
-              const TemplateComponent = template.Component;
-              return (
-                <div
-                  key={template.id}
-                  onClick={() => { setSelectedTemplate(index); setSelectedAiIndex(null); }}
-                  className={`relative bg-card rounded-xl shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-md ${selectedTemplate === index ? "ring-2 ring-primary" : ""}`}
-                >
-                  <div className={`absolute top-3 left-3 w-5 h-5 rounded border-2 flex items-center justify-center z-10 ${selectedTemplate === index ? "bg-primary border-primary" : "border-border bg-card"}`}>
-                    {selectedTemplate === index && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <div className="relative overflow-hidden" style={{ height: "280px" }}>
-                    <div ref={(el) => { templateRefs.current[index] = el; }} className="absolute top-0 left-1/2 -translate-x-1/2 scale-[0.5] origin-top">
-                      <TemplateComponent data={templateData} />
-                    </div>
-                  </div>
-                  <div className="p-3 bg-card border-t border-border">
-                    <h3 className="font-medium text-secondary text-center text-sm">{template.name}</h3>
-                  </div>
+                    {uploadingInvitation ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    החלפת קובץ
+                  </button>
+                  <a
+                    href={invitationImageUrl}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-card border border-border text-secondary rounded-lg py-2 px-4 text-sm flex items-center gap-2 hover:bg-muted transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    הורדה
+                  </a>
+                  <button
+                    onClick={handleRemoveInvitation}
+                    className="text-destructive hover:text-destructive/80 rounded-lg py-2 px-4 text-sm flex items-center gap-2 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    הסרה
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" dir="rtl">
-            <button onClick={downloadInvitation} className="bg-card border border-border rounded-xl p-4 flex items-center justify-center gap-2 hover:bg-muted transition-colors">
-              <Download className="w-5 h-5 text-secondary" />
-              <span className="text-secondary font-medium text-sm">הורדת ההזמנה כתמונה</span>
-            </button>
-            {selectedAiIndex !== null && aiInvitations[selectedAiIndex] && (
-              <a href={aiInvitations[selectedAiIndex].imageUrl} download={`הזמנה-ai-${selectedAiIndex + 1}.png`} target="_blank" rel="noopener noreferrer" className="bg-primary hover:bg-primary/90 rounded-xl p-4 flex items-center justify-center gap-2 transition-colors">
-                <Download className="w-5 h-5 text-primary-foreground" />
-                <span className="text-primary-foreground font-medium text-sm">הורדת הזמנת AI</span>
-              </a>
+              </div>
+            ) : (
+              <button
+                onClick={() => invitationInputRef.current?.click()}
+                disabled={uploadingInvitation}
+                className="w-full border-2 border-dashed border-border rounded-xl p-10 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors disabled:opacity-50"
+              >
+                {uploadingInvitation ? (
+                  <>
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">מעלה...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium text-secondary">לחצו להעלאת קובץ הזמנה</span>
+                    <span className="text-xs text-muted-foreground">תמונה (PNG, JPG) או PDF</span>
+                  </>
+                )}
+              </button>
             )}
-            <div className="bg-card border border-border rounded-xl p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-muted transition-colors">
-              <Upload className="w-5 h-5 text-secondary" />
-              <span className="text-secondary font-medium text-sm">העלאת קובץ הזמנה מוכן</span>
-            </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4" dir="rtl">
+          <div className="flex items-center justify-between pt-4">
             <button onClick={handlePrevStep} className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-1">
               <ArrowRight className="w-4 h-4" />
               חזרה למוזמנים
             </button>
-            <button onClick={handleSendInvitations} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors">
+            <button
+              onClick={handleSendInvitations}
+              disabled={!invitationImageUrl}
+              className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-lg py-2 px-5 text-sm flex items-center gap-2 transition-colors"
+            >
               שליחת ההזמנות
               <ArrowLeft className="w-4 h-4" />
             </button>
