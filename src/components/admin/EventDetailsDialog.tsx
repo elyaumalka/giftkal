@@ -42,6 +42,9 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [localPaymentCompleted, setLocalPaymentCompleted] = useState(event.payment_completed);
   const [localDeviceReturned, setLocalDeviceReturned] = useState(event.device_returned);
   const [localBudgetEnabled, setLocalBudgetEnabled] = useState(event.budget_enabled ?? false);
+  const [localGiftsEnabled, setLocalGiftsEnabled] = useState(event.gifts_enabled ?? false);
+  const [localInvitationsEnabled, setLocalInvitationsEnabled] = useState(event.invitations_enabled ?? false);
+  const [localRsvpEnabled, setLocalRsvpEnabled] = useState(event.rsvp_enabled ?? false);
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [approvingKyc, setApprovingKyc] = useState(false);
@@ -451,6 +454,34 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
     },
   });
 
+  // Generic feature toggle (gifts / invitations / rsvp) — lets admin grant access
+  // even if the customer hasn't paid.
+  const toggleFeature = useMutation({
+    mutationFn: async (params: { field: 'gifts_enabled' | 'invitations_enabled' | 'rsvp_enabled'; next: boolean }) => {
+      const { error } = await supabase
+        .from('events')
+        .update({ [params.field]: params.next } as any)
+        .eq('id', event.id);
+      if (error) throw error;
+      return params;
+    },
+    onSuccess: ({ field, next }) => {
+      if (field === 'gifts_enabled') setLocalGiftsEnabled(next);
+      if (field === 'invitations_enabled') setLocalInvitationsEnabled(next);
+      if (field === 'rsvp_enabled') setLocalRsvpEnabled(next);
+      queryClient.invalidateQueries({ queryKey: ["events-list"] });
+      const labels: Record<string, string> = {
+        gifts_enabled: 'מתנות באשראי',
+        invitations_enabled: 'הזמנות דיגיטליות',
+        rsvp_enabled: 'אישורי הגעה',
+      };
+      toast({ title: `${labels[field]} ${next ? 'הופעלו' : 'כובו'}` });
+    },
+    onError: (err: any) => {
+      toast({ title: 'שגיאה בעדכון גישה', description: err.message, variant: 'destructive' });
+    },
+  });
+
   const handleFileUpload = async (file: File, docType: string) => {
     setUploadingDocType(docType);
     try {
@@ -649,7 +680,30 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       {/* Header - Title on RIGHT, buttons on LEFT */}
       <div className="bg-secondary text-white p-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">פרטי לקוח</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          {/* Feature access toggles — allow admin to grant features without payment */}
+          <Button
+            onClick={() => toggleFeature.mutate({ field: 'gifts_enabled', next: !localGiftsEnabled })}
+            className={`${localGiftsEnabled ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500 hover:bg-gray-600'} text-white rounded-full px-5`}
+            disabled={toggleFeature.isPending}
+          >
+            {localGiftsEnabled ? 'מתנות פעיל' : 'הפעל מתנות'}
+          </Button>
+          <Button
+            onClick={() => toggleFeature.mutate({ field: 'invitations_enabled', next: !localInvitationsEnabled })}
+            className={`${localInvitationsEnabled ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-gray-500 hover:bg-gray-600'} text-white rounded-full px-5`}
+            disabled={toggleFeature.isPending}
+          >
+            {localInvitationsEnabled ? 'הזמנות פעיל' : 'הפעל הזמנות'}
+          </Button>
+          <Button
+            onClick={() => toggleFeature.mutate({ field: 'rsvp_enabled', next: !localRsvpEnabled })}
+            className={`${localRsvpEnabled ? 'bg-cyan-500 hover:bg-cyan-600' : 'bg-gray-500 hover:bg-gray-600'} text-white rounded-full px-5`}
+            disabled={toggleFeature.isPending}
+          >
+            {localRsvpEnabled ? 'אישורי הגעה פעיל' : 'הפעל אישורי הגעה'}
+          </Button>
+
           {/* Budget Toggle Button */}
           <Button
             onClick={() => toggleBudget.mutate()}
