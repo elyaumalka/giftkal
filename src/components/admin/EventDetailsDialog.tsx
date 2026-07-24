@@ -42,6 +42,9 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
   const [localPaymentCompleted, setLocalPaymentCompleted] = useState(event.payment_completed);
   const [localDeviceReturned, setLocalDeviceReturned] = useState(event.device_returned);
   const [localBudgetEnabled, setLocalBudgetEnabled] = useState(event.budget_enabled ?? false);
+  const [localGiftsEnabled, setLocalGiftsEnabled] = useState(event.gifts_enabled ?? false);
+  const [localInvitationsEnabled, setLocalInvitationsEnabled] = useState(event.invitations_enabled ?? false);
+  const [localRsvpEnabled, setLocalRsvpEnabled] = useState(event.rsvp_enabled ?? false);
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [approvingKyc, setApprovingKyc] = useState(false);
