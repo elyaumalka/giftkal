@@ -78,6 +78,7 @@ export default function EventInvitations() {
         const v = data.venues as any;
         setVenueName(customVenue || (v?.name) || "");
         setVenueLocation(customLocation || (v?.address) || "");
+        setInvitationImageUrl((data as any).invitation_design_url || null);
 
         // If invitation details were already saved, lock them and start at step 2
         const hasDetails = data.groom_name || data.bride_name || (data as any).child_name || (data as any).family_name;
