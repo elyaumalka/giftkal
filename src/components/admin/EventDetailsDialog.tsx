@@ -680,7 +680,30 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       {/* Header - Title on RIGHT, buttons on LEFT */}
       <div className="bg-secondary text-white p-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">פרטי לקוח</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          {/* Feature access toggles — allow admin to grant features without payment */}
+          <Button
+            onClick={() => toggleFeature.mutate({ field: 'gifts_enabled', next: !localGiftsEnabled })}
+            className={`${localGiftsEnabled ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500 hover:bg-gray-600'} text-white rounded-full px-5`}
+            disabled={toggleFeature.isPending}
+          >
+            {localGiftsEnabled ? 'מתנות פעיל' : 'הפעל מתנות'}
+          </Button>
+          <Button
+            onClick={() => toggleFeature.mutate({ field: 'invitations_enabled', next: !localInvitationsEnabled })}
+            className={`${localInvitationsEnabled ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-gray-500 hover:bg-gray-600'} text-white rounded-full px-5`}
+            disabled={toggleFeature.isPending}
+          >
+            {localInvitationsEnabled ? 'הזמנות פעיל' : 'הפעל הזמנות'}
+          </Button>
+          <Button
+            onClick={() => toggleFeature.mutate({ field: 'rsvp_enabled', next: !localRsvpEnabled })}
+            className={`${localRsvpEnabled ? 'bg-cyan-500 hover:bg-cyan-600' : 'bg-gray-500 hover:bg-gray-600'} text-white rounded-full px-5`}
+            disabled={toggleFeature.isPending}
+          >
+            {localRsvpEnabled ? 'אישורי הגעה פעיל' : 'הפעל אישורי הגעה'}
+          </Button>
+
           {/* Budget Toggle Button */}
           <Button
             onClick={() => toggleBudget.mutate()}
