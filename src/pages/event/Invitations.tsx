@@ -6,11 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Sparkles, Loader2, Trash2, Link2, Copy, UserPlus, Send } from "lucide-react";
-import { templates } from "@/components/invitations/InvitationTemplates";
+import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Loader2, Trash2, Link2, Copy, UserPlus, Send } from "lucide-react";
 import { useExcelHandler } from "@/components/invitations/useExcelHandler";
 import { useAudioHandler } from "@/components/invitations/useAudioHandler";
-import html2canvas from "html2canvas";
 
 type Step = 1 | 2 | 3;
 type EventType = "חתונה" | "אירוסין" | "בר מצווה" | "בת מצווה" | "ברית" | "אחר";
