@@ -34,9 +34,9 @@ export default function EventInvitations() {
   const [venueName, setVenueName] = useState("");
   const [venueLocation, setVenueLocation] = useState("");
   const [voiceText, setVoiceText] = useState("");
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [aiInvitations, setAiInvitations] = useState<{ id: number; style: string; imageUrl: string }[]>([]);
-  const [selectedAiIndex, setSelectedAiIndex] = useState<number | null>(null);
+  const [invitationImageUrl, setInvitationImageUrl] = useState<string | null>(null);
+  const [uploadingInvitation, setUploadingInvitation] = useState(false);
+  const invitationInputRef = useRef<HTMLInputElement>(null);
 
   // Add guest form
   const [newGuestName, setNewGuestName] = useState("");
