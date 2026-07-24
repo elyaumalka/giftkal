@@ -15,11 +15,9 @@ type EventType = "חתונה" | "אירוסין" | "בר מצווה" | "בת מ�
 
 export default function EventInvitations() {
   const [currentStep, setCurrentStep] = useState<Step>(1);
-  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
   const [detailsLocked, setDetailsLocked] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const templateRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Form state
   const [eventType, setEventType] = useState<EventType>("חתונה");
