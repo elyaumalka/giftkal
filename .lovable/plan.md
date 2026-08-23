@@ -1,60 +1,42 @@
-# Multi-page marketing site
+# החלפת מותג: Giftkal → בשמחות פלוס
 
-Take the visual language from `/about` and `/contact` (cream background `#F5F5F5`, dark-navy pill navbar, gold `#AE842D` accents, white rounded cards, right-aligned RTL) and roll it out across a full marketing site with real navigation. Replace the current one-page `HomePage` with a proper home page + dedicated pages for each nav item.
+## מטרה
+להחליף כל מופע משתמש-פנוי של המותג "Giftkal"/"גיפטקאל" ב"בשמחות פלוס" (ובאנגלית "Besimchot Plus" או "Bsimchot Plus" לפי הקשר).
 
-## New route map
+## מה ישתנה
 
-All pages sit under `MarketingLayout` (navbar + footer already built).
+### 1. מטא-נתונים וכותרות (index.html)
+- `<title>`: Giftkal → בשמחות פלוס
+- meta description, author, og:title, twitter:site, apple-mobile-web-app-title
 
-```
-/                → Home            (short teaser home, links out to sub-pages)
-/how-it-works    → איך זה עובד?    (extended 3-step flow + visual)
-/why-us          → למה דווקא אנחנו? (feature grid, comparison, testimonial)
-/pricing         → מחירון           (199₪ plan + add-ons + coupon note)
-/faq             → שאלות ותשובות   (accordion grouped by topic)
-/about           → אודות            (exists)
-/contact         → יצירת קשר        (exists)
-```
+### 2. קומפוננטות Layout
+- `MarketingLayout.tsx`: alt texts, טקסט זכויות יוצרים בפוטר.
+- `AdminSidebar.tsx`, `EventLayout.tsx`, `VenueLayout.tsx`: alt של הלוגו.
 
-Update nav links in `MarketingLayout.tsx` from `/#how`, `/#features`, `/#pricing`, `/#faq` to the real routes above.
+### 3. עמודי שיווק
+- `Home.tsx`, `EventOwners.tsx`, `VenueOwners.tsx`, `WhyUs.tsx`, `Testimonials.tsx`, `Pricing.tsx`, `FAQ.tsx`, `HowItWorks.tsx`, `About.tsx`, `Contact.tsx`: כל טקסט "GiftKal" / "גיפטקאל" → "בשמחות פלוס".
 
-## Pages to build
+### 4. עמודי אירוע / אולם / מתנה
+- `EventWelcome.tsx`, `GiftScreen.tsx`, `GiftSearch.tsx`, `PaymeSetup.tsx`, `Upgrade.tsx`, `Settings.tsx` (event), `Settings.tsx` (venue): טקסטים וכותרות.
 
-Each page follows the same structural template as `/about`:
-1. Hero band — badge chip, H1 (navy), gold sub-line, description, 2 CTAs, image on the opposite side
-2. 1–2 supporting sections in white or cream cards with `rounded-[24px]` and soft shadow
-3. Closing CTA band linking to `/contact` or `/signup`
+### 5. מסכי ניהול
+- `Wallets.tsx`, `EventDetailsDialog.tsx`, `NedarimBillingDialog.tsx`, `Signup.tsx`: טקסטים, כותרות, הודעות toast.
 
-**Home (`/`)** — Hero with tagline "המתנות המושלמות לאירוע שלך", 4-stat strip (reuse from About), 3 feature teasers linking to `/how-it-works`, `/why-us`, `/pricing`, closing "פתחו אירוע" CTA.
+### 6. תיעוד API
+- `partner-api.md`, `SystemApiDocs.tsx`, `NedarimApiDocs.tsx`, `YemotApiDocs.tsx`: כותרות, טקסטי הסבר, כתובת תמיכה.
 
-**How it works (`/how-it-works`)** — 3 numbered step cards (עמוד מתנות אישי / האורחים משלימים / סדר ושליטה) with expanded copy, side illustration, "מה קורה אחרי האירוע?" secondary block.
+### 7. PWA / קונפיגורציה
+- `vite.config.ts`: `name` ו-`short_name` של ה-PWA.
 
-**Why us (`/why-us`)** — Feature grid (6 cards: מחיר קבוע, שקיפות, נוחות, ליווי אישי, אבטחה, איזור אישי), simple compare block vs. traditional gift envelopes, single testimonial quote card.
+### 8. קוד ותיעוד פנימי
+- `fees.ts`, `public-api/index.ts`, edge functions, הערות קוד: "giftkal master" / "giftkal commission" → "בשמחות פלוס" / "platform" בהתאם להקשר.
 
-**Pricing (`/pricing`)** — Single big price card "199 ₪ לאירוע" with bullet list of what's included, small "מה לא כלול" note, coupon input hint, FAQ mini-link.
+## מה יישאר ללא שינוי (מזהים טכניים)
+- **כתובות דומיין**: `giftkal.com`, `giftkal.lovable.app` — נשארות כדי לא לשבור קישורים, DNS ואימותים קיימים.
+- **כותרות Webhook**: `X-Giftkal-Signature`, `X-Giftkal-Event` — חוזה API עם שותפים; שינוי דורש עדכון מקבלי Webhook.
+- **קוד קופון בדיקה**: `GIFTKAL-TEST` — מזהה טכני שמופיע ב-DB/שותפים; ישתנה רק בטקסט תצוגה אם קיים, לא בלוגיקה.
+- **מפתחות סביבה / קבועים**: `GIFTKAL_WEBHOOK_SECRET` וכדומה — נשארים כמוגדרים.
 
-**FAQ (`/faq`)** — Accordion (`@/components/ui/accordion`) grouped: כללי / תשלום / אורחים / בעלי אירוע. ~10–12 questions total.
-
-## Design tokens (reused verbatim from About)
-
-- Background `#F5F5F5`, white cards, `#f9f7f3` soft-cream, `#f2f0eb` chip
-- Navy `#051839` for headings, Gold `#AE842D` for accents/CTAs
-- Radii `24px`/`30px`/`32px`, shadow `0 8px 16px rgba(0,0,0,0.06)`
-- All content `dir="rtl"`, `text-right`, using lucide-react icons
-
-## Cleanup
-
-- Change `/` route to render a new `Home.tsx` under `MarketingLayout` (replacing the old `HomePage`)
-- Delete/deprecate: `src/pages/landing/HomePage.tsx` and unused landing sub-components (`FinalCTA`, feature/how/faq/etc. one-page sections) if they are no longer imported anywhere else
-- Remove the legacy `Navigate` redirects (`/pricing → /#contact`, `/benefits → /#features`, etc.) and point them to the new real routes
-- Update in-page anchors (`href="#faq"`, `#pricing`, etc.) inside the new pages to real `/faq`, `/pricing` routes
-
-## Images
-
-I'll generate hero illustrations for each new page in the same navy+gold style as the ones on About/Contact (event hall, gift box, price tag, question-mark cluster). If you want to use Figma assets instead, export them and drop them in the chat and I'll swap them in.
-
-## Not doing (unless you ask)
-
-- No changes to backend, leads table, or auth flows
-- No changes to logged-in areas (event/venue/admin)
-- No new copy translations — Hebrew RTL only, matching existing tone
+## בדיקה
+- חיפוש חוזר של Giftkal/giftkal/גיפטקאל לאיתור שאריות (למעט המזהים הטכניים המופיעים לעיל).
+- בדיקת build לוודא שאין שגיאות לאחר ההחלפות.
