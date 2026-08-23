@@ -48,7 +48,7 @@ const EventLogin = () => {
       <div className="relative z-10 w-full max-w-md mx-auto px-4">
         <div className="text-center mb-8">
           <Link to="/">
-            <img src={logoAsset.url} alt="Giftkal" className="h-12 mx-auto mb-6" />
+            <img src={logoAsset.url} alt="בשמחות פלוס" className="h-12 mx-auto mb-6" />
           </Link>
         </div>
 

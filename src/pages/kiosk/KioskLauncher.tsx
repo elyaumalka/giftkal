@@ -121,7 +121,7 @@ export default function KioskLauncher() {
       <div className="w-full max-w-3xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <img src={logoAsset.url} alt="Giftkal" className="h-14 mx-auto mb-4" />
+          <img src={logoAsset.url} alt="בשמחות פלוס" className="h-14 mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-white mb-2">השקת קיוסק</h1>
           <p className="text-white/60">הכניסו קוד גישה לבחירת אולם או אירוע</p>
         </div>

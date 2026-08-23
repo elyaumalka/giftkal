@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
 
     // Partner-referral markup. When present, guest is charged extra:
     //   partnerCommissionPct → paid to partner
-    //   platformPartnerPct   → paid to giftkal
+    //   platformPartnerPct   → paid to Besimchot Plus
     let partnerId: string | null = null;
     let partnerCommissionPct = 0;
     let platformPartnerPct = 0;

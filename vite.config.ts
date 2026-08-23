@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.png", "pwa-icon-192.png", "pwa-icon-512.png"],
       manifest: {
-        name: "Giftkal Kiosk",
-        short_name: "Giftkal",
+        name: "בשמחות פלוס Kiosk",
+        short_name: "בשמחות פלוס",
         description: "מערכת קיוסק למתנות דיגיטליות",
         theme_color: "#051839",
         background_color: "#051839",

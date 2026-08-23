@@ -11,11 +11,11 @@ import { computeBreakdown, formatILS } from "@/lib/fees";
  * URL: /embed/gift/:eventId?amount=100&name=...&phone=...&email=...&blessing=...&relationship=...
  *
  * Posts messages to parent window:
- *  - { source: 'giftkal-embed', type: 'ready' }
- *  - { source: 'giftkal-embed', type: 'success', transactionId, paymeSaleId }
- *  - { source: 'giftkal-embed', type: 'error', message }
+ *  - { source: 'Besimchot Plus-embed', type: 'ready' }
+ *  - { source: 'Besimchot Plus-embed', type: 'success', transactionId, paymeSaleId }
+ *  - { source: 'בשמחות פלוס-embed', type: 'error', message }
  *
- * Uses PayMe Hosted Fields wrapped in Giftkal branding (gold/navy, RTL).
+ * Uses PayMe Hosted Fields wrapped in בשמחות פלוס branding (gold/navy, RTL).
  */
 export default function EmbedGift() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -38,7 +38,7 @@ export default function EmbedGift() {
   // Post message helper
   const postToParent = (type: string, data: Record<string, unknown> = {}) => {
     try {
-      window.parent.postMessage({ source: "giftkal-embed", type, ...data }, "*");
+      window.parent.postMessage({ source: "Besimchot Plus-embed", type, ...data }, "*");
     } catch (_e) {
       // ignore
     }
@@ -171,7 +171,7 @@ export default function EmbedGift() {
         {/* Header */}
         <div className="text-center mb-6">
           <div className="inline-block bg-gradient-to-r from-[#C4A35A] to-[#D4B36A] text-white rounded-full px-4 py-1 text-sm font-bold mb-2">
-            giftkal
+            Besimchot Plus
           </div>
           <h1 className="text-xl font-bold text-[#051839]">{productLabel}</h1>
           <p className="text-3xl font-bold text-[#C4A35A] mt-2">{formatILS(embedBreakdown.giftAmount)}</p>

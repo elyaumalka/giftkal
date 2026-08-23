@@ -89,7 +89,7 @@ const VenueOwners = () => {
           </p>
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 max-w-2xl mx-auto mb-10 text-right space-y-3">
             <p className="text-white/80 text-base leading-relaxed">
-              <span className="font-bold text-primary">GiftKal</span> מאפשרת לאורחים באירועים שלכם להעניק מתנות באשראי — בצורה אלגנטית ומאובטחת, ישירות מעמדה שמוצבת באולם או דרך קישור אישי שנשלח למוזמנים.
+              <span className="font-bold text-primary">בשמחות פלוס</span> מאפשרת לאורחים באירועים שלכם להעניק מתנות באשראי — בצורה אלגנטית ומאובטחת, ישירות מעמדה שמוצבת באולם או דרך קישור אישי שנשלח למוזמנים.
             </p>
             <p className="text-white/60 text-sm leading-relaxed">
               המערכת כוללת דף נחיתה מותאם אישית לאולם שלכם, ניהול לידים מתוך האירועים, ותמיכה מלאה בכל סוגי האירועים — חתונות, בר/בת מצוות, בריתות ועוד.
@@ -101,7 +101,7 @@ const VenueOwners = () => {
                 הצטרפו ללא עלות 👈
               </Button>
             </a>
-            <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע על GiftKal לאולם שלי" target="_blank" rel="noopener noreferrer">
+            <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע על בשמחות פלוס לאולם שלי" target="_blank" rel="noopener noreferrer">
               <Button size="lg" className="text-lg px-10 py-6 bg-transparent border-2 border-white/30 text-white hover:bg-white/10">
                 <MessageCircle className="w-5 h-5 ml-2" />
                 דברו עם נציג
@@ -116,7 +116,7 @@ const VenueOwners = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <span className="text-4xl mb-4 block">🎁</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary">מה GiftKal נותן לאולם שלכם?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-secondary">מה בשמחות פלוס נותן לאולם שלכם?</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <BenefitCard icon={Monitor} title="עמדת מתנות דיגיטלית" desc="עמדה אלגנטית שמוצבת באולם ומאפשרת לאורחים לשלוח מתנות בצורה נוחה — מותאמת לבראנד שלכם" delay={0} />

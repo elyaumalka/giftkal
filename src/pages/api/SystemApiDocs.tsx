@@ -961,7 +961,7 @@ export default function SystemApiDocs() {
               חזרה
             </Button>
             <div className="h-6 w-px bg-border" />
-            <h1 className="text-lg font-bold">🎁 GiftKal API</h1>
+            <h1 className="text-lg font-bold">🎁 בשמחות פלוס API</h1>
             <Badge variant="secondary" className="text-[10px]">v2</Badge>
           </div>
           <div className="relative w-72">
@@ -1031,7 +1031,7 @@ export default function SystemApiDocs() {
         <main className="flex-1 p-6 lg:p-8 min-w-0">
           {/* Intro */}
           <div className="mb-8 p-6 bg-muted/30 rounded-2xl border border-border">
-            <h2 className="text-xl font-bold mb-2">GiftKal Public API v2</h2>
+            <h2 className="text-xl font-bold mb-2">בשמחות פלוס Public API v2</h2>
             <p className="text-sm text-muted-foreground leading-relaxed mb-4">
               ה-API מאפשר שליטה מלאה על כל המערכת: ניהול אירועים, מוזמנים, אישורי הגעה, מתנות, אולמות, לידים, משתמשים, מסמכים ותמיכה.
               כל הבקשות נשלחות לכתובת אחת עם פרמטר <code className="bg-muted px-1 rounded">action</code>:
@@ -1084,7 +1084,7 @@ export default function SystemApiDocs() {
               <h2 className="text-lg font-bold text-amber-900">מצב Partner — שותפים B2B</h2>
             </div>
             <p className="text-sm text-amber-900 leading-relaxed mb-4">
-              מערכת חיצונית (ספק אישורי-הגעה, סוכנות מקצועית וכו') יכולה להשתמש ב-giftkal דרך מפתח API משויך-לשותף.
+              מערכת חיצונית (ספק אישורי-הגעה, סוכנות מקצועית וכו') יכולה להשתמש ב-בשמחות פלוס דרך מפתח API משויך-לשותף.
               ההבדלים מ-מפתח אדמין רגיל:
             </p>
             <ul className="text-sm text-amber-900 space-y-1.5 list-disc list-inside mb-4">

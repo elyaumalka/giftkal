@@ -430,7 +430,7 @@ export default function GiftScreen() {
           {(event.venues as any)?.logo_url && (
             <img src={(event.venues as any).logo_url} alt="" className="w-9 h-9 rounded-full border border-[#C4A35A]/40 object-cover" />
           )}
-          <img src={logoAsset.url} alt="Giftkal" className="h-6 w-auto brightness-0 invert opacity-60" />
+          <img src={logoAsset.url} alt="בשמחות פלוס" className="h-6 w-auto brightness-0 invert opacity-60" />
         </div>
       </div>
 
@@ -924,7 +924,7 @@ export default function GiftScreen() {
           </button>
           <div className="flex items-center justify-center gap-2">
             <span className="text-white/20 text-[10px]">Powered by</span>
-            <img src={logoAsset.url} alt="Giftkal" className="h-3 w-auto opacity-15" />
+            <img src={logoAsset.url} alt="בשמחות פלוס" className="h-3 w-auto opacity-15" />
           </div>
         </div>
       </div>

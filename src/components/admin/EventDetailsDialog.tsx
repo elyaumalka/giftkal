@@ -238,7 +238,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       });
       if (error) throw new Error(error.message || 'שגיאה');
       if (!data?.success) throw new Error(data?.error || data?.details || 'שגיאה');
-      toast({ title: `הועברו ${formatILS(amount)} לארנק giftkal ✅` });
+      toast({ title: `הועברו ${formatILS(amount)} לארנק בשמחות פלוס ✅` });
       setSweepAmount("");
       setSweepNote("");
       queryClient.invalidateQueries({ queryKey: ['event-owners'] });
@@ -1424,7 +1424,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                   <div className="font-bold text-amber-900 text-base">{formatILS(walletData.collected)}</div>
                 </div>
                 <div className="bg-white/70 rounded-lg p-2">
-                  <div className="text-amber-800/60">הועבר ל-giftkal</div>
+                  <div className="text-amber-800/60">הועבר ל-בשמחות פלוס</div>
                   <div className="font-bold text-amber-900 text-base">{formatILS(walletData.swept)}</div>
                 </div>
                 <div className="bg-white/70 rounded-lg p-2 border-2 border-amber-500">
@@ -1438,11 +1438,11 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
               </div>
             ) : null}
 
-            {/* Sweep commission: move giftkal's cut from event-owner wallet → master wallet */}
+            {/* Sweep commission: move Besimchot Plus's cut from event-owner wallet → master wallet */}
             <div className="bg-white/70 rounded-xl p-3 space-y-2">
-              <div className="text-sm font-medium text-amber-900">העברת עמלת giftkal</div>
+              <div className="text-sm font-medium text-amber-900">העברת עמלת בשמחות פלוס</div>
               <p className="text-xs text-amber-800/70">
-                העברה wallet → wallet מארנק בעל האירוע אל ארנק giftkal. הסכום ממולא אוטומטית לפי העמלות שנותרו להעברה.
+                העברה wallet → wallet מארנק בעל האירוע אל ארנק בשמחות פלוס. הסכום ממולא אוטומטית לפי העמלות שנותרו להעברה.
               </p>
               <div className="flex gap-2">
                 <Input
@@ -1493,7 +1493,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
                 <div className="mt-3 space-y-2 text-xs">
                   {walletData.transfers.slice(0, 5).map((t: any) => (
                     <div key={t.id} className="flex justify-between items-center bg-white/70 rounded px-2 py-1">
-                      <span className="text-amber-900">העברה ל-giftkal · {formatILS(Number(t.amount) || 0)}</span>
+                      <span className="text-amber-900">העברה ל-בשמחות פלוס · {formatILS(Number(t.amount) || 0)}</span>
                       <span className={
                         t.status === 'completed' ? 'text-green-700' :
                         t.status === 'failed' ? 'text-red-700' :

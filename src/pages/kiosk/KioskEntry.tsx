@@ -92,7 +92,7 @@ export default function KioskEntry() {
       dir="rtl"
     >
       <div className="w-full max-w-md text-center">
-        <img src={logoAsset.url} alt="Giftkal" className="h-14 mx-auto mb-8" />
+        <img src={logoAsset.url} alt="בשמחות פלוס" className="h-14 mx-auto mb-8" />
 
         {(status === "detecting" || status === "resolving") && (
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">

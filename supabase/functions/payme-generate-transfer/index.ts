@@ -1,7 +1,7 @@
 // payme-generate-transfer
 // ---------------------------------------------------------------------------
 // Moves money from one PayMe wallet to another inside our marketplace.
-// Used to sweep giftkal's platform commission out of an event-owner's wallet
+// Used to sweep Besimchot Plus's platform commission out of an event-owner's wallet
 // into the master wallet after each sale (or in batches at admin discretion).
 //
 // Endpoint:    POST https://live.payme.io/api/sales
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const paymeClientKey = Deno.env.get('PAYME_CLIENT_KEY')
-    // The seller_payme_id of giftkal's own (master) PayMe account — where the
+    // The seller_payme_id of Besimchot Plus's own (master) PayMe account — where the
     // commission lands. Configured once in Supabase secrets after onboarding.
     const masterSellerId = Deno.env.get('PAYME_MASTER_SELLER_ID')
 
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       throw new Error('PAYME_CLIENT_KEY not configured')
     }
     if (!masterSellerId) {
-      throw new Error('PAYME_MASTER_SELLER_ID not configured (giftkal\'s seller id)')
+      throw new Error('PAYME_MASTER_SELLER_ID not configured (Besimchot Plus\'s seller id)')
     }
 
     const authHeader = req.headers.get('Authorization')
@@ -97,12 +97,12 @@ Deno.serve(async (req) => {
 
     const paymeBaseUrl = 'https://live.payme.io'
     const productName = body.productName
-      ?? `giftkal commission · ${event.groom_name ?? event.child_name ?? event.family_name ?? body.eventId.slice(0, 8)}`
+      ?? `Besimchot Plus commission · ${event.groom_name ?? event.child_name ?? event.family_name ?? body.eventId.slice(0, 8)}`
 
     // PayMe payload for wallet-to-wallet transfer.
     // payment.method = "Bank Transfer"
     // payment.origin_seller_id = the seller WE PULL FROM (event owner)
-    // seller_payme_id          = the seller WE PUSH TO   (giftkal master)
+    // seller_payme_id          = the seller WE PUSH TO   (Besimchot Plus master)
     const transferPayload = {
       payme_client_key: paymeClientKey,
       payment: {

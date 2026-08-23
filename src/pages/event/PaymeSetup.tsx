@@ -183,7 +183,7 @@ export default function PaymeSetup() {
     onSuccess: () => {
       setStep('submitted');
       queryClient.invalidateQueries({ queryKey: ['event-payme', eventId] });
-      toast({ title: "הפרטים נשלחו בהצלחה!", description: "הבקשה תיבדק על ידי צוות GiftKal" });
+      toast({ title: "הפרטים נשלחו בהצלחה!", description: "הבקשה תיבדק על ידי צוות בשמחות פלוס" });
     },
     onError: (error: Error) => {
       toast({ title: "שגיאה", description: error.message, variant: "destructive" });
@@ -373,7 +373,7 @@ export default function PaymeSetup() {
             <Clock className="w-16 h-16 text-amber-500 mx-auto mb-4" />
             <CardTitle>הבקשה נשלחה לאישור ⏳</CardTitle>
             <CardDescription>
-              הפרטים שלך נבדקים על ידי צוות GiftKal. לאחר אישור ובדיקה, חשבון הסליקה יופעל ותקבלו הודעה.
+              הפרטים שלך נבדקים על ידי צוות בשמחות פלוס. לאחר אישור ובדיקה, חשבון הסליקה יופעל ותקבלו הודעה.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -760,7 +760,7 @@ export default function PaymeSetup() {
                   )}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground mt-4">
-                  הפרטים יישלחו לצוות GiftKal לבדיקה ואישור
+                  הפרטים יישלחו לצוות בשמחות פלוס לבדיקה ואישור
                 </p>
               </div>
             </form>

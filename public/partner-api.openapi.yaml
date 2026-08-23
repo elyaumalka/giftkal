@@ -1,15 +1,15 @@
 openapi: 3.0.3
 info:
-  title: Giftkal Partner API
+  title: בשמחות פלוס Partner API
   version: "1.0.0"
   description: |
-    Server-to-server API for Giftkal partners. Authenticate with the
+    Server-to-server API for בשמחות פלוס partners. Authenticate with the
     `x-api-key` header issued to your partner. Every request is scoped
     automatically to the data your key created.
 
     All endpoints share a single URL. Select the action via `?action=<Name>`.
   contact:
-    name: Giftkal Support
+    name: בשמחות פלוס Support
     email: support@giftkal.com
 
 servers:
@@ -69,7 +69,7 @@ components:
       required: [email, password, full_name]
       properties:
         email: { type: string, format: email, description: Unique email for the new user. }
-        password: { type: string, minLength: 8, description: Random 16+ chars. The user resets via Giftkal. }
+        password: { type: string, minLength: 8, description: Random 16+ chars. The user resets via בשמחות פלוס. }
         full_name: { type: string, description: Full display name (Hebrew allowed). }
         phone: { type: string, example: "+972501234567" }
         event:
@@ -141,7 +141,7 @@ components:
       type: object
       description: |
         KYC submission for opening a payment account for an event.
-        The request is queued for manual review by Giftkal's compliance team.
+        The request is queued for manual review by בשמחות פלוס's compliance team.
         Approval is delivered asynchronously via the `payment-account-approved` webhook.
       required:
         - event_id
@@ -251,9 +251,9 @@ components:
               enum: [not_submitted, pending_review, rejected, processing, approved]
               description: |
                 * `not_submitted` — no KYC data received yet.
-                * `pending_review` — awaiting manual review by Giftkal.
-                * `rejected` — Giftkal rejected the submission.
-                * `processing` — Giftkal approved; payment account is being provisioned.
+                * `pending_review` — awaiting manual review by בשמחות פלוס.
+                * `rejected` — בשמחות פלוס rejected the submission.
+                * `processing` — בשמחות פלוס approved; payment account is being provisioned.
                 * `approved` — active. The event can receive payments.
             can_receive_payments: { type: boolean }
             documents_uploaded:
@@ -318,7 +318,7 @@ paths:
                   mime_type: application/pdf
                   file_base64: JVBERi0xLjcKJcOkw7zDtsO...
               SubmitPaymentAccount:
-                summary: SubmitPaymentAccount (queues for Giftkal review)
+                summary: SubmitPaymentAccount (queues for בשמחות פלוס review)
                 value:
                   event_id: "a12b..."
                   first_name: דוד

@@ -461,7 +461,7 @@ export default function Billing() {
         customerName={selectedOwner?.ownerName || ""}
         customerPhone={selectedOwner?.ownerPhone || ""}
         customerEmail={selectedOwner?.ownerEmail || ""}
-        description={`חיוב שירות GiftKal - ${selectedOwner?.groom_name || ""} & ${selectedOwner?.bride_name || ""}`}
+        description={`חיוב שירות בשמחות פלוס - ${selectedOwner?.groom_name || ""} & ${selectedOwner?.bride_name || ""}`}
         eventId={selectedOwner?.id}
         ownerId={selectedOwner?.owner_id}
         venueName={selectedOwner?.venues?.name}

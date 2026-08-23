@@ -4,7 +4,7 @@
  * Aggregates every event's wallet state into one place so the admin can
  * answer at a glance:
  *   - How much commission was collected platform-wide?
- *   - How much of it have we already swept to giftkal's master wallet?
+ *   - How much of it have we already swept to Besimchot Plus's master wallet?
  *   - How much is still sitting in event-owner wallets waiting to be swept?
  *   - How much have we paid out to event-owner bank accounts?
  *
@@ -90,7 +90,7 @@ export default function Wallets() {
     },
     onSuccess: () => {
       toast({
-        title: `הועבר ${formatILS(Number(transferAmount))} ל-giftkal ✅`,
+        title: `הועבר ${formatILS(Number(transferAmount))} ל-בשמחות פלוס ✅`,
       });
       setTransferTarget(null);
       setTransferAmount("");
@@ -268,7 +268,7 @@ export default function Wallets() {
           accent="bg-emerald-50 border-emerald-200"
         />
         <StatTile
-          label="הועברו ל-giftkal"
+          label="הועברו ל-בשמחות פלוס"
           value={formatILS(totals.swept)}
           subtitle="ארנק מאסטר"
           accent="bg-blue-50 border-blue-200"
@@ -343,7 +343,7 @@ export default function Wallets() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ArrowRightLeft className="w-5 h-5 text-amber-700" />
-              העברת עמלה ל-giftkal
+              העברת עמלה ל-בשמחות פלוס
             </DialogTitle>
           </DialogHeader>
           {transferTarget && (

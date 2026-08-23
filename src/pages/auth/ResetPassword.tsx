@@ -136,7 +136,7 @@ export default function ResetPassword() {
           <div className="text-center mb-8">
             <div className="relative inline-block">
               <div className="absolute inset-0 bg-[#C4A35A]/30 blur-2xl rounded-full scale-150" />
-              <img src={logoAsset.url} alt="Giftkal Logo" className="h-24 mx-auto relative z-10 drop-shadow-2xl" />
+              <img src={logoAsset.url} alt="בשמחות פלוס Logo" className="h-24 mx-auto relative z-10 drop-shadow-2xl" />
             </div>
             <h1 className="text-3xl font-bold text-white mt-6 mb-2">איפוס סיסמה</h1>
             <p className="text-[#C4A35A] text-lg">הזן סיסמה חדשה</p>
@@ -241,7 +241,7 @@ export default function ResetPassword() {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-white/40 text-sm">
-              © 2024 Giftkal. כל הזכויות שמורות.
+              © 2024 בשמחות פלוס. כל הזכויות שמורות.
             </p>
           </div>
         </div>

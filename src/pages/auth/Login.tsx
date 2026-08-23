@@ -153,7 +153,7 @@ export default function Login() {
           {/* Logo & headline */}
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
-              <img src={logoAsset.url} alt="Giftkal Logo" className="h-20 mx-auto" />
+              <img src={logoAsset.url} alt="בשמחות פלוס Logo" className="h-20 mx-auto" />
             </Link>
             <span
               className="mt-6 inline-block rounded-[20px] px-4 py-1.5 text-[13px] font-semibold text-white uppercase"
@@ -261,7 +261,7 @@ export default function Login() {
 
           <div className="mt-8 text-center">
             <p className="text-sm" style={{ color: `${NAVY}80` }}>
-              © 2024 Giftkal. כל הזכויות שמורות.
+              © 2024 בשמחות פלוס. כל הזכויות שמורות.
             </p>
           </div>
         </div>
