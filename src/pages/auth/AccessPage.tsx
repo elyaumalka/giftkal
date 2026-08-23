@@ -10,7 +10,7 @@ const AccessPage = () => {
     { icon: PartyPopper, label: "בעלי אירועים", desc: "יש לכם אירוע? נכנסים כאן", href: "/login/event" },
     { icon: Building2, label: "בעלי אולמות", desc: "מנהלים אולם? כאן הכניסה", href: "/login/venue" },
     { icon: Gift, label: "רוצים להעביר מתנה?", desc: "חפשו את האירוע ושלחו מתנה", href: "/gift-search" },
-    { icon: UserPlus, label: "רוצים להצטרף?", desc: "פתחו אירוע חדש ב-בשמחות פלוס", href: "/signup" },
+    { icon: UserPlus, label: "רוצים להצטרף?", desc: "פתחו אירוע חדש בשמחות פלוס", href: "/signup" },
   ];
 
   return (

@@ -141,7 +141,7 @@ components:
       type: object
       description: |
         KYC submission for opening a payment account for an event.
-        The request is queued for manual review by בשמחות פלוס's compliance team.
+        The request is queued for manual review by the Besimchot Plus compliance team.
         Approval is delivered asynchronously via the `payment-account-approved` webhook.
       required:
         - event_id

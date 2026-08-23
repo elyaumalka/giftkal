@@ -1084,7 +1084,7 @@ export default function SystemApiDocs() {
               <h2 className="text-lg font-bold text-amber-900">מצב Partner — שותפים B2B</h2>
             </div>
             <p className="text-sm text-amber-900 leading-relaxed mb-4">
-              מערכת חיצונית (ספק אישורי-הגעה, סוכנות מקצועית וכו') יכולה להשתמש ב-בשמחות פלוס דרך מפתח API משויך-לשותף.
+              מערכת חיצונית (ספק אישורי-הגעה, סוכנות מקצועית וכו') יכולה להשתמש בשמחות פלוס דרך מפתח API משויך-לשותף.
               ההבדלים מ-מפתח אדמין רגיל:
             </p>
             <ul className="text-sm text-amber-900 space-y-1.5 list-disc list-inside mb-4">

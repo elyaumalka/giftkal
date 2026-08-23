@@ -36,7 +36,7 @@ export interface FeeConfig {
   installmentSurchargeBase: number;
   /** Partner's cut, %. Only applied when the event was created by a partner. */
   partnerCommissionPct?: number;
-  /** בשמחות פלוס's cut of the partner-referral markup, %. */
+  /** Besimchot Plus's cut of the partner-referral markup, %. */
   platformPartnerPct?: number;
 }
 

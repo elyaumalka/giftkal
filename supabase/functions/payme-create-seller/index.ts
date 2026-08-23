@@ -279,11 +279,11 @@ Deno.serve(async (req) => {
       seller_merchant_name: body.merchantName.trim(),
       seller_merchant_name_en: /^[a-zA-Z0-9\s\-_]+$/.test((body.merchantNameEn || '').trim())
         ? body.merchantNameEn.trim()
-        : transliterateHebrew(body.merchantName.trim()) || 'בשמחות פלוס Event',
+        : transliterateHebrew(body.merchantName.trim()) || 'Besimchot Plus Event',
       seller_dba: body.merchantName.trim(),
       seller_dba_en: /^[a-zA-Z0-9\s\-_]+$/.test((body.merchantNameEn || '').trim())
         ? body.merchantNameEn.trim()
-        : transliterateHebrew(body.merchantName.trim()) || 'בשמחות פלוס Event',
+        : transliterateHebrew(body.merchantName.trim()) || 'Besimchot Plus Event',
       seller_site_url: body.siteUrl || 'https://giftkal.com',
       seller_description: body.description || `אירוע - ${body.merchantName}`,
       seller_address_city: body.city.trim(),
