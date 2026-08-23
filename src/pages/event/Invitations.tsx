@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Loader2, Trash2, Link2, Copy, UserPlus, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Loader2, Trash2, Link2, Copy, UserPlus, Send, Mail } from "lucide-react";
 import { useExcelHandler } from "@/components/invitations/useExcelHandler";
 import { useAudioHandler } from "@/components/invitations/useAudioHandler";
+import { useInvitationSends } from "@/components/invitations/useInvitationSends";
 
 type Step = 1 | 2 | 3;
 type EventType = "חתונה" | "אירוסין" | "בר מצווה" | "בת מצווה" | "ברית" | "אחר";
@@ -113,6 +114,7 @@ export default function EventInvitations() {
 
   const { downloadSampleExcel, handleExcelUpload } = useExcelHandler(event?.id, () => refetchGuests());
   const { audioFile, audioUrl, isUploading, handleAudioUpload, removeAudio } = useAudioHandler(event?.id);
+  const { logSend, lastSendByGuest, countByChannel } = useInvitationSends(event?.id);
 
   // Persist step
   useEffect(() => {
@@ -561,8 +563,18 @@ export default function EventInvitations() {
           {/* Guests list */}
           {guests && guests.length > 0 && (
             <div className="bg-card border border-border rounded-xl p-4 space-y-3" dir="rtl">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-foreground font-medium text-sm">רשימת מוזמנים ({guests.length})</p>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Send className="w-3 h-3 text-green-600" />
+                    נשלחו בוואטסאפ: {countByChannel("whatsapp")}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Mail className="w-3 h-3 text-primary" />
+                    נשלחו במייל: {countByChannel("email")}
+                  </span>
+                </div>
               </div>
               <div className="max-h-[400px] overflow-y-auto">
                 <table className="w-full text-sm">
@@ -574,6 +586,7 @@ export default function EventInvitations() {
                       <th className="text-right p-2 font-medium text-muted-foreground">קרבה</th>
                       <th className="text-right p-2 font-medium text-muted-foreground">קישור RSVP</th>
                       <th className="text-right p-2 font-medium text-muted-foreground">שלח</th>
+                      <th className="text-right p-2 font-medium text-muted-foreground">מצב שליחה</th>
                       <th className="p-2 w-10"></th>
                     </tr>
                   </thead>
@@ -582,6 +595,7 @@ export default function EventInvitations() {
                       const rsvpUrl = `${window.location.origin}/rsvp/${event?.id}/${g.id}`;
                       const waMessage = encodeURIComponent(getRsvpMessage(g));
                       const waLink = g.phone ? `https://wa.me/972${g.phone.replace(/^0/, "").replace(/[-\s]/g, "")}?text=${waMessage}` : null;
+                      const lastSend = lastSendByGuest(g.id);
                       return (
                         <tr key={g.id} className="border-b border-border/50 hover:bg-muted/30">
                           <td className="p-2 font-medium">{g.full_name}</td>
@@ -602,12 +616,31 @@ export default function EventInvitations() {
                           </td>
                           <td className="p-2">
                             {waLink ? (
-                              <a href={waLink} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:text-green-700 text-xs flex items-center gap-1">
+                              <a
+                                href={waLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => logSend({ guestId: g.id, channel: "whatsapp", recipient: g.phone })}
+                                className="text-green-600 hover:text-green-700 text-xs flex items-center gap-1"
+                              >
                                 <Send className="w-3 h-3" />
                                 וואטסאפ
                               </a>
                             ) : (
                               <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </td>
+                          <td className="p-2 text-xs">
+                            {lastSend ? (
+                              <span className={lastSend.status === "failed" ? "text-destructive" : "text-green-600"}>
+                                {lastSend.channel === "whatsapp" ? "וואטסאפ" : "מייל"}
+                                {lastSend.status === "failed" ? " • נכשל" : ""}
+                                {" • "}
+                                {new Date(lastSend.created_at).toLocaleDateString("he-IL")}{" "}
+                                {new Date(lastSend.created_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">לא נשלח</span>
                             )}
                           </td>
                           <td className="p-2">
@@ -629,6 +662,7 @@ export default function EventInvitations() {
               </div>
             </div>
           )}
+
 
           <div className="flex items-center justify-between pt-4" dir="rtl">
             <button onClick={handlePrevStep} className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-1">

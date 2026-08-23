@@ -481,6 +481,64 @@ export type Database = {
           },
         ]
       }
+      guest_invitation_sends: {
+        Row: {
+          channel: string
+          created_at: string
+          error_message: string | null
+          event_id: string
+          guest_id: string
+          id: string
+          recipient: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error_message?: string | null
+          event_id: string
+          guest_id: string
+          id?: string
+          recipient?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          event_id?: string
+          guest_id?: string
+          id?: string
+          recipient?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_invitation_sends_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_invitation_sends_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_invitation_sends_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guests: {
         Row: {
           children_count: number
@@ -489,7 +547,9 @@ export type Database = {
           event_id: string
           full_name: string
           id: string
+          invitation_last_channel: string | null
           invitation_sent: boolean | null
+          invitation_sent_at: string | null
           number_of_guests: number
           phone: string | null
           relationship: string | null
@@ -504,7 +564,9 @@ export type Database = {
           event_id: string
           full_name: string
           id?: string
+          invitation_last_channel?: string | null
           invitation_sent?: boolean | null
+          invitation_sent_at?: string | null
           number_of_guests?: number
           phone?: string | null
           relationship?: string | null
@@ -519,7 +581,9 @@ export type Database = {
           event_id?: string
           full_name?: string
           id?: string
+          invitation_last_channel?: string | null
           invitation_sent?: boolean | null
+          invitation_sent_at?: string | null
           number_of_guests?: number
           phone?: string | null
           relationship?: string | null
