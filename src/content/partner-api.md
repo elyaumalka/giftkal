@@ -1,4 +1,4 @@
-# Giftkal – מסמך API לשותפים
+# בשמחות פלוס – מסמך API לשותפים
 
 **גרסה:** 1.1
 **עודכן:** יולי 2026
@@ -10,14 +10,14 @@
 
 ## 1. סקירה כללית
 
-ה-API של Giftkal לשותפים מאפשר למערכת שלכם:
+ה-API של בשמחות פלוס לשותפים מאפשר למערכת שלכם:
 
-1. ליצור משתמשי קצה (בעלי אירוע, בעלי אולם) בתוך Giftkal.
+1. ליצור משתמשי קצה (בעלי אירוע, בעלי אולם) בתוך בשמחות פלוס.
 2. ליצור ולנהל אירועים, מוזמנים, אישורי הגעה, תשלומים, אולמות, אולמות אירועים ומכשירי קיוסק בשמם.
-3. **להגיש בקשה לפתיחת חשבון סליקה לאירוע — כולל KYC** (סעיף 5). האישור ידני על ידי Giftkal.
+3. **להגיש בקשה לפתיחת חשבון סליקה לאירוע — כולל KYC** (סעיף 5). האישור ידני על ידי בשמחות פלוס.
 4. לקבל **התראות webhook בזמן אמת** כשמתבצעים תשלומים, כשחשבון הסליקה של אירוע מאושר וכשמסתיימות משיכות כספים.
 
-**שותף** הוא זהות מבודדת ב-Giftkal. כל מפתח API משויך למזהה השותף שלכם, ולכן:
+**שותף** הוא זהות מבודדת בשמחות פלוס. כל מפתח API משויך למזהה השותף שלכם, ולכן:
 
 - כל קריאת קריאה/רשימה מסוננת אוטומטית — **תוכלו לראות רק אירועים, משתמשים ונתונים שהמפתח שלכם יצר.**
 - כל קריאת יצירה מתויגת אוטומטית במזהה השותף שלכם.
@@ -178,7 +178,7 @@ CRUD סטנדרטי (ראו Swagger): `ListLeads` / `CreateLead` / `UpdateLead` 
 
 ## 5. הקמת חשבון סליקה (Payment Account Onboarding)
 
-בסוף התהליך הזה האירוע יכול לקבל תשלומי מתנות. **כל האינטגרציה עם ספק הסליקה מתבצעת בתוך Giftkal** — אתם רק שולחים את פרטי ה-KYC, ואנחנו פותחים את החשבון ומעדכנים אתכם כשהוא פעיל.
+בסוף התהליך הזה האירוע יכול לקבל תשלומי מתנות. **כל האינטגרציה עם ספק הסליקה מתבצעת בתוך בשמחות פלוס** — אתם רק שולחים את פרטי ה-KYC, ואנחנו פותחים את החשבון ומעדכנים אתכם כשהוא פעיל.
 
 **סדר קריאות חובה:**
 
@@ -187,12 +187,12 @@ CRUD סטנדרטי (ראו Swagger): `ListLeads` / `CreateLead` / `UpdateLead` 
 2. CreateEvent              →  יצירת האירוע (סעיף 4.4)
 3. UploadPaymentDocument ×2 →  ת"ז + אישור ניהול חשבון בנק
 4. SubmitPaymentAccount     →  שליחת פרטי ה-KYC. סטטוס → pending_review
-                                (הבקשה עולה ל-Giftkal לבדיקה ידנית)
-5. אישור על ידי צוות Giftkal   →  אנחנו פותחים את חשבון הסליקה
+                                (הבקשה עולה ל-בשמחות פלוס לבדיקה ידנית)
+5. אישור על ידי צוות בשמחות פלוס   →  אנחנו פותחים את חשבון הסליקה
 6. Webhook: seller-approve  →  החשבון פעיל. האירוע יכול לקבל תשלומים.
 ```
 
-> ⚠️ בין שלב 4 לשלב 6 עוברת בדיקת עמידה בדרישות (KYC) של Giftkal. הבדיקה ידנית ולא מיידית — צפו לעד 24 שעות עסקים. סטטוס הבקשה זמין בכל רגע דרך `GetPaymentAccountStatus`.
+> ⚠️ בין שלב 4 לשלב 6 עוברת בדיקת עמידה בדרישות (KYC) של בשמחות פלוס. הבדיקה ידנית ולא מיידית — צפו לעד 24 שעות עסקים. סטטוס הבקשה זמין בכל רגע דרך `GetPaymentAccountStatus`.
 
 ### 5.1 `UploadPaymentDocument`
 
@@ -218,7 +218,7 @@ CRUD סטנדרטי (ראו Swagger): `ListLeads` / `CreateLead` / `UpdateLead` 
 
 ### 5.2 `SubmitPaymentAccount`
 
-שולח את פרטי ה-KYC לבדיקה. הבקשה עולה **לתור אישורים ידני** אצל Giftkal.
+שולח את פרטי ה-KYC לבדיקה. הבקשה עולה **לתור אישורים ידני** אצל בשמחות פלוס.
 
 **שדות חובה — פרטים אישיים**
 
@@ -303,7 +303,7 @@ POST ?action=SubmitPaymentAccount
 {
   "responseStatus": "OK",
   "status": "pending_review",
-  "message": "Payment account submitted. A Giftkal administrator will review it...",
+  "message": "Payment account submitted. A בשמחות פלוס administrator will review it...",
   "documents_uploaded": { "social_id": true, "bank_approval": true }
 }
 ```
@@ -321,9 +321,9 @@ GET ?action=GetPaymentAccountStatus&event_id=a12b...
 | `status` | משמעות |
 |---|---|
 | `not_submitted` | עדיין לא נקראה `SubmitPaymentAccount`. |
-| `pending_review` | ממתין לאישור ידני של Giftkal. |
-| `rejected` | Giftkal דחתה את הבקשה. פנו לתמיכה לפרטים. |
-| `processing` | Giftkal אישרה, החשבון בהקמה מול ספק הסליקה. |
+| `pending_review` | ממתין לאישור ידני של בשמחות פלוס. |
+| `rejected` | בשמחות פלוס דחתה את הבקשה. פנו לתמיכה לפרטים. |
+| `processing` | בשמחות פלוס אישרה, החשבון בהקמה מול ספק הסליקה. |
 | `approved` | פעיל. האירוע יכול לקבל תשלומים. |
 
 **תשובה:**
@@ -340,19 +340,19 @@ GET ?action=GetPaymentAccountStatus&event_id=a12b...
 
 ### 5.4 סביבת בדיקות בלי חיוב אמיתי
 
-Giftkal יכולה להנפיק שותף עם דגל `sandbox` שמדלג על תהליך ה-KYC וקופון `GIFTKAL-TEST` שמדמה תשלום מלא. פנו לתמיכה.
+בשמחות פלוס יכולה להנפיק שותף עם דגל `sandbox` שמדלג על תהליך ה-KYC וקופון `GIFTKAL-TEST` שמדמה תשלום מלא. פנו לתמיכה.
 
 ---
 
 ## 6. Webhooks
 
-אם סיפקתם `webhook_url` בעת יצירת השותף, Giftkal תשלח POST לכתובת הזו כשמתרחשים אירועים ב**אירועים שלכם**.
+אם סיפקתם `webhook_url` בעת יצירת השותף, בשמחות פלוס תשלח POST לכתובת הזו כשמתרחשים אירועים ב**אירועים שלכם**.
 
 ### 6.1 סוגי אירועים
 
 | `event_type` | מתי נשלח |
 |---|---|
-| `payment-account-approved` | חשבון הסליקה של האירוע אושר על ידי Giftkal והופעל — האירוע יכול לקבל תשלומים. |
+| `payment-account-approved` | חשבון הסליקה של האירוע אושר על ידי בשמחות פלוס והופעל — האירוע יכול לקבל תשלומים. |
 | `sale-paid` | תשלום מתנה הצליח. |
 | `sale-failure` | תשלום מתנה נכשל. |
 | `refund` | מתנה זוכתה חזרה. |
@@ -388,7 +388,7 @@ X-Giftkal-Signature: <hex HMAC-SHA256>
 **Node.js:**
 ```js
 import crypto from "crypto";
-app.post("/webhooks/giftkal", express.raw({ type: "application/json" }), (req, res) => {
+app.post("/webhooks/בשמחות פלוס", express.raw({ type: "application/json" }), (req, res) => {
   const expected = crypto.createHmac("sha256", process.env.GIFTKAL_WEBHOOK_SECRET)
     .update(req.body).digest("hex");
   if (req.header("X-Giftkal-Signature") !== expected) return res.status(401).send("bad signature");
@@ -410,7 +410,7 @@ if (!hash_equals($expected, $_SERVER['HTTP_X_GIFTKAL_SIGNATURE'] ?? '')) {
 ### 6.4 ניסיונות חוזרים ויומן משלוחים
 
 - החזירו **HTTP 2xx** תוך 10 שניות. כל תשובה שאינה 2xx או timeout נרשמת ככשלון.
-- כרגע **אין ניסיונות חוזרים אוטומטיים**. Giftkal שומרת כל ניסיון (סטטוס + גוף התשובה) ומנהל המערכת יכול לשלוח מחדש משלוחים שנכשלו.
+- כרגע **אין ניסיונות חוזרים אוטומטיים**. בשמחות פלוס שומרת כל ניסיון (סטטוס + גוף התשובה) ומנהל המערכת יכול לשלוח מחדש משלוחים שנכשלו.
 - דאגו לביטול כפילויות לפי `transaction_id` — התייחסו ל-webhooks כ-at-least-once.
 
 ---
@@ -419,7 +419,7 @@ if (!hash_equals($expected, $_SERVER['HTTP_X_GIFTKAL_SIGNATURE'] ?? '')) {
 
 - **צד שרת בלבד** — מפתח ה-API אינו מוגן ב-CORS, אך לעולם אל תחשפו אותו לדפדפן.
 - **Idempotency** ב-`CreateEventOwner` — טפלו בשגיאת `email already registered` כאילו המשתמש קיים.
-- **סיסמאות** — שלחו סיסמה אקראית ארוכה ואל תשמרו אותה. המשתמש יאפס דרך Giftkal.
+- **סיסמאות** — שלחו סיסמה אקראית ארוכה ואל תשמרו אותה. המשתמש יאפס דרך בשמחות פלוס.
 - **קבצי KYC** — השתמשו ב-PDF < 5MB. שלחו רק Base64 של המידע (בלי `data:...;base64,`).
 - **תאריכים** — בכל ה-API בפורמט ISO 8601. **חריגים:** ב-`SubmitPaymentAccount` השדות `birthdate` ו-`social_id_date` בפורמט `DD/MM/YYYY`.
 - **טקסט בעברית** — UTF-8 בלבד.
@@ -428,7 +428,7 @@ if (!hash_equals($expected, $_SERVER['HTTP_X_GIFTKAL_SIGNATURE'] ?? '')) {
 
 ## 8. Checklist להעלאה לאוויר
 
-Giftkal תספק:
+בשמחות פלוס תספק:
 
 - [ ] שם השותף
 - [ ] ערך `x-api-key` (מוצג פעם אחת)
@@ -440,9 +440,9 @@ Giftkal תספק:
 - [ ] לבצע `CreateEventOwner` ולראות ב-`ListProfiles`.
 - [ ] לבצע `CreateEvent` ולראות ב-`ListEvents`.
 - [ ] לבצע `UploadPaymentDocument` × 2 + `SubmitPaymentAccount` ולראות `status = pending_review` ב-`GetPaymentAccountStatus`.
-- [ ] לקבל webhook `payment-account-approved` אחרי אישור ידני של Giftkal.
+- [ ] לקבל webhook `payment-account-approved` אחרי אישור ידני של בשמחות פלוס.
 - [ ] לקבל webhook `sale-paid` ולאמת חתימה.
 
 ---
 
-*© Giftkal · giftkal.com*
+*© בשמחות פלוס · giftkal.com*

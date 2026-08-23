@@ -116,8 +116,8 @@ export default function NedarimApiDocs() {
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">GiftKal API – מדריך לנדרים פלוס</h1>
-            <p className="text-sm text-muted-foreground mt-1">כל מה שצריך כדי לחבר את הטופס החיצוני למערכת GiftKal</p>
+            <h1 className="text-2xl font-bold">בשמחות פלוס API – מדריך לנדרים פלוס</h1>
+            <p className="text-sm text-muted-foreground mt-1">כל מה שצריך כדי לחבר את הטופס החיצוני למערכת בשמחות פלוס</p>
           </div>
           <Badge variant="outline" className="text-xs">v1.0</Badge>
         </div>
@@ -131,7 +131,7 @@ export default function NedarimApiDocs() {
           <div className="grid gap-2 text-sm">
             <div className="flex items-start gap-2">
               <span className="font-medium min-w-[120px]">API Key:</span>
-              <span className="text-muted-foreground">יסופק על ידי צוות GiftKal (נשלח בהדר <code className="bg-muted px-1 rounded text-xs">X-API-Key</code>)</span>
+              <span className="text-muted-foreground">יסופק על ידי צוות בשמחות פלוס (נשלח בהדר <code className="bg-muted px-1 rounded text-xs">X-API-Key</code>)</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-medium min-w-[120px]">כתובת בסיס:</span>
@@ -238,7 +238,7 @@ X-API-Key: YOUR_API_KEY
         {/* ═══ SECTION 1: CREATE CUSTOMER ═══ */}
         <Section id="create-customer" icon={UserPlus} title="שלב 1: הקמת לקוח (בעל אירוע)" defaultOpen>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            יצירת בעל אירוע חדש במערכת GiftKal. הפעולה יוצרת משתמש + פרופיל + אירוע בבת אחת.
+            יצירת בעל אירוע חדש במערכת בשמחות פלוס. הפעולה יוצרת משתמש + פרופיל + אירוע בבת אחת.
             <br />
             אם הלקוח כבר קיים במערכת – אפשר ליצור רק אירוע חדש (ראה <strong>CreateEvent</strong> למטה).
           </p>
@@ -697,7 +697,7 @@ X-API-Key: YOUR_API_KEY
             לשאלות ותמיכה טכנית: <a href="tel:023131700" className="text-primary hover:underline">02-3131700</a> | <a href="mailto:g023131700@gmail.com" className="text-primary hover:underline">g023131700@gmail.com</a>
           </p>
           <p className="text-xs text-muted-foreground">
-            © GiftKal {new Date().getFullYear()} – כל הזכויות שמורות
+            © בשמחות פלוס {new Date().getFullYear()} – כל הזכויות שמורות
           </p>
         </div>
       </div>

@@ -1,9 +1,9 @@
 /**
- * Gift fee model — central calculator for the gross-up pricing used by giftkal.
+ * Gift fee model — central calculator for the gross-up pricing used by Besimchot Plus.
  *
  * Business model (confirmed with Elyau + PayMe):
- *   - PayMe charges giftkal's master account ~0.9% per transaction (negotiated rate).
- *   - giftkal adds a platform margin of ~1.1% per transaction.
+ *   - PayMe charges Besimchot Plus's master account ~0.9% per transaction (negotiated rate).
+ *   - Besimchot Plus adds a platform margin of ~1.1% per transaction.
  *   - For installment payments, PayMe levies an additional (prime + 4.4) / 12 %
  *     PER INSTALLMENT (it's a monthly-equivalent rate).
  *   - All three fees are passed to the GUEST (gross-up). The couple receives the
@@ -26,9 +26,9 @@
 export type FeeMode = "gift" | "total";
 
 export interface FeeConfig {
-  /** PayMe processing fee, % (charged to giftkal master, passed through). */
+  /** PayMe processing fee, % (charged to Besimchot Plus master, passed through). */
   paymePct: number;
-  /** giftkal's platform margin, %. */
+  /** Besimchot Plus's platform margin, %. */
   platformPct: number;
   /** Bank of Israel prime rate, %. Used to compute installment surcharge. */
   primeRate: number;
@@ -36,7 +36,7 @@ export interface FeeConfig {
   installmentSurchargeBase: number;
   /** Partner's cut, %. Only applied when the event was created by a partner. */
   partnerCommissionPct?: number;
-  /** Giftkal's cut of the partner-referral markup, %. */
+  /** Besimchot Plus's cut of the partner-referral markup, %. */
   platformPartnerPct?: number;
 }
 

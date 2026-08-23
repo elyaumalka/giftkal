@@ -314,7 +314,7 @@ export default function VenueLanding() {
       {/* ═══════ FOOTER ═══════ */}
       <div className="py-8 text-center">
         <p className="text-gray-400 text-xs">
-          Powered by <span className="text-[#C4A35A] font-semibold">Giftkal</span>
+          Powered by <span className="text-[#C4A35A] font-semibold">בשמחות פלוס</span>
         </p>
       </div>
     </div>

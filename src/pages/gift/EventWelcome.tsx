@@ -217,7 +217,7 @@ function VenueLandingPopup({ venueId, onClose }: { venueId: string; onClose: () 
                 </div>
               </div>
               <div className="py-6 text-center">
-                <p className="text-gray-400 text-xs">Powered by <span className="text-[#C4A35A] font-semibold">Giftkal</span></p>
+                <p className="text-gray-400 text-xs">Powered by <span className="text-[#C4A35A] font-semibold">בשמחות פלוס</span></p>
               </div>
             </>
           )}
@@ -383,7 +383,7 @@ export default function EventWelcome() {
             <img src={venue.logo_url} alt={venue?.name || ""} className="relative w-20 h-20 rounded-full border-2 border-[#C4A35A]/50 shadow-2xl object-cover bg-white/10 backdrop-blur-sm group-hover:scale-105 transition-transform" />
           ) : (
             <div className="relative w-20 h-20 rounded-full border-2 border-[#C4A35A]/50 shadow-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-              <img src={logoAsset.url} alt="Giftkal" className="h-8 w-auto brightness-0 invert" />
+              <img src={logoAsset.url} alt="בשמחות פלוס" className="h-8 w-auto brightness-0 invert" />
             </div>
           )}
         </div>
@@ -433,7 +433,7 @@ export default function EventWelcome() {
 
         <div className="mt-4 flex items-center justify-center gap-2">
           <span className="text-white/25 text-[10px]">Powered by</span>
-          <img src={logoAsset.url} alt="Giftkal" className="h-3 w-auto opacity-20" />
+          <img src={logoAsset.url} alt="בשמחות פלוס" className="h-3 w-auto opacity-20" />
         </div>
       </div>
 

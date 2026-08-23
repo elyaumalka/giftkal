@@ -279,8 +279,8 @@ const Signup = () => {
         Tashlumim: "1",
         Day: "",
         Currency: "1",
-        Groupe: "GiftKal",
-        Comment: `הרשמה GiftKal - ${planNames} - ₪${totalPrice}`,
+        Groupe: "בשמחות פלוס",
+        Comment: `הרשמה בשמחות פלוס - ${planNames} - ₪${totalPrice}`,
         Param1: "",
         Param2: "",
         CallBack: "",
@@ -393,7 +393,7 @@ const Signup = () => {
         {/* Logo */}
         <div className="text-center mb-6">
           <Link to="/">
-            <img src={logoAsset.url} alt="Giftkal" className="h-12 mx-auto mb-4" />
+            <img src={logoAsset.url} alt="בשמחות פלוס" className="h-12 mx-auto mb-4" />
           </Link>
         </div>
 
@@ -633,7 +633,7 @@ const Signup = () => {
               <div className="flex items-start gap-3 bg-white/5 rounded-xl p-4 border border-white/10">
                 <Checkbox id="terms" checked={data.agreeTerms} onCheckedChange={(checked) => setData({...data, agreeTerms: !!checked})} className="border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary mt-0.5" />
                 <Label htmlFor="terms" className="text-white/60 text-sm leading-relaxed cursor-pointer">
-                  אני מאשר/ת את <span className="text-primary underline">תנאי השירות</span> ו<span className="text-primary underline">מדיניות הפרטיות</span> של Giftkal
+                  אני מאשר/ת את <span className="text-primary underline">תנאי השירות</span> ו<span className="text-primary underline">מדיניות הפרטיות</span> של בשמחות פלוס
                 </Label>
               </div>
 

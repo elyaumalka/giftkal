@@ -940,7 +940,7 @@ export default function Settings() {
             </div>
             <div>
               <Label className="text-muted-foreground text-sm mb-2 block">Webhook URL (אופציונלי)</Label>
-              <Input value={newPartnerWebhookUrl} onChange={(e) => setNewPartnerWebhookUrl(e.target.value)} placeholder="https://partner.com/webhooks/giftkal" className="ltr text-left" dir="ltr" />
+              <Input value={newPartnerWebhookUrl} onChange={(e) => setNewPartnerWebhookUrl(e.target.value)} placeholder="https://partner.com/webhooks/Besimchot Plus" className="ltr text-left" dir="ltr" />
               <p className="text-xs text-muted-foreground mt-1">
                 URL שיקבל הודעות. נחתום על ה-payload עם HMAC-SHA256 בכותרת <code>X-Giftkal-Signature</code>.
               </p>

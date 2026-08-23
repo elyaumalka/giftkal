@@ -61,7 +61,7 @@ const EventOwnersPage = () => {
                 הרשמה לחבילה המלאה
               </Button>
             </Link>
-            <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע פרטים על GiftKal לאירוע שלי" target="_blank" rel="noopener noreferrer">
+            <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע פרטים על בשמחות פלוס לאירוע שלי" target="_blank" rel="noopener noreferrer">
               <Button size="lg" className="text-lg px-10 py-6 bg-transparent border-2 border-white/30 text-white hover:bg-white/10">
                 <MessageCircle className="w-5 h-5 ml-2" />
                 דברו עם נציג
@@ -143,12 +143,12 @@ const EventOwnersPage = () => {
                 <h3 className="font-bold text-secondary text-lg">יש עמדה באולם שלכם?</h3>
               </div>
               <p className="text-muted-foreground text-sm mb-4">
-                אם באולם שלכם כבר קיימת עמדת GiftKal — אנחנו מפעילים אותה עבורכם ללא עלות נוספת!
+                אם באולם שלכם כבר קיימת עמדת בשמחות פלוס — אנחנו מפעילים אותה עבורכם ללא עלות נוספת!
               </p>
               <p className="text-sm text-foreground/70 mb-4">
                 👈 השאירו את פרטי בעל האולם ואנחנו נדאג לכל השאר
               </p>
-              <a href="https://wa.me/97223131700?text=היי, יש עמדת GiftKal באולם שלנו ואשמח להפעיל אותה לאירוע" target="_blank" rel="noopener noreferrer">
+              <a href="https://wa.me/97223131700?text=היי, יש עמדת בשמחות פלוס באולם שלנו ואשמח להפעיל אותה לאירוע" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" className="w-full">
                   <MessageCircle className="w-4 h-4 ml-2" />
                   שלחו פרטי בעל האולם
@@ -166,7 +166,7 @@ const EventOwnersPage = () => {
                 <h3 className="font-bold text-secondary text-lg">אין עמדה באולם?</h3>
               </div>
               <p className="text-muted-foreground text-sm mb-4">
-                ניתן להשכיר עמדת מתנות ממוקדי GiftKal הפרוסים ברחבי הארץ
+                ניתן להשכיר עמדת מתנות ממוקדי בשמחות פלוס הפרוסים ברחבי הארץ
               </p>
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
                 <p className="text-2xl font-black text-primary text-center">₪100</p>
@@ -239,7 +239,7 @@ const EventOwnersPage = () => {
                 הרשמה לחבילה המלאה
               </Button>
             </Link>
-            <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע פרטים על GiftKal לאירוע שלי" target="_blank" rel="noopener noreferrer">
+            <a href="https://wa.me/97223131700?text=היי, אשמח לשמוע פרטים על בשמחות פלוס לאירוע שלי" target="_blank" rel="noopener noreferrer">
               <Button size="lg" className="text-lg px-12 py-7 bg-white/10 border-2 border-white/30 text-white hover:bg-white/20">
                 <MessageCircle className="w-5 h-5 ml-2" />
                 דברו עם נציג

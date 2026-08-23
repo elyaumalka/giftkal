@@ -10,7 +10,7 @@ const AccessPage = () => {
     { icon: PartyPopper, label: "בעלי אירועים", desc: "יש לכם אירוע? נכנסים כאן", href: "/login/event" },
     { icon: Building2, label: "בעלי אולמות", desc: "מנהלים אולם? כאן הכניסה", href: "/login/venue" },
     { icon: Gift, label: "רוצים להעביר מתנה?", desc: "חפשו את האירוע ושלחו מתנה", href: "/gift-search" },
-    { icon: UserPlus, label: "רוצים להצטרף?", desc: "פתחו אירוע חדש ב-Giftkal", href: "/signup" },
+    { icon: UserPlus, label: "רוצים להצטרף?", desc: "פתחו אירוע חדש בשמחות פלוס", href: "/signup" },
   ];
 
   return (
@@ -22,14 +22,14 @@ const AccessPage = () => {
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-14">
           <Link to="/" className="inline-block">
-            <img src={logoAsset.url} alt="Giftkal" className="h-14 mx-auto mb-8" />
+            <img src={logoAsset.url} alt="בשמחות פלוס" className="h-14 mx-auto mb-8" />
           </Link>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/70 backdrop-blur-sm border mb-6" style={{ borderColor: `${GOLD}33` }}>
             <Sparkles className="w-4 h-4" style={{ color: GOLD }} />
             <span className="text-sm font-medium" style={{ color: NAVY }}>ברוכים הבאים</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{ color: NAVY }}>
-            ברוכים הבאים ל-<span style={{ color: GOLD }}>Giftkal</span>
+            ברוכים הבאים ל-<span style={{ color: GOLD }}>בשמחות פלוס</span>
           </h1>
           <p className="text-lg" style={{ color: `${NAVY}99` }}>בחרו את הכניסה המתאימה לכם</p>
         </div>

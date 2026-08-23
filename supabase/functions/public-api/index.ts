@@ -880,8 +880,8 @@ async function handleSettings(action: string, supabase: any, url: URL, body: any
 // ===== Payment Account Onboarding (partner-scoped, admin-gated) =====
 // The partner submits KYC data + documents through the API. It lands as
 // `payment_setup_status = 'pending_approval'` on the event, exactly like a
-// direct event-owner submission. A Giftkal admin reviews and approves it in
-// the admin UI — only then does Giftkal open the merchant account with the
+// direct event-owner submission. A בשמחות פלוס admin reviews and approves it in
+// the admin UI — only then does בשמחות פלוס open the merchant account with the
 // underlying payment processor. The partner never sees the processor name.
 //
 // `payment_setup_data` is a JSONB blob that must match the shape written by
@@ -917,7 +917,7 @@ async function handlePayments(action: string, supabase: any, url: URL, body: any
         return errorResponse('Payment account already active for this event', 400);
       }
       if (event.payment_setup_status === 'pending_approval') {
-        return errorResponse('Payment account already submitted and awaiting Giftkal review', 400);
+        return errorResponse('Payment account already submitted and awaiting בשמחות פלוס review', 400);
       }
 
       const required = [
@@ -981,7 +981,7 @@ async function handlePayments(action: string, supabase: any, url: URL, body: any
 
       return okResponse({
         status: 'pending_review',
-        message: 'Payment account submitted. A Giftkal administrator will review it. You will receive a webhook when the account is approved.',
+        message: 'Payment account submitted. A בשמחות פלוס administrator will review it. You will receive a webhook when the account is approved.',
         documents_uploaded: {
           social_id: Boolean(prior.socialIdFile),
           bank_approval: Boolean(prior.bankApprovalFile),

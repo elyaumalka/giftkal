@@ -124,7 +124,7 @@ const Testimonials = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(149,116,47,0.15),transparent_60%)]" />
         <div className="container mx-auto px-4 text-center relative z-10">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-            אלפי בעלי אירועים כבר עברו ל-<span className="text-primary">GiftKal</span>
+            אלפי בעלי אירועים כבר עברו ל-<span className="text-primary">בשמחות פלוס</span>
           </h1>
           <p className="text-xl text-white/60 max-w-2xl mx-auto">
             והם לא חוזרים אחורה

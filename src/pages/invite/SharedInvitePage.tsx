@@ -206,7 +206,7 @@ export default function SharedInvitePage() {
   if (!event) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8F7F4] gap-4" dir="rtl">
-        <img src={logoAsset.url} alt="Giftkal" className="h-12" />
+        <img src={logoAsset.url} alt="בשמחות פלוס" className="h-12" />
         <h1 className="text-2xl font-bold text-[#051839]">הקישור אינו תקף</h1>
         <p className="text-muted-foreground">ייתכן שהקישור פג תוקף או שאינו נכון.</p>
       </div>
@@ -218,7 +218,7 @@ export default function SharedInvitePage() {
       {/* Header */}
       <header className="bg-[#051839] text-white py-6 px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <img src={logoAsset.url} alt="Giftkal" className="h-8 mx-auto mb-4 brightness-0 invert" />
+          <img src={logoAsset.url} alt="בשמחות פלוס" className="h-8 mx-auto mb-4 brightness-0 invert" />
           <h1 className="text-2xl font-bold mb-1">{getPageTitle()}</h1>
           <p className="text-[#C4A35A] font-medium text-lg">{getSideLabel()}</p>
           {event.event_date && (
@@ -343,7 +343,7 @@ export default function SharedInvitePage() {
 
         {/* Info footer */}
         <div className="text-center text-gray-400 text-xs pt-4">
-          <p>מופעל על ידי Giftkal — מערכת מתנות דיגיטלית</p>
+          <p>מופעל על ידי בשמחות פלוס — מערכת מתנות דיגיטלית</p>
         </div>
       </div>
     </div>

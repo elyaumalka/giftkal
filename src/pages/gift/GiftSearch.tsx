@@ -79,7 +79,7 @@ const GiftSearch = () => {
         {/* Header */}
         <div className="text-center mb-10">
           <Link to="/">
-            <img src={logoAsset.url} alt="Giftkal" className="h-12 mx-auto mb-6" />
+            <img src={logoAsset.url} alt="בשמחות פלוס" className="h-12 mx-auto mb-6" />
           </Link>
           <div className="w-16 h-16 rounded-2xl bg-gradient-gold flex items-center justify-center mx-auto mb-4">
             <Gift className="w-8 h-8 text-white" />

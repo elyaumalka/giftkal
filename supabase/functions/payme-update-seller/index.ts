@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
       seller_bank_code: Number(business.seller_bank_code || business.seller_bank_account_code || 0),
       seller_bank_branch: business.seller_bank_branch || business.seller_bank_account_branch || '',
       seller_bank_account_number: business.seller_bank_account_number || '',
-      seller_description: business.seller_description || 'אירוע - GiftKal',
+      seller_description: business.seller_description || 'אירוע - בשמחות פלוס',
       seller_site_url: business.seller_site_url || 'https://giftkal.com',
       seller_person_business_type: business.seller_person_business_type || business.seller_business_type || 10010,
       seller_inc: business.seller_inc ?? 0,

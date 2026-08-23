@@ -21,7 +21,7 @@ export default function PartnerApiDocs() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "giftkal-partner-api.md";
+    a.download = "Besimchot Plus-partner-api.md";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -32,7 +32,7 @@ export default function PartnerApiDocs() {
       <header className="sticky top-0 z-40 bg-[#051839]/95 backdrop-blur text-white border-b border-white/10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-3">
-            <img src={logoAsset.url} alt="Giftkal" className="h-9 w-auto" />
+            <img src={logoAsset.url} alt="בשמחות פלוס" className="h-9 w-auto" />
             <span className="text-sm text-white/70 hidden sm:inline">Partner API Documentation</span>
           </Link>
           <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ export default function PartnerApiDocs() {
         </article>
 
         <footer className="text-center text-sm text-slate-500 mt-8">
-          © Giftkal · <a href="mailto:support@giftkal.com" className="text-[#95742F] hover:underline">support@giftkal.com</a>
+          © בשמחות פלוס · <a href="mailto:support@giftkal.com" className="text-[#95742F] hover:underline">support@giftkal.com</a>
         </footer>
       </main>
 

@@ -34,7 +34,7 @@ const MarketingNavbar = () => {
           to="/"
           className="bg-white rounded-[30px] h-[56px] md:h-[69px] w-[110px] md:w-[129px] flex items-center justify-center shrink-0 shadow-sm"
         >
-          <img src={logoAsset.url} alt="Giftkal" className="max-h-[48px] md:max-h-[58px] w-auto object-contain" />
+          <img src={logoAsset.url} alt="בשמחות פלוס" className="max-h-[48px] md:max-h-[58px] w-auto object-contain" />
         </Link>
 
         {/* Center nav (desktop) */}
@@ -148,7 +148,7 @@ const MarketingFooter = () => {
           <div className="order-1 lg:order-1">
             <div className="bg-white text-[#051839] rounded-[24px] p-6 h-full flex flex-col">
               <Link to="/" className="mb-6 flex justify-center">
-                <img src={logoAsset.url} alt="Giftkal" className="h-16 md:h-20 w-auto" />
+                <img src={logoAsset.url} alt="בשמחות פלוס" className="h-16 md:h-20 w-auto" />
               </Link>
               <div className="space-y-4">
                 <a href="tel:02-3131700" className="flex items-center justify-between gap-3 hover:text-[#AE842D] transition-colors">
@@ -242,7 +242,7 @@ const MarketingFooter = () => {
         </div>
 
         <div className="border-t border-white/10 mt-10 pt-6 text-center text-white/50 text-sm">
-          © {new Date().getFullYear()} Giftkal. כל הזכויות שמורות.
+          © {new Date().getFullYear()} בשמחות פלוס. כל הזכויות שמורות.
         </div>
       </div>
     </footer>
