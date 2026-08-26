@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, AlertCircle, CreditCard, Building2, User, MapPin, Tag, Clock, XCircle, AlertTriangle, RefreshCw, Send, Upload, FileCheck } from "lucide-react";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
+import { SITE_URL } from "@/lib/site";
 
 // Israeli banks
 const BANKS = [
@@ -106,7 +107,7 @@ export default function PaymeSetup() {
     incCode: '',
     merchantName: '',
     merchantNameEn: '',
-    siteUrl: 'https://giftkal.com',
+    siteUrl: SITE_URL,
     city: '',
     street: '',
     streetNumber: '',
@@ -666,7 +667,7 @@ export default function PaymeSetup() {
 
                 <div>
                   <Label htmlFor="siteUrl">כתובת אתר *</Label>
-                  <Input id="siteUrl" type="url" value={formData.siteUrl || ''} onChange={(e) => handleChange('siteUrl', e.target.value)} placeholder="https://giftkal.com" className={errors.siteUrl ? 'border-red-500' : ''} dir="ltr" />
+                  <Input id="siteUrl" type="url" value={formData.siteUrl || ''} onChange={(e) => handleChange('siteUrl', e.target.value)} placeholder="https://beshmachot-plus.co.il" className={errors.siteUrl ? 'border-red-500' : ''} dir="ltr" />
                   {errors.siteUrl && <p className="text-red-500 text-sm mt-1">{errors.siteUrl}</p>}
                   <p className="text-xs text-muted-foreground mt-1">כתובת האתר שבו תתבצע גביית המתנות</p>
                 </div>
