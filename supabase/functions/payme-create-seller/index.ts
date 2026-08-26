@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { dispatchPartnerWebhooks } from '../_shared/partner-webhooks.ts'
+import { SITE_URL } from '../_shared/site.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -284,7 +285,7 @@ Deno.serve(async (req) => {
       seller_dba_en: /^[a-zA-Z0-9\s\-_]+$/.test((body.merchantNameEn || '').trim())
         ? body.merchantNameEn.trim()
         : transliterateHebrew(body.merchantName.trim()) || 'Besimchot Plus Event',
-      seller_site_url: body.siteUrl || 'https://giftkal.com',
+      seller_site_url: body.siteUrl || SITE_URL,
       seller_description: body.description || `אירוע - ${body.merchantName}`,
       seller_address_city: body.city.trim(),
       seller_address_street: body.street.trim(),

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { SITE_URL } from '../_shared/site.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -107,7 +108,7 @@ Deno.serve(async (req) => {
         if (hall) hall_name = hall.name;
       }
 
-      const projectUrl = supabaseUrl.includes('xadihaigjkbvphzphxxk') ? 'https://giftkal.com' : supabaseUrl;
+      const projectUrl = supabaseUrl.includes('xadihaigjkbvphzphxxk') ? SITE_URL : supabaseUrl;
 
       return new Response(
         JSON.stringify({

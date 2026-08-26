@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { SITE_URL } from '../_shared/site.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -158,7 +159,7 @@ Deno.serve(async (req) => {
       seller_bank_branch: business.seller_bank_branch || business.seller_bank_account_branch || '',
       seller_bank_account_number: business.seller_bank_account_number || '',
       seller_description: business.seller_description || 'אירוע - בשמחות פלוס',
-      seller_site_url: business.seller_site_url || 'https://giftkal.com',
+      seller_site_url: business.seller_site_url || SITE_URL,
       seller_person_business_type: business.seller_person_business_type || business.seller_business_type || 10010,
       seller_inc: business.seller_inc ?? 0,
       seller_merchant_name: business.seller_merchant_name || '',

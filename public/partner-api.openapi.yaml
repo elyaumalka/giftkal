@@ -10,7 +10,7 @@ info:
     All endpoints share a single URL. Select the action via `?action=<Name>`.
   contact:
     name: בשמחות פלוס Support
-    email: support@giftkal.com
+    email: support@beshmachot-plus.co.il
 
 servers:
   - url: https://xadihaigjkbvphzphxxk.supabase.co/functions/v1/public-api

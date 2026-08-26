@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, AlertCircle, CheckCircle, Copy, Gift, ExternalLink, Send, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { publicUrl } from "@/lib/site";
 
 export default function EventSettings() {
   const navigate = useNavigate();
@@ -114,7 +115,7 @@ export default function EventSettings() {
   };
 
   const giftPageUrl = event?.id 
-    ? `https://giftkal.com/gift/${event.id}` 
+    ? publicUrl(`/gift/${event.id}`)
     : null;
 
   const copyToClipboard = () => {

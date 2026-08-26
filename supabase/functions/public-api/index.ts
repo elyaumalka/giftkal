@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { SITE_URL } from '../_shared/site.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -669,7 +670,7 @@ async function handleDevices(action: string, supabase: any, url: URL, body: any,
 
       const activeEvent = (events && events.length > 0) ? events[0] : null;
       const projectUrl = Deno.env.get('SUPABASE_URL') || '';
-      const baseUrl = projectUrl.includes('xadihaigjkbvphzphxxk') ? 'https://giftkal.com' : '';
+      const baseUrl = projectUrl.includes('xadihaigjkbvphzphxxk') ? SITE_URL : '';
 
       return okResponse({
         device,
@@ -958,7 +959,7 @@ async function handlePayments(action: string, supabase: any, url: URL, body: any
         incCode: body.inc_code || '',
         merchantName: String(body.merchant_name).trim(),
         merchantNameEn: body.merchant_name_en || String(body.merchant_name).trim(),
-        siteUrl: body.site_url || 'https://giftkal.com',
+        siteUrl: body.site_url || SITE_URL,
         city: String(body.city).trim(),
         street: String(body.street).trim(),
         streetNumber: String(body.street_number).trim(),

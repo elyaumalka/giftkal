@@ -3,6 +3,7 @@
 // Auth: validates EventPassword against NEDARIM_SIGNUP_PASSWORD secret, OR X-API-Key header
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { SITE_URL } from '../_shared/site.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -245,7 +246,7 @@ Deno.serve(async (req) => {
     }
 
     const projectUrl = Deno.env.get('SUPABASE_URL') || '';
-    const baseUrl = projectUrl.includes('xadihaigjkbvphzphxxk') ? 'https://giftkal.com' : projectUrl;
+    const baseUrl = projectUrl.includes('xadihaigjkbvphzphxxk') ? SITE_URL : projectUrl;
 
     return new Response(JSON.stringify({
       status: 'success',

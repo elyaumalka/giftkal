@@ -84,7 +84,7 @@ serve(async (req) => {
     if (role === "admin") redirectPath = "/admin";
 
     // Use a different domain for impersonation to avoid session conflicts
-    // Admin on giftkal.com → impersonate on giftkal.lovable.app (and vice versa)
+    // Admin on beshmachot-plus.co.il → impersonate on the lovable.app surface
     const siteUrl = "https://giftkal.lovable.app";
 
     // Generate magic link

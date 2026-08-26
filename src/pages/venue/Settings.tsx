@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, User, Globe, Copy, ExternalLink, Loader2, Trash2, X } from "lucide-react";
+import { publicUrl } from "@/lib/site";
 
 export default function VenueSettings() {
   const [activeTab, setActiveTab] = useState<"user" | "landing">("user");
@@ -394,7 +395,7 @@ export default function VenueSettings() {
     },
   });
 
-  const landingPageUrl = venue?.id ? `https://giftkal.com/landing/${venue.id}` : "";
+  const landingPageUrl = venue?.id ? publicUrl(`/landing/${venue.id}`) : "";
 
   const copyLink = () => {
     navigator.clipboard.writeText(landingPageUrl);

@@ -220,7 +220,7 @@ export default function EmbedGift() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-4">
-          🔒 תשלום מאובטח · giftkal.com
+          🔒 תשלום מאובטח · beshmachot-plus.co.il
         </p>
       </div>
     </div>

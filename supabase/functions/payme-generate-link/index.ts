@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { SITE_URL } from '../_shared/site.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
     const requestOrigin = req.headers.get('origin') || req.headers.get('referer')?.replace(/\/[^/]*$/, '');
     const origin = requestOrigin && /^https:\/\//.test(requestOrigin)
       ? requestOrigin
-      : 'https://giftkal.com';
+      : SITE_URL;
     const successUrl = `${origin}/gift/${eventId}/send?payment_status=success&transaction_id=${transaction.id}`;
     const failureUrl = `${origin}/gift/${eventId}/send?payment_status=failed&transaction_id=${transaction.id}`;
 
