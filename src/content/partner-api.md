@@ -4,7 +4,7 @@
 **עודכן:** יולי 2026
 **כתובת בסיס:** `https://xadihaigjkbvphzphxxk.supabase.co/functions/v1/public-api`
 **Swagger אינטראקטיבי:** [/docs/partner-api-explorer](/docs/partner-api-explorer)
-**תמיכה:** support@giftkal.com
+**תמיכה:** support@beshmachot-plus.co.il
 
 ---
 
@@ -445,4 +445,4 @@ if (!hash_equals($expected, $_SERVER['HTTP_X_GIFTKAL_SIGNATURE'] ?? '')) {
 
 ---
 
-*© בשמחות פלוס · giftkal.com*
+*© בשמחות פלוס · beshmachot-plus.co.il*

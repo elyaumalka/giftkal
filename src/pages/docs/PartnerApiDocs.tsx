@@ -77,7 +77,7 @@ export default function PartnerApiDocs() {
         </article>
 
         <footer className="text-center text-sm text-slate-500 mt-8">
-          © בשמחות פלוס · <a href="mailto:support@giftkal.com" className="text-[#95742F] hover:underline">support@giftkal.com</a>
+          © בשמחות פלוס · <a href="mailto:support@beshmachot-plus.co.il" className="text-[#95742F] hover:underline">support@beshmachot-plus.co.il</a>
         </footer>
       </main>
 

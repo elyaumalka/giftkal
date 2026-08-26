@@ -223,8 +223,8 @@ X-API-Key: YOUR_API_KEY
   "user": { "id": "...", "email": "david@example.com", "full_name": "דוד כהן" },
   "event": {
     "id": "EVENT_ID",
-    "gift_link": "https://giftkal.com/gift/EVENT_ID",
-    "login_url": "https://giftkal.com/login/event"
+    "gift_link": "https://beshmachot-plus.co.il/gift/EVENT_ID",
+    "login_url": "https://beshmachot-plus.co.il/login/event"
   },
   "credentials": { "email": "david@example.com", "password": "AUTO_GENERATED" },
   "nedarim_customer_id": "NDR-9876"
@@ -680,12 +680,12 @@ X-API-Key: YOUR_API_KEY
   "device": { "id": "...", "name": "קיוסק כניסה", "hall_id": "..." },
   "hall": {
     "id": "uuid", "name": "אולם הזהב",
-    "kiosk_url": "https://giftkal.com/kiosk/HALL_ID"
+    "kiosk_url": "https://beshmachot-plus.co.il/kiosk/HALL_ID"
   },
   "active_event": {
     "id": "EVENT_ID", "event_type": "חתונה",
     "groom_name": "דוד", "bride_name": "רחל",
-    "gift_url": "https://giftkal.com/gift/EVENT_ID"
+    "gift_url": "https://beshmachot-plus.co.il/gift/EVENT_ID"
   },
   "has_active_event": true
 }`} />
