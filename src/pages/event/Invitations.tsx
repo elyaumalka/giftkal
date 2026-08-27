@@ -6,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Loader2, Trash2, Link2, Copy, UserPlus, Send, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Loader2, Trash2, Link2, Copy, UserPlus, Send, Mail, MessageSquare } from "lucide-react";
 import { useExcelHandler } from "@/components/invitations/useExcelHandler";
 import { useAudioHandler } from "@/components/invitations/useAudioHandler";
 import { useInvitationSends } from "@/components/invitations/useInvitationSends";
+import InvitationSendPanel from "@/components/invitations/InvitationSendPanel";
 
 type Step = 1 | 2 | 3;
 type EventType = "חתונה" | "אירוסין" | "בר מצווה" | "בת מצווה" | "ברית" | "אחר";
