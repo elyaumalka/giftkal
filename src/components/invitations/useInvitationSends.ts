@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type SendChannel = "email" | "whatsapp";
+export type SendChannel = "email" | "whatsapp" | "sms";
 
 export type InvitationSend = {
   id: string;
