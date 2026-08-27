@@ -1,0 +1,2 @@
+ALTER TABLE public.guest_invitation_sends DROP CONSTRAINT IF EXISTS guest_invitation_sends_channel_check;
+ALTER TABLE public.guest_invitation_sends ADD CONSTRAINT guest_invitation_sends_channel_check CHECK (channel = ANY (ARRAY['email'::text, 'whatsapp'::text, 'sms'::text]));
