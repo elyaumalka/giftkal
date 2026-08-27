@@ -560,6 +560,19 @@ export default function EventInvitations() {
             </div>
           </div>
 
+          {/* Unified send panel */}
+          {guests && guests.length > 0 && (
+            <InvitationSendPanel
+              eventId={event?.id}
+              guests={guests as any}
+              buildMessage={(g) => getRsvpMessage(g)}
+              lastSendByGuest={lastSendByGuest as any}
+              logSend={logSend}
+              refetchSends={refetchSends}
+              emailEnabled={false}
+            />
+          )}
+
           {/* Guests list */}
           {guests && guests.length > 0 && (
             <div className="bg-card border border-border rounded-xl p-4 space-y-3" dir="rtl">
@@ -568,11 +581,15 @@ export default function EventInvitations() {
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Send className="w-3 h-3 text-green-600" />
-                    נשלחו בוואטסאפ: {countByChannel("whatsapp")}
+                    וואטסאפ: {countByChannel("whatsapp")}
                   </span>
                   <span className="flex items-center gap-1">
                     <Mail className="w-3 h-3 text-primary" />
-                    נשלחו במייל: {countByChannel("email")}
+                    מייל: {countByChannel("email")}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MessageSquare className="w-3 h-3 text-secondary" />
+                    SMS: {countByChannel("sms")}
                   </span>
                 </div>
               </div>
