@@ -61,7 +61,11 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => null)
     const eventId: unknown = body?.eventId
     const guestIds: unknown = body?.guestIds
-    const contentSid: unknown = body?.contentSid
+    // Approved WhatsApp template (invitation_rsvp_he). Can be overridden per request.
+    const DEFAULT_CONTENT_SID = Deno.env.get('TWILIO_WHATSAPP_CONTENT_SID') || 'HXd968b435201244b338299d4498946ff6'
+    const contentSid: unknown = typeof body?.contentSid === 'string' && body.contentSid
+      ? body.contentSid
+      : DEFAULT_CONTENT_SID
     if (typeof eventId !== 'string' || !Array.isArray(guestIds) || guestIds.length === 0) {
       return json({ error: 'נתונים חסרים' }, 400)
     }
