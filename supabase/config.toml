@@ -1,42 +1,31 @@
 project_id = "xadihaigjkbvphzphxxk"
 
-[functions.generate-invitations]
-verify_jwt = false
-
-[functions.public-api]
-verify_jwt = false
-
-[functions.get-payme-key]
-verify_jwt = false
-
-[functions.payme-charge-token]
-verify_jwt = false
-
-[functions.payme-webhook]
-verify_jwt = false
-
-[functions.payme-generate-sale]
-verify_jwt = false
-
-[functions.payme-generate-link]
-verify_jwt = false
-
-[functions.payme-create-seller]
-verify_jwt = false
-
-[functions.get-nedarim-config]
-verify_jwt = false
-
-[functions.nedarim-gift]
-verify_jwt = false
-
-[functions.nedarim-event-signup]
-verify_jwt = false
-
-[functions.payme-generate-transfer]
-verify_jwt = false
-
-[functions.payme-withdraw-balance]
-verify_jwt = false
-
-
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.generate-invitations]
+    verify_jwt = false
+  [functions.get-nedarim-config]
+    verify_jwt = false
+  [functions.get-payme-key]
+    verify_jwt = false
+  [functions.nedarim-event-signup]
+    verify_jwt = false
+  [functions.nedarim-gift]
+    verify_jwt = false
+  [functions.payme-charge-token]
+    verify_jwt = false
+  [functions.payme-create-seller]
+    verify_jwt = false
+  [functions.payme-generate-link]
+    verify_jwt = false
+  [functions.payme-generate-sale]
+    verify_jwt = false
+  [functions.payme-generate-transfer]
+    verify_jwt = false
+  [functions.payme-webhook]
+    verify_jwt = false
+  [functions.payme-withdraw-balance]
+    verify_jwt = false
+  [functions.public-api]
+    verify_jwt = false
