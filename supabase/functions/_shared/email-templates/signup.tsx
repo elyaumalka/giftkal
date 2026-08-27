@@ -27,31 +27,31 @@ export const SignupEmail = ({
   recipient,
   confirmationUrl,
 }: SignupEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="he" dir="rtl">
     <Head />
-    <Preview>Confirm your email for {siteName}</Preview>
+    <Preview>אישור כתובת המייל שלך ב{siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
+        <Heading style={h1}>אישור כתובת המייל</Heading>
         <Text style={text}>
-          Thanks for signing up for{' '}
+          תודה שנרשמת ל{' '}
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
           </Link>
           !
         </Text>
         <Text style={text}>
-          Please confirm your email address (
+          נא לאשר את כתובת המייל שלך (
           <Link href={`mailto:${recipient}`} style={link}>
             {recipient}
           </Link>
-          ) by clicking the button below:
+          ) בלחיצה על הכפתור:
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Verify Email
+          אישור המייל
         </Button>
         <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
+          אם לא נרשמת, אפשר להתעלם מהמייל הזה.
         </Text>
       </Container>
     </Body>
@@ -60,26 +60,26 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', textAlign: 'right' as const, fontFamily: 'Assistant, Arial, sans-serif' }
 const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: '#051839',
   margin: '0 0 20px',
 }
 const text = {
   fontSize: '14px',
-  color: '#55575d',
+  color: '#4a5568',
   lineHeight: '1.5',
   margin: '0 0 25px',
 }
 const link = { color: 'inherit', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: '#051839',
   color: '#ffffff',
   fontSize: '14px',
-  borderRadius: '8px',
+  borderRadius: '14px',
   padding: '12px 20px',
   textDecoration: 'none',
 }
