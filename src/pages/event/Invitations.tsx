@@ -115,7 +115,7 @@ export default function EventInvitations() {
 
   const { downloadSampleExcel, handleExcelUpload } = useExcelHandler(event?.id, () => refetchGuests());
   const { audioFile, audioUrl, isUploading, handleAudioUpload, removeAudio } = useAudioHandler(event?.id);
-  const { logSend, lastSendByGuest, countByChannel } = useInvitationSends(event?.id);
+  const { logSend, lastSendByGuest, countByChannel, refetchSends } = useInvitationSends(event?.id);
 
   // Persist step
   useEffect(() => {
