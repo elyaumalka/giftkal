@@ -6,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Loader2, Trash2, Link2, Copy, UserPlus, Send, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Download, Music, FileSpreadsheet, X, Check, Loader2, Trash2, Link2, Copy, UserPlus, Send, Mail, MessageSquare } from "lucide-react";
 import { useExcelHandler } from "@/components/invitations/useExcelHandler";
 import { useAudioHandler } from "@/components/invitations/useAudioHandler";
 import { useInvitationSends } from "@/components/invitations/useInvitationSends";
+import InvitationSendPanel from "@/components/invitations/InvitationSendPanel";
 
 type Step = 1 | 2 | 3;
 type EventType = "חתונה" | "אירוסין" | "בר מצווה" | "בת מצווה" | "ברית" | "אחר";
@@ -114,7 +115,7 @@ export default function EventInvitations() {
 
   const { downloadSampleExcel, handleExcelUpload } = useExcelHandler(event?.id, () => refetchGuests());
   const { audioFile, audioUrl, isUploading, handleAudioUpload, removeAudio } = useAudioHandler(event?.id);
-  const { logSend, lastSendByGuest, countByChannel } = useInvitationSends(event?.id);
+  const { logSend, lastSendByGuest, countByChannel, refetchSends } = useInvitationSends(event?.id);
 
   // Persist step
   useEffect(() => {
@@ -560,6 +561,19 @@ export default function EventInvitations() {
             </div>
           </div>
 
+          {/* Unified send panel */}
+          {guests && guests.length > 0 && (
+            <InvitationSendPanel
+              eventId={event?.id}
+              guests={guests as any}
+              buildMessage={(g) => getRsvpMessage(g)}
+              lastSendByGuest={lastSendByGuest as any}
+              logSend={logSend}
+              refetchSends={refetchSends}
+              emailEnabled={false}
+            />
+          )}
+
           {/* Guests list */}
           {guests && guests.length > 0 && (
             <div className="bg-card border border-border rounded-xl p-4 space-y-3" dir="rtl">
@@ -568,11 +582,15 @@ export default function EventInvitations() {
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Send className="w-3 h-3 text-green-600" />
-                    נשלחו בוואטסאפ: {countByChannel("whatsapp")}
+                    וואטסאפ: {countByChannel("whatsapp")}
                   </span>
                   <span className="flex items-center gap-1">
                     <Mail className="w-3 h-3 text-primary" />
-                    נשלחו במייל: {countByChannel("email")}
+                    מייל: {countByChannel("email")}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MessageSquare className="w-3 h-3 text-secondary" />
+                    SMS: {countByChannel("sms")}
                   </span>
                 </div>
               </div>
@@ -633,7 +651,7 @@ export default function EventInvitations() {
                           <td className="p-2 text-xs">
                             {lastSend ? (
                               <span className={lastSend.status === "failed" ? "text-destructive" : "text-green-600"}>
-                                {lastSend.channel === "whatsapp" ? "וואטסאפ" : "מייל"}
+                                {lastSend.channel === "whatsapp" ? "וואטסאפ" : lastSend.channel === "sms" ? "SMS" : "מייל"}
                                 {lastSend.status === "failed" ? " • נכשל" : ""}
                                 {" • "}
                                 {new Date(lastSend.created_at).toLocaleDateString("he-IL")}{" "}
