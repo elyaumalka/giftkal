@@ -570,7 +570,7 @@ export default function EventInvitations() {
               lastSendByGuest={lastSendByGuest as any}
               logSend={logSend}
               refetchSends={refetchSends}
-              emailEnabled={false}
+              emailEnabled={true}
             />
           )}
 
