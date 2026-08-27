@@ -104,6 +104,7 @@ function App() {
             <Route path="/faq" element={<FAQ />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/accessibility" element={<AccessibilityStatement />} />
           </Route>
           {/* Legacy redirects */}
           <Route path="/venues-page" element={<Navigate to="/why-us" replace />} />
