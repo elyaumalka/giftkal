@@ -180,6 +180,7 @@ function App() {
           {/* Catch all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <AccessibilityWidget />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
