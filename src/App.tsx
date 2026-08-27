@@ -22,6 +22,8 @@ import HowItWorks from "./pages/marketing/HowItWorks";
 import WhyUs from "./pages/marketing/WhyUs";
 import Pricing from "./pages/marketing/Pricing";
 import FAQ from "./pages/marketing/FAQ";
+import AccessibilityStatement from "./pages/marketing/Accessibility";
+import AccessibilityWidget from "./components/accessibility/AccessibilityWidget";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -102,6 +104,7 @@ function App() {
             <Route path="/faq" element={<FAQ />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/accessibility" element={<AccessibilityStatement />} />
           </Route>
           {/* Legacy redirects */}
           <Route path="/venues-page" element={<Navigate to="/why-us" replace />} />
@@ -177,6 +180,7 @@ function App() {
           {/* Catch all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <AccessibilityWidget />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
