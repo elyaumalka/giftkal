@@ -213,13 +213,18 @@ export default function InvitationSendPanel({
       {channel === "whatsapp" && (
         <div className="space-y-3">
           {!queueActive ? (
-            <div className="flex justify-end">
-              <Button onClick={startQueue} className="gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="outline" onClick={startQueue} className="gap-2">
                 <Play className="w-4 h-4" />
-                התחל תור שליחה
+                תור שליחה ידני (חינם)
+              </Button>
+              <Button onClick={sendWhatsappBulk} disabled={sending || targets.length === 0} className="gap-2">
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                שליחה אוטומטית ({targets.length})
               </Button>
             </div>
           ) : (
+
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium text-secondary">
