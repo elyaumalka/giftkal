@@ -114,6 +114,30 @@ export default function InvitationSendPanel({
     }
   };
 
+  const sendWhatsappBulk = async () => {
+    if (!eventId || targets.length === 0) return;
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invitation-whatsapp", {
+        body: { eventId, guestIds: targets.map((g) => g.id) },
+      });
+      if (error) {
+        const details = (error as any)?.context ? await (error as any).context.text() : error.message;
+        throw new Error(details);
+      }
+      toast({
+        title: `נשלחו ${data?.sent ?? 0} הודעות וואטסאפ`,
+        description: data?.failed ? `${data.failed} נכשלו` : undefined,
+        variant: data?.failed ? "destructive" : undefined,
+      });
+      refetchSends();
+    } catch (err: any) {
+      toast({ title: "שליחת וואטסאפ נכשלה", description: err.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
   const sendEmailBulk = async () => {
     if (!eventId || targets.length === 0) return;
     setSending(true);
@@ -137,6 +161,7 @@ export default function InvitationSendPanel({
       setSending(false);
     }
   };
+
 
   const channels: { value: SendChannel | "sms"; label: string; icon: typeof Send }[] = [
     { value: "whatsapp", label: "וואטסאפ", icon: Send },
