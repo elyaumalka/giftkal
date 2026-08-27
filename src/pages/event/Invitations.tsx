@@ -223,12 +223,25 @@ export default function EventInvitations() {
     if (!file || !event?.id) return;
     setUploadingInvitation(true);
     try {
-      const ext = file.name.split(".").pop() || "png";
-      const path = `invitations/${event.id}/${Date.now()}-${sanitizeFilename(file.name.replace(/\.[^.]+$/, ""))}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("נדרשת התחברות מחדש");
+      if (file.size > 20 * 1024 * 1024) throw new Error("הקובץ גדול מדי (מקסימום 20MB)");
+
+      const ext = (file.name.split(".").pop() || "png").toLowerCase();
+      // Storage RLS requires the first folder to be the user's id
+      const path = `${user.id}/invitations/${event.id}/${Date.now()}-${sanitizeFilename(file.name.replace(/\.[^.]+$/, ""))}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("documents")
+        .upload(path, file, { upsert: true, contentType: file.type || undefined });
       if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("documents").getPublicUrl(path);
-      const url = pub.publicUrl;
+
+      // Bucket is private — use a long-lived signed URL so invitations can be shared
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
+      if (signErr) throw signErr;
+      const url = signed.signedUrl;
+
       const { error: updErr } = await supabase
         .from("events")
         .update({ invitation_design_url: url } as any)
