@@ -114,6 +114,30 @@ export default function InvitationSendPanel({
     }
   };
 
+  const sendWhatsappBulk = async () => {
+    if (!eventId || targets.length === 0) return;
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invitation-whatsapp", {
+        body: { eventId, guestIds: targets.map((g) => g.id) },
+      });
+      if (error) {
+        const details = (error as any)?.context ? await (error as any).context.text() : error.message;
+        throw new Error(details);
+      }
+      toast({
+        title: `נשלחו ${data?.sent ?? 0} הודעות וואטסאפ`,
+        description: data?.failed ? `${data.failed} נכשלו` : undefined,
+        variant: data?.failed ? "destructive" : undefined,
+      });
+      refetchSends();
+    } catch (err: any) {
+      toast({ title: "שליחת וואטסאפ נכשלה", description: err.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
   const sendEmailBulk = async () => {
     if (!eventId || targets.length === 0) return;
     setSending(true);
@@ -137,6 +161,7 @@ export default function InvitationSendPanel({
       setSending(false);
     }
   };
+
 
   const channels: { value: SendChannel | "sms"; label: string; icon: typeof Send }[] = [
     { value: "whatsapp", label: "וואטסאפ", icon: Send },
@@ -188,13 +213,18 @@ export default function InvitationSendPanel({
       {channel === "whatsapp" && (
         <div className="space-y-3">
           {!queueActive ? (
-            <div className="flex justify-end">
-              <Button onClick={startQueue} className="gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="outline" onClick={startQueue} className="gap-2">
                 <Play className="w-4 h-4" />
-                התחל תור שליחה
+                תור שליחה ידני (חינם)
+              </Button>
+              <Button onClick={sendWhatsappBulk} disabled={sending || targets.length === 0} className="gap-2">
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                שליחה אוטומטית ({targets.length})
               </Button>
             </div>
           ) : (
+
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium text-secondary">
@@ -226,8 +256,10 @@ export default function InvitationSendPanel({
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            ההודעה נשלחת ממספר הוואטסאפ שלכם — ללא עלות. כל שליחה נרשמת במעקב.
+            שליחה ידנית — ממספר הוואטסאפ שלכם, ללא עלות. שליחה אוטומטית — דרך מספר הוואטסאפ העסקי שחובר
+            לטוויליו (עלות לכל הודעה). כל שליחה נרשמת במעקב.
           </p>
+
         </div>
       )}
 
