@@ -22,6 +22,8 @@ import HowItWorks from "./pages/marketing/HowItWorks";
 import WhyUs from "./pages/marketing/WhyUs";
 import Pricing from "./pages/marketing/Pricing";
 import FAQ from "./pages/marketing/FAQ";
+import AccessibilityStatement from "./pages/marketing/Accessibility";
+import AccessibilityWidget from "./components/accessibility/AccessibilityWidget";
 
 // Admin
 import { AdminLayout } from "./components/layout/AdminLayout";
