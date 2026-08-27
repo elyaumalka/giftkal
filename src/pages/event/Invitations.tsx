@@ -651,7 +651,7 @@ export default function EventInvitations() {
                           <td className="p-2 text-xs">
                             {lastSend ? (
                               <span className={lastSend.status === "failed" ? "text-destructive" : "text-green-600"}>
-                                {lastSend.channel === "whatsapp" ? "וואטסאפ" : "מייל"}
+                                {lastSend.channel === "whatsapp" ? "וואטסאפ" : lastSend.channel === "sms" ? "SMS" : "מייל"}
                                 {lastSend.status === "failed" ? " • נכשל" : ""}
                                 {" • "}
                                 {new Date(lastSend.created_at).toLocaleDateString("he-IL")}{" "}
