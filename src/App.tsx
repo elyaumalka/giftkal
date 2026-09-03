@@ -127,7 +127,8 @@ function App() {
           <Route path="/event/:eventId/payme-setup" element={<PaymeSetup />} />
            <Route path="/landing/:venueId" element={<VenueLanding />} />
            <Route path="/invite/:token" element={<SharedInvitePage />} />
-           <Route path="/rsvp/:eventId/:guestId" element={<PublicRSVP />} />
+          <Route path="/rsvp/join/:token" element={<SelfRSVP />} />
+          <Route path="/rsvp/:eventId/:guestId" element={<PublicRSVP />} />
            <Route path="/kiosk" element={<KioskEntry />} />
            <Route path="/kiosk/launcher" element={<KioskLauncher />} />
            <Route path="/kiosk/:hallId" element={<KioskPage />} />
