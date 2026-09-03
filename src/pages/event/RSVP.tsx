@@ -20,12 +20,16 @@ export default function RSVP() {
       if (!user) return null;
       const { data } = await supabase
         .from("events")
-        .select("id")
+        .select("id, share_token_general")
         .eq("owner_id", user.id)
         .maybeSingle();
       return data;
     },
   });
+
+  const generalLink = (eventData as any)?.share_token_general
+    ? `${window.location.origin}/rsvp/join/${(eventData as any).share_token_general}`
+    : "";
 
   const { data: guests = [], isLoading } = useQuery({
     queryKey: ["rsvp-guests", eventData?.id],
@@ -124,6 +128,48 @@ export default function RSVP() {
         ))}
       </div>
 
+      {/* General self-RSVP link */}
+      {generalLink && (
+        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-5 h-5 text-[#C4A35A]" />
+            <h3 className="font-bold text-[#051839]">לינק כללי לאישור הגעה</h3>
+          </div>
+          <p className="text-sm text-gray-500">
+            שתפו לינק אחד בקבוצות או בסטטוס — כל אורח ממלא את הפרטים שלו ומתווסף אוטומטית לרשימה.
+            מי שמאשר הגעה מקבל SMS עם פרטי האירוע, וביום האירוע לינק לשליחת מתנה.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              readOnly
+              value={generalLink}
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm text-[#051839]"
+              dir="ltr"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generalLink);
+                  toast({ title: "הלינק הועתק!" });
+                }}
+                className="bg-[#051839] text-white text-sm font-medium px-5 py-2 rounded-full hover:opacity-90 transition-opacity"
+              >
+                העתק לינק
+              </button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`הוזמנתם לאירוע שלנו! נא לאשר הגעה כאן: ${generalLink}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#C4A35A] text-white text-sm font-medium px-5 py-2 rounded-full hover:bg-[#95742F] transition-colors"
+              >
+                שיתוף בוואטסאפ
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search + Filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="relative flex-1 max-w-md">
@@ -197,7 +243,14 @@ export default function RSVP() {
                   key={guest.id}
                   className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_0.6fr_auto] gap-3 items-center bg-gray-50 rounded-xl p-4 text-sm hover:bg-gray-100 transition-colors"
                 >
-                  <span className="font-bold text-[#051839]">{guest.full_name}</span>
+                  <span className="font-bold text-[#051839] flex items-center gap-2">
+                    {guest.full_name}
+                    {guest.rsvp_source === "self" && (
+                      <span className="text-[10px] font-medium bg-[#C4A35A]/15 text-[#95742F] px-2 py-0.5 rounded-full">
+                        לינק כללי
+                      </span>
+                    )}
+                  </span>
                   <span className="text-[#051839]">{guest.phone || "—"}</span>
                   <span className="text-[#051839]">{guest.relationship || "—"}</span>
                   <span className="font-bold text-[#051839]">{guest.number_of_guests || 1}</span>
