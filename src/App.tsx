@@ -69,6 +69,7 @@ import GiftScreen from "./pages/gift/GiftScreen";
 import SharedInvitePage from "./pages/invite/SharedInvitePage";
 import GiftSearch from "./pages/gift/GiftSearch";
 import PublicRSVP from "./pages/rsvp/PublicRSVP";
+import SelfRSVP from "./pages/rsvp/SelfRSVP";
 import VenueLanding from "./pages/landing/VenueLanding";
 import EmbedGift from "./pages/embed/EmbedGift";
 import PartnerGift from "./pages/gift/PartnerGift";
