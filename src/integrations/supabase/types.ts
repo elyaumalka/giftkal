@@ -546,6 +546,7 @@ export type Database = {
           email: string | null
           event_id: string
           full_name: string
+          gift_sms_sent_at: string | null
           id: string
           invitation_last_channel: string | null
           invitation_sent: boolean | null
@@ -554,6 +555,7 @@ export type Database = {
           phone: string | null
           relationship: string | null
           rsvp_date: string | null
+          rsvp_source: string
           rsvp_status: string
           side: string
         }
@@ -563,6 +565,7 @@ export type Database = {
           email?: string | null
           event_id: string
           full_name: string
+          gift_sms_sent_at?: string | null
           id?: string
           invitation_last_channel?: string | null
           invitation_sent?: boolean | null
@@ -571,6 +574,7 @@ export type Database = {
           phone?: string | null
           relationship?: string | null
           rsvp_date?: string | null
+          rsvp_source?: string
           rsvp_status?: string
           side?: string
         }
@@ -580,6 +584,7 @@ export type Database = {
           email?: string | null
           event_id?: string
           full_name?: string
+          gift_sms_sent_at?: string | null
           id?: string
           invitation_last_channel?: string | null
           invitation_sent?: boolean | null
@@ -588,6 +593,7 @@ export type Database = {
           phone?: string | null
           relationship?: string | null
           rsvp_date?: string | null
+          rsvp_source?: string
           rsvp_status?: string
           side?: string
         }
@@ -1388,6 +1394,22 @@ export type Database = {
           groom_name: string
           id: string
           side: string
+        }[]
+      }
+      self_rsvp_join: {
+        Args: {
+          _children_count: number
+          _full_name: string
+          _number_of_guests: number
+          _phone: string
+          _relationship: string
+          _rsvp_status: string
+          _side: string
+          _token: string
+        }
+        Returns: {
+          event_id: string
+          guest_id: string
         }[]
       }
     }
