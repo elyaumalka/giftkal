@@ -128,6 +128,48 @@ export default function RSVP() {
         ))}
       </div>
 
+      {/* General self-RSVP link */}
+      {generalLink && (
+        <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-5 h-5 text-[#C4A35A]" />
+            <h3 className="font-bold text-[#051839]">לינק כללי לאישור הגעה</h3>
+          </div>
+          <p className="text-sm text-gray-500">
+            שתפו לינק אחד בקבוצות או בסטטוס — כל אורח ממלא את הפרטים שלו ומתווסף אוטומטית לרשימה.
+            מי שמאשר הגעה מקבל SMS עם פרטי האירוע, וביום האירוע לינק לשליחת מתנה.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              readOnly
+              value={generalLink}
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm text-[#051839]"
+              dir="ltr"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generalLink);
+                  toast({ title: "הלינק הועתק!" });
+                }}
+                className="bg-[#051839] text-white text-sm font-medium px-5 py-2 rounded-full hover:opacity-90 transition-opacity"
+              >
+                העתק לינק
+              </button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`הוזמנתם לאירוע שלנו! נא לאשר הגעה כאן: ${generalLink}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#C4A35A] text-white text-sm font-medium px-5 py-2 rounded-full hover:bg-[#95742F] transition-colors"
+              >
+                שיתוף בוואטסאפ
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search + Filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="relative flex-1 max-w-md">
