@@ -22,8 +22,9 @@ export default function RSVP() {
         .from("events")
         .select("id, share_token_general")
         .eq("owner_id", user.id)
-        .maybeSingle();
-      return data;
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return data?.[0] ?? null;
     },
   });
 
