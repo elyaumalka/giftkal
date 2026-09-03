@@ -243,7 +243,14 @@ export default function RSVP() {
                   key={guest.id}
                   className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_0.6fr_auto] gap-3 items-center bg-gray-50 rounded-xl p-4 text-sm hover:bg-gray-100 transition-colors"
                 >
-                  <span className="font-bold text-[#051839]">{guest.full_name}</span>
+                  <span className="font-bold text-[#051839] flex items-center gap-2">
+                    {guest.full_name}
+                    {guest.rsvp_source === "self" && (
+                      <span className="text-[10px] font-medium bg-[#C4A35A]/15 text-[#95742F] px-2 py-0.5 rounded-full">
+                        לינק כללי
+                      </span>
+                    )}
+                  </span>
                   <span className="text-[#051839]">{guest.phone || "—"}</span>
                   <span className="text-[#051839]">{guest.relationship || "—"}</span>
                   <span className="font-bold text-[#051839]">{guest.number_of_guests || 1}</span>
