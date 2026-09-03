@@ -20,12 +20,16 @@ export default function RSVP() {
       if (!user) return null;
       const { data } = await supabase
         .from("events")
-        .select("id")
+        .select("id, share_token_general")
         .eq("owner_id", user.id)
         .maybeSingle();
       return data;
     },
   });
+
+  const generalLink = (eventData as any)?.share_token_general
+    ? `${window.location.origin}/rsvp/join/${(eventData as any).share_token_general}`
+    : "";
 
   const { data: guests = [], isLoading } = useQuery({
     queryKey: ["rsvp-guests", eventData?.id],
