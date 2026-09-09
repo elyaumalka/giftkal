@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Building2, Monitor, Copy, Check, Pencil, Trash2, ExternalLink, Loader2, Link2, Unlink, CalendarPlus, CalendarX2 } from "lucide-react";
+import { Plus, Building2, Monitor, Copy, Check, Pencil, Trash2, ExternalLink, Loader2, Link2, Unlink, CalendarPlus, CalendarX2, QrCode } from "lucide-react";
+import { QRCodeCanvas } from "@/components/QRCodeCanvas";
 
 export default function VenueHalls() {
   const { toast } = useToast();
@@ -27,6 +28,7 @@ export default function VenueHalls() {
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [eventLinkingHallId, setEventLinkingHallId] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState("");
+  const [qrHall, setQrHall] = useState<any>(null);
 
   // Get venue for current user
   useEffect(() => {
@@ -347,6 +349,37 @@ export default function VenueHalls() {
         </DialogContent>
       </Dialog>
 
+      {/* QR Code Dialog */}
+      <Dialog open={!!qrHall} onOpenChange={(open) => !open && setQrHall(null)}>
+        <DialogContent dir="rtl" className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>קוד QR לקיוסק — {qrHall?.name}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <div className="flex flex-col items-center gap-4 py-2">
+              {qrHall && (
+                <div className="bg-white p-3 rounded-2xl shadow-sm border">
+                  <QRCodeCanvas value={`${window.location.origin}/kiosk/${qrHall.id}`} size={220} />
+                </div>
+              )}
+              <p className="text-xs text-gray-400 text-center break-all" dir="ltr">
+                {qrHall && `${window.location.origin}/kiosk/${qrHall.id}`}
+              </p>
+              <p className="text-xs text-gray-500 text-center">
+                סרוק את הקוד עם הטאבלט או העתק את הקישור להגדרת Fully Kiosk Browser
+              </p>
+              <Button
+                onClick={() => qrHall && copyKioskLink(qrHall.id)}
+                className="w-full bg-[#C4A35A] hover:bg-[#B4943A] text-white rounded-xl gap-2"
+              >
+                {copiedId === qrHall?.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                העתק קישור
+              </Button>
+            </div>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+
       {/* Link Event Dialog */}
       <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
         <DialogContent dir="rtl">
@@ -528,6 +561,16 @@ export default function VenueHalls() {
                     >
                       {copiedId === hall.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                       העתק קישור קיוסק
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl gap-2 text-xs"
+                      onClick={() => setQrHall(hall)}
+                      title="הצג קוד QR"
+                    >
+                      <QrCode className="w-3 h-3" />
+                      QR
                     </Button>
                     <Button
                       variant="outline"
