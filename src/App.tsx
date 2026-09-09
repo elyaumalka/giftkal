@@ -131,6 +131,8 @@ function App() {
           <Route path="/rsvp/:eventId/:guestId" element={<PublicRSVP />} />
            <Route path="/kiosk" element={<KioskEntry />} />
            <Route path="/kiosk/launcher" element={<KioskLauncher />} />
+           <Route path="/kiosk-launcher" element={<KioskLauncher />} />
+           <Route path="/kiosk-launcher/:code" element={<KioskLauncher />} />
            <Route path="/kiosk/:hallId" element={<KioskPage />} />
           <Route path="/api/yemot" element={<YemotApiDocs />} />
           <Route path="/api/docs" element={<SystemApiDocs />} />
