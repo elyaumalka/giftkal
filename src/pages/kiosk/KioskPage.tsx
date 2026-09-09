@@ -103,21 +103,42 @@ export default function KioskPage() {
     if (!hallId) return;
 
     const today = new Date().toISOString().split("T")[0];
+    const cols = "id, groom_name, bride_name, child_name, family_name, event_type, event_date, reception_time, ceremony_time";
 
-    const { data: events } = await supabase
+    // 1. Events explicitly linked to this hall
+    const { data: hallEvents } = await supabase
       .from("public_events")
-      .select("id, groom_name, bride_name, child_name, family_name, event_type, event_date, reception_time, ceremony_time")
+      .select(cols)
       .eq("hall_id", hallId)
       .eq("event_date", today);
 
-    if (events && events.length > 0) {
-      // If multiple events today, pick the one closest to now
-      setActiveEvent(events[0]);
-    } else {
-      setActiveEvent(null);
+    if (hallEvents && hallEvents.length > 0) {
+      setActiveEvent(hallEvents[0]);
+      setLoading(false);
+      return;
     }
+
+    // 2. Fallback: events for the same venue that were not assigned to a specific hall
+    const venueId = hall?.venue_id;
+    if (venueId) {
+      const { data: venueEvents } = await supabase
+        .from("public_events")
+        .select(cols)
+        .eq("venue_id", venueId)
+        .is("hall_id", null)
+        .eq("event_date", today);
+
+      if (venueEvents && venueEvents.length > 0) {
+        setActiveEvent(venueEvents[0]);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setActiveEvent(null);
     setLoading(false);
-  }, [hallId]);
+  }, [hallId, hall?.venue_id]);
+
 
   useEffect(() => {
     checkActiveEvent();
