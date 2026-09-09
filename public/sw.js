@@ -1,7 +1,9 @@
 // One-release cleanup for the previous Workbox app-shell service worker.
 // Keep this file at /sw.js so returning kiosk browsers receive the cleanup.
 function isAppWorkboxCache(name) {
-  return /(^|-)precache-v\d+-|(^|-)runtime-|(^|-)googleAnalytics-|html-shell/.test(name);
+  if (name === "html-shell") return true;
+  const isWorkboxCache = /(^|-)precache-v\d+-|(^|-)runtime-|(^|-)googleAnalytics-/.test(name);
+  return isWorkboxCache && name.endsWith(self.registration.scope);
 }
 
 self.addEventListener("install", () => self.skipWaiting());
