@@ -236,23 +236,31 @@
       hideError();
 
       try {
-        const nameParts = config.payerName.trim().split(' ');
-        const firstName = nameParts[0] || '';
+        const nameParts = config.payerName.trim().split(' ').filter(Boolean);
+        const firstName = nameParts[0] || 'אורח';
         const lastName = nameParts.slice(1).join(' ') || firstName;
 
-        const result = await paymeInstance.tokenize({
+        // PayMe rejects phones that contain separators or a country prefix.
+        // Normalize to a plain Israeli mobile (0XXXXXXXXX) or drop it entirely.
+        let phone = String(config.payerPhone || '').replace(/\D/g, '');
+        if (phone.startsWith('972')) phone = '0' + phone.slice(3);
+        if (!/^0\d{8,9}$/.test(phone)) phone = '';
+
+        const payload = {
           payerFirstName: firstName,
           payerLastName: lastName,
           payerEmail: config.payerEmail || 'guest@example.com',
-          payerPhone: config.payerPhone || '',
           total: {
             label: config.productLabel,
             amount: {
               currency: 'ILS',
-              value: config.amount.toFixed(2),
+              value: Number(config.amount).toFixed(2),
             },
           },
-        });
+        };
+        if (phone) payload.payerPhone = phone;
+
+        const result = await paymeInstance.tokenize(payload);
 
         if (result.type === 'tokenize-success' && result.token) {
           postToParent('tokenize', {
@@ -261,13 +269,21 @@
             expiry: result.card?.expiry,
           });
         } else {
-          throw new Error('Tokenization failed');
+          throw new Error(
+            (result && (result.message || result.status_error_details)) || 'Tokenization failed'
+          );
         }
       } catch (err) {
-        console.error('Tokenize error:', err);
-        const msg = err?.errors 
-          ? Object.values(err.errors).join(', ')
-          : 'שגיאה בעיבוד התשלום';
+        console.error('Tokenize error:', err, JSON.stringify(err));
+        let detail = '';
+        if (err && err.errors) {
+          detail = Object.values(err.errors).join(', ');
+        } else if (err && (err.status_error_details || err.statusErrorDetails)) {
+          detail = err.status_error_details || err.statusErrorDetails;
+        } else if (err && err.message) {
+          detail = err.message;
+        }
+        const msg = detail ? ('שגיאה בעיבוד התשלום: ' + detail) : 'שגיאה בעיבוד התשלום';
         showError(msg);
         postToParent('error', { message: msg });
         btn.disabled = false;
