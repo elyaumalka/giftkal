@@ -106,11 +106,11 @@ Deno.serve(async (req) => {
     const transferPayload = {
       payme_client_key: paymeClientKey,
       payment: {
-        method: 'Bank Transfer',
+        method: 'Funds Transfer',
         origin_seller_id: event.seller_payme_id,
       },
       currency: 'ILS',
-      sale_price: body.amount,
+      sale_price: Math.round(body.amount * 100), // agorot
       product_name: productName,
       seller_payme_id: masterSellerId,
     }
