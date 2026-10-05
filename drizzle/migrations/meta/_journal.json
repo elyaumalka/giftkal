@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791232942194,
+      "tag": "0000_restore_platform_commission_transfers",
+      "breakpoints": true
+    }
+  ]
+}

@@ -910,6 +910,63 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_commission_transfers: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          event_id: string
+          failure_reason: string | null
+          id: string
+          initiated_by: string | null
+          payme_sale_id: string | null
+          payme_transaction_id: string | null
+          source_transaction_ids: Json | null
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          event_id: string
+          failure_reason?: string | null
+          id?: string
+          initiated_by?: string | null
+          payme_sale_id?: string | null
+          payme_transaction_id?: string | null
+          source_transaction_ids?: Json | null
+          status?: string
+          submitted_at?: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          event_id?: string
+          failure_reason?: string | null
+          id?: string
+          initiated_by?: string | null
+          payme_sale_id?: string | null
+          payme_transaction_id?: string | null
+          source_transaction_ids?: Json | null
+          status?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_commission_transfers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_commission_transfers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
