@@ -19,6 +19,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,7 @@ export default function Wallets() {
           productName: transferNote || undefined,
         },
       });
-      if (error) throw new Error(error.message || "שגיאה");
+      if (error) throw new Error(await getFunctionErrorMessage(error));
       if (!data?.success) throw new Error(data?.error || data?.details || "שגיאה");
       return data;
     },
