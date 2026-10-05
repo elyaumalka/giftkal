@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     const paymePayload: Record<string, unknown> = {
       payme_client_key: paymeClientKey,
       seller_payme_id: event.seller_payme_id,
-      withdraw_currency: 'ILS',
+      withdrawal_currency: 'ILS',
       language: 'he',
     }
     if (body.transactionIds?.length) {
@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
     const paymeResult = await paymeResponse.json()
 
     if (paymeResult.status_code !== 0) {
-      console.error('PayMe withdraw rejected:', paymeResult.status_error_details ?? paymeResult.status_message)
+      console.error('PayMe withdraw rejected:', paymeResult.status_error_details ?? paymeResult.status_message, paymeResult.status_additional_info ?? '')
       if (payoutRow) {
         await supabase
           .from('payouts')
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
       }
       return json({
         error: 'PayMe withdrawal failed',
-        details: paymeResult.status_error_details ?? paymeResult.status_error_code ?? paymeResult.status_message,
+        details: [paymeResult.status_error_details ?? paymeResult.status_message, paymeResult.status_additional_info].filter(Boolean).join(' — '),
       }, 400)
     }
 
