@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
       }
       return json({
         error: 'PayMe withdrawal failed',
-        details: paymeResult.status_error_details ?? paymeResult.status_error_code ?? paymeResult.status_message,
+        details: [paymeResult.status_error_details ?? paymeResult.status_message, paymeResult.status_additional_info].filter(Boolean).join(' — '),
       }, 400)
     }
 
