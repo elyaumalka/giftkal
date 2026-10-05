@@ -8,6 +8,13 @@
       "when": 1791232942194,
       "tag": "0000_restore_platform_commission_transfers",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791233890541,
+      "tag": "0001_restore_payouts",
+      "breakpoints": true
     }
   ]
 }

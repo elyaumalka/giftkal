@@ -910,6 +910,69 @@ export type Database = {
         }
         Relationships: []
       }
+      payouts: {
+        Row: {
+          amount: number | null
+          approved_by: string | null
+          completed_at: string | null
+          created_at: string
+          currency: string
+          event_id: string | null
+          failure_reason: string | null
+          id: string
+          note: string | null
+          partial_transaction_ids: Json | null
+          requested_by: string | null
+          seller_payme_id: string | null
+          status: string
+        }
+        Insert: {
+          amount?: number | null
+          approved_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          event_id?: string | null
+          failure_reason?: string | null
+          id?: string
+          note?: string | null
+          partial_transaction_ids?: Json | null
+          requested_by?: string | null
+          seller_payme_id?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number | null
+          approved_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          event_id?: string | null
+          failure_reason?: string | null
+          id?: string
+          note?: string | null
+          partial_transaction_ids?: Json | null
+          requested_by?: string | null
+          seller_payme_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_commission_transfers: {
         Row: {
           amount: number

@@ -103,6 +103,24 @@ export default function Wallets() {
     },
   });
 
+  const withdrawMutation = useMutation({
+    mutationFn: async (row: EventRow) => {
+      const { data, error } = await supabase.functions.invoke("payme-withdraw-balance", {
+        body: { eventId: row.event_id, note: "שחרור ע\"י מנהל מעמוד הארנקים" },
+      });
+      if (error) throw new Error(await getFunctionErrorMessage(error));
+      if (!data?.success) throw new Error(data?.error || data?.details || "שגיאה");
+      return data;
+    },
+    onSuccess: (data: any) => {
+      toast({ title: "בקשת השחרור נשלחה ✅", description: data?.message });
+      queryClient.invalidateQueries({ queryKey: ["wallets-dashboard"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "שגיאה בשחרור לבנק", description: err.message, variant: "destructive" });
+    },
+  });
+
   const openTransfer = (row: EventRow) => {
     setTransferTarget(row);
     setTransferAmount(row.pending > 0 ? String(row.pending) : "");
@@ -328,7 +346,15 @@ export default function Wallets() {
             <Loader2 className="w-5 h-5 animate-spin mr-2" /> טוען נתונים...
           </div>
         ) : tab === "events" ? (
-          <EventsTable rows={filteredEvents} onTransfer={openTransfer} />
+          <EventsTable
+            rows={filteredEvents}
+            onTransfer={openTransfer}
+            onWithdraw={(r) => {
+              if (r.pending > 0 && !window.confirm(`נשארו ${formatILS(r.pending)} עמלות שלא הועברו. להמשיך בשחרור בכל זאת?`)) return;
+              if (!window.confirm(`לשחרר את כל יתרת הארנק של "${r.event_label}" לחשבון הבנק של בעל האירוע?`)) return;
+              withdrawMutation.mutate(r);
+            }}
+          />
         ) : tab === "sweeps" ? (
           <SweepsTable rows={rows.transfers} eventLabel={eventLabelById} />
         ) : tab === "payouts" ? (
@@ -477,9 +503,11 @@ function TabButton({
 function EventsTable({
   rows,
   onTransfer,
+  onWithdraw,
 }: {
   rows: EventRow[];
   onTransfer: (row: EventRow) => void;
+  onWithdraw: (row: EventRow) => void;
 }) {
   if (rows.length === 0) {
     return <div className="p-12 text-center text-muted-foreground">אין אירועים לתצוגה.</div>;
@@ -533,6 +561,17 @@ function EventsTable({
               >
                 <ArrowRightLeft className="w-3.5 h-3.5" />
                 העבר
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={r.payment_setup_status !== "approved" || !r.seller_payme_id}
+                onClick={() => onWithdraw(r)}
+                className="h-8 gap-1.5 ms-1.5"
+                title="שחרור יתרת הארנק לחשבון הבנק של בעל האירוע"
+              >
+                <ArrowDownToLine className="w-3.5 h-3.5" />
+                שחרור לבנק
               </Button>
             </Td>
           </tr>
