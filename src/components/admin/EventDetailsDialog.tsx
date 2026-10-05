@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/functionError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -236,7 +237,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       const { data, error } = await supabase.functions.invoke('payme-generate-transfer', {
         body: { eventId: event.id, amount, productName: sweepNote || undefined },
       });
-      if (error) throw new Error(error.message || 'שגיאה');
+      if (error) throw new Error(await getFunctionErrorMessage(error));
       if (!data?.success) throw new Error(data?.error || data?.details || 'שגיאה');
       toast({ title: `הועברו ${formatILS(amount)} לארנק בשמחות פלוס ✅` });
       setSweepAmount("");
@@ -257,7 +258,7 @@ export function EventDetailsDialog({ event, onClose }: EventDetailsDialogProps) 
       const { data, error } = await supabase.functions.invoke('payme-withdraw-balance', {
         body: { eventId: event.id },
       });
-      if (error) throw new Error(error.message || 'שגיאה');
+      if (error) throw new Error(await getFunctionErrorMessage(error));
       if (!data?.success) throw new Error(data?.error || data?.details || 'שגיאה');
       toast({
         title: "בקשת המשיכה נשלחה ל-PayMe ✅",
