@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
     const transferPayload = {
       payme_client_key: paymeClientKey,
       payment: {
-        method: 'Funds Transfer',
+        method: 'funds-transfer',
         origin_seller_id: event.seller_payme_id,
       },
       currency: 'ILS',
