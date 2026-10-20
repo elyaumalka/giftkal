@@ -308,8 +308,8 @@ export default function GiftScreen() {
           giftAmount: breakdown.giftAmount,
           feeAmount: breakdown.feeAmount,
           payerName,
-          payerEmail: payerEmail || undefined,
-          payerPhone: payerPhone || undefined,
+          payerEmail: effectivePayerEmail,
+          payerPhone: payerPhone.trim(),
           relationship: relationship || undefined,
           blessing: blessing || undefined,
           blessingImageUrl: imageUrl || undefined,
@@ -607,9 +607,9 @@ export default function GiftScreen() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-white/70 font-medium text-sm">טלפון</Label>
+                    <Label className="text-white/70 font-medium text-sm">טלפון *</Label>
                     <Input type="tel" value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} placeholder="050-1234567"
-                      className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
+                      className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" required />
                   </div>
                   <div>
                     <Label className="text-white/70 font-medium text-sm">מייל (לקבלה)</Label>
