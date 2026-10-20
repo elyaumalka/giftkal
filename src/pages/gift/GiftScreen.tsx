@@ -263,6 +263,9 @@ export default function GiftScreen() {
 
   const validateEmail = (email: string): boolean => { if (!email) return true; return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); };
   const validatePhone = (phone: string): boolean => { if (!phone) return true; return /^[\d\-\+\(\)\s]{7,15}$/.test(phone); };
+  // If the guest leaves the email empty, the receipt goes to the system admin's email.
+  const FALLBACK_RECEIPT_EMAIL = "0533116358a@gmail.com";
+  const effectivePayerEmail = payerEmail.trim() || FALLBACK_RECEIPT_EMAIL;
 
   const handleProceedToDetails = () => {
     if (!finalAmount || finalAmount <= 0) { toast({ title: "⚠️ סכום לא תקין", description: "יש לבחור סכום מתנה או להזין סכום גדול מ-0", variant: "destructive" }); return; }
@@ -275,7 +278,8 @@ export default function GiftScreen() {
     if (!payerName.trim()) { toast({ title: "⚠️ שם חסר", description: "יש להזין שם מלא כדי להמשיך", variant: "destructive" }); return; }
     if (payerName.trim().length < 2) { toast({ title: "⚠️ שם קצר מדי", description: "יש להזין שם מלא (לפחות 2 תווים)", variant: "destructive" }); return; }
     if (payerEmail && !validateEmail(payerEmail)) { toast({ title: "⚠️ כתובת מייל לא תקינה", description: "יש להזין כתובת מייל תקינה", variant: "destructive" }); return; }
-    if (payerPhone && !validatePhone(payerPhone)) { toast({ title: "⚠️ מספר טלפון לא תקין", description: "יש להזין מספר טלפון תקין", variant: "destructive" }); return; }
+    if (!payerPhone.trim()) { toast({ title: "⚠️ מספר טלפון חסר", description: "יש להזין מספר טלפון כדי להמשיך", variant: "destructive" }); return; }
+    if (!validatePhone(payerPhone)) { toast({ title: "⚠️ מספר טלפון לא תקין", description: "יש להזין מספר טלפון תקין", variant: "destructive" }); return; }
     setStep("blessing");
   };
 
