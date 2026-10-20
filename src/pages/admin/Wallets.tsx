@@ -59,6 +59,8 @@ interface EventRow {
   installmentCount: number;
   /** Total transactions count (regular + installments). */
   txCount: number;
+  /** Most recent bank release (payout) for this event, if any. */
+  lastPayout: { status: string; created_at: string; completed_at: string | null } | null;
 }
 
 export default function Wallets() {
@@ -148,8 +150,8 @@ export default function Wallets() {
           .select("id, event_id, amount, status, submitted_at, completed_at")
           .order("submitted_at", { ascending: false }),
         (supabase.from as any)("payouts")
-          .select("id, event_id, amount, status, submitted_at, completed_at, seller_payme_id")
-          .order("submitted_at", { ascending: false }),
+          .select("id, event_id, amount, status, created_at, completed_at, seller_payme_id, failure_reason")
+          .order("created_at", { ascending: false }),
       ]);
       const { data: partnersRes } = await supabase
         .from("partners")
@@ -206,6 +208,7 @@ export default function Wallets() {
           gifts: agg.gifts,
           installmentCount: agg.installmentCount,
           txCount: agg.txCount,
+          lastPayout: payouts.find((p) => p.event_id === e.id) ?? null,
         };
       });
 
@@ -573,6 +576,12 @@ function EventsTable({
                 <ArrowDownToLine className="w-3.5 h-3.5" />
                 שחרור לבנק
               </Button>
+              {r.lastPayout && (
+                <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <StatusPill value={r.lastPayout.status} />
+                  <span>{formatRowDate(r.lastPayout.completed_at ?? r.lastPayout.created_at)}</span>
+                </div>
+              )}
             </Td>
           </tr>
         ))}
@@ -664,7 +673,7 @@ function PayoutsTable({ rows, eventLabel }: { rows: any[]; eventLabel: Map<strin
       <tbody className="divide-y">
         {rows.map((r) => (
           <tr key={r.id} className="hover:bg-muted/30">
-            <Td muted>{formatRowDate(r.submitted_at)}</Td>
+            <Td muted>{formatRowDate(r.created_at)}</Td>
             <Td>{eventLabel.get(r.event_id) ?? r.event_id.slice(0, 8)}</Td>
             <Td muted className="font-mono text-xs">{r.seller_payme_id}</Td>
             <Td align="right">{r.amount ? formatILS(Number(r.amount)) : "יתרה מלאה"}</Td>
@@ -706,6 +715,13 @@ function Td({
   );
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  submitted: "נשלח לבנק",
+  completed: "הועבר",
+  failed: "נכשל",
+  cancelled: "בוטל",
+};
+
 function StatusPill({ value }: { value: string }) {
   const map: Record<string, string> = {
     submitted: "bg-amber-100 text-amber-800 border-amber-200",
@@ -714,8 +730,8 @@ function StatusPill({ value }: { value: string }) {
     cancelled: "bg-gray-100 text-gray-700 border-gray-200",
   };
   return (
-    <Badge variant="outline" className={cn("font-mono text-[10px]", map[value] ?? "bg-gray-100 text-gray-700")}>
-      {value}
+    <Badge variant="outline" className={cn("text-[10px]", map[value] ?? "bg-gray-100 text-gray-700")}>
+      {STATUS_LABELS[value] ?? value}
     </Badge>
   );
 }
