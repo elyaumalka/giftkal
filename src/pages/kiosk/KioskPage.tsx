@@ -196,27 +196,28 @@ export default function KioskPage() {
           </div>
         </div>
 
-        {/* Gift page iframe - responsive, fills screen */}
-        <div className="flex min-h-[calc(100dvh-64px)] flex-col lg:h-[calc(100dvh-64px)] lg:min-h-0 lg:flex-row">
-          <aside className="flex shrink-0 items-center justify-center gap-4 border-b border-border bg-card px-4 py-5 text-card-foreground lg:w-72 lg:flex-col lg:gap-5 lg:border-b-0 lg:border-l lg:px-6" aria-label="מתנה מהירה מהסמארטפון">
-            <div className="shrink-0 rounded-lg border border-border p-1" role="img" aria-label={`קוד QR להענקת מתנה ל${eventTitle}`}>
-              <div className="h-36 w-36 lg:h-56 lg:w-56 [&_canvas]:!h-full [&_canvas]:!w-full">
-                <QRCodeCanvas value={`${window.location.origin}/gift/${activeEvent.id}/send`} size={224} />
-              </div>
-            </div>
-            <div className="min-w-0 space-y-2 text-right lg:text-center">
-              <Smartphone className="h-7 w-7 text-primary lg:mx-auto" aria-hidden="true" />
-              <h2 className="text-xl font-bold">מתנה מהירה מהסמארטפון</h2>
-              <p className="text-sm text-muted-foreground">סרקו ותנו מתנה</p>
-              <p className="break-words text-sm font-medium">{eventTitle}</p>
-            </div>
-          </aside>
-          <div className="h-[calc(100dvh-64px)] min-w-0 flex-1 lg:h-full">
+        {/* Gift page iframe - fills the screen */}
+        <div className="relative h-[calc(100dvh-64px)]">
           <iframe
             src={`/gift/${activeEvent.id}`}
             className="border-0 w-full h-full"
             title={`מתנה ל${eventTitle}`}
           />
+
+          {/* Smartphone-gift QR integrated into the design - floating glass card, never blocks the gift flow */}
+          <div
+            className="pointer-events-none absolute left-3 top-3 z-10 flex w-[168px] flex-col items-center gap-1.5 rounded-2xl border border-[#C4A35A]/40 bg-[#051839]/75 p-3 text-center shadow-2xl backdrop-blur-md lg:left-6 lg:top-6 lg:w-[220px] lg:gap-2 lg:p-4"
+            aria-label="מתנה מהירה מהסמארטפון"
+          >
+            <div className="rounded-xl bg-white p-1.5 shadow-inner">
+              <div className="h-32 w-32 lg:h-40 lg:w-40 [&_canvas]:!h-full [&_canvas]:!w-full" role="img" aria-label={`קוד QR להענקת מתנה ל${eventTitle}`}>
+                <QRCodeCanvas value={`${window.location.origin}/gift/${activeEvent.id}/send`} size={160} />
+              </div>
+            </div>
+            <Smartphone className="h-5 w-5 text-[#C4A35A]" aria-hidden="true" />
+            <p className="text-sm font-bold leading-tight text-white lg:text-base">מתנה מהירה מהסמארטפון</p>
+            <p className="text-xs font-medium text-[#C4A35A] lg:text-sm">סרקו ותנו מתנה</p>
+            <p className="text-[10px] leading-tight text-white/60 lg:text-xs">{eventTitle}</p>
           </div>
         </div>
       </div>
