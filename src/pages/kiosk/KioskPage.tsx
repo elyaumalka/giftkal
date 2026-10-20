@@ -200,7 +200,7 @@ export default function KioskPage() {
         <div className="flex min-h-[calc(100dvh-64px)] flex-col lg:h-[calc(100dvh-64px)] lg:min-h-0 lg:flex-row">
           <aside className="flex shrink-0 items-center justify-center gap-4 border-b border-border bg-card px-4 py-5 text-card-foreground lg:w-72 lg:flex-col lg:gap-5 lg:border-b-0 lg:border-l lg:px-6" aria-label="מתנה מהירה מהסמארטפון">
             <div className="shrink-0 rounded-lg border border-border p-1" role="img" aria-label={`קוד QR להענקת מתנה ל${eventTitle}`}>
-              <div className="h-36 w-36 lg:h-56 lg:w-56 [&_canvas]:h-full [&_canvas]:w-full">
+              <div className="h-36 w-36 lg:h-56 lg:w-56 [&_canvas]:!h-full [&_canvas]:!w-full">
                 <QRCodeCanvas value={`${window.location.origin}/gift/${activeEvent.id}/send`} size={224} />
               </div>
             </div>
