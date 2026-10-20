@@ -886,7 +886,11 @@ export default function GiftScreen() {
               <div className="bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-[#C4A35A]/20 w-full">
                 <p className="text-sm text-white/40">סכום המתנה</p>
                 <p className="text-3xl font-bold text-[#C4A35A] mt-1">{breakdown.giftAmount > 0 ? formatILS(breakdown.giftAmount) : `₪${searchParams.get('amount') || ''}`}</p>
-                <p className="text-white/30 text-xs mt-1">כולל עמלת סליקה ₪2.30</p>
+                {breakdown.feeAmount > 0 && (
+                  <p className="text-white/30 text-xs mt-1">
+                    סה״כ חויב {formatILS(breakdown.totalCharge)} (כולל עמלת סליקה {formatILS(breakdown.feeAmount)})
+                  </p>
+                )}
               </div>
 
               {/* Show the blessing card */}
