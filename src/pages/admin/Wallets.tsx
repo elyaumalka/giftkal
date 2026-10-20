@@ -208,6 +208,7 @@ export default function Wallets() {
           gifts: agg.gifts,
           installmentCount: agg.installmentCount,
           txCount: agg.txCount,
+          lastPayout: payouts.find((p) => p.event_id === e.id) ?? null,
         };
       });
 
