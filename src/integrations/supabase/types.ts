@@ -484,6 +484,27 @@ export type Database = {
           },
         ]
       }
+      gift_summary_runs: {
+        Row: {
+          admin_sent: boolean
+          created_at: string
+          owners_sent: number
+          run_date: string
+        }
+        Insert: {
+          admin_sent?: boolean
+          created_at?: string
+          owners_sent?: number
+          run_date: string
+        }
+        Update: {
+          admin_sent?: boolean
+          created_at?: string
+          owners_sent?: number
+          run_date?: string
+        }
+        Relationships: []
+      }
       guest_invitation_sends: {
         Row: {
           channel: string
@@ -1216,6 +1237,7 @@ export type Database = {
           payme_transaction_id: string | null
           payment_status: string | null
           platform_partner_share: number
+          receipt_email_sent_at: string | null
           receipt_url: string | null
           relationship: string | null
           side: string | null
@@ -1241,6 +1263,7 @@ export type Database = {
           payme_transaction_id?: string | null
           payment_status?: string | null
           platform_partner_share?: number
+          receipt_email_sent_at?: string | null
           receipt_url?: string | null
           relationship?: string | null
           side?: string | null
@@ -1266,6 +1289,7 @@ export type Database = {
           payme_transaction_id?: string | null
           payment_status?: string | null
           platform_partner_share?: number
+          receipt_email_sent_at?: string | null
           receipt_url?: string | null
           relationship?: string | null
           side?: string | null

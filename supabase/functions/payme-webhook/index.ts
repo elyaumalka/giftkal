@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import md5 from 'https://esm.sh/js-md5@0.8.3'
 import { dispatchPartnerWebhooks } from '../_shared/partner-webhooks.ts'
+import { sendGiftReceipt } from '../_shared/gift-emails.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -262,6 +263,8 @@ async function handleSaleEvent(supabase: SupabaseClient, payload: Payload, type:
   }
 
   console.log(`${type ?? 'sale-event'}: tx=${transaction.id} → ${paymentStatus}`)
+
+  if (paymentStatus === 'completed') await sendGiftReceipt(supabase, transaction.id)
 
   // Notify the originating partner (if any) about the new payment state.
   if (paymentStatus !== transaction.payment_status) {
