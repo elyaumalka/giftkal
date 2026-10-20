@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Accessibility,
   X,
@@ -55,8 +55,18 @@ const applySettings = (s: Settings) => {
 };
 
 const AccessibilityWidget = () => {
+  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
+  const isKioskPath = (path: string) => /^\/kiosk(?:\/|$|-launcher(?:\/|$))/.test(path);
+  let isKiosk = isKioskPath(pathname);
+  try {
+    // The gift flow has its own App inside the kiosk's same-origin iframe.
+    // Hide its widget too, including after navigation between gift steps.
+    isKiosk = isKiosk || isKioskPath(window.top?.location.pathname || "");
+  } catch {
+    // External embeds cannot inspect their parent; keep their accessibility UI.
+  }
 
   useEffect(() => {
     try {
@@ -105,6 +115,8 @@ const AccessibilityWidget = () => {
     { key: "stopAnimations", label: "עצירת אנימציות", icon: Pause },
     { key: "bigCursor", label: "סמן גדול", icon: MousePointer2 },
   ];
+
+  if (isKiosk) return null;
 
   return (
     <>
