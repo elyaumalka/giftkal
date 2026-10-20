@@ -12,7 +12,7 @@ const cors = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 }
 const PUBLIC_EVENT_FIELDS =
-  'id, event_type, event_date, groom_name, bride_name, child_name, family_name, custom_venue_name, custom_venue_location, venue_id, hall_id, hf_api_key, gifts_enabled, payment_setup_status, seller_payme_id, venues(name, location)'
+  'id, event_type, event_date, groom_name, bride_name, child_name, family_name, custom_venue_name, custom_venue_location, venue_id, hall_id, hf_api_key, gifts_enabled, payment_setup_status, seller_payme_id, venues(name, address)'
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
@@ -34,7 +34,7 @@ function publicEvent(e: any) {
     id: e.id, event_type: e.event_type, event_date: e.event_date,
     groom_name: e.groom_name, bride_name: e.bride_name, child_name: e.child_name, family_name: e.family_name,
     venue_name: venue?.name || e.custom_venue_name || null,
-    venue_location: venue?.location || e.custom_venue_location || null,
+    venue_location: venue?.address || e.custom_venue_location || null,
     venue_id: e.venue_id, hall_id: e.hall_id,
     hf_api_key: e.hf_api_key,
     can_receive_payments: e.payment_setup_status === 'approved' && !!e.seller_payme_id,
