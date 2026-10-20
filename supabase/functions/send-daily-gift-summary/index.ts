@@ -19,10 +19,6 @@ Deno.serve(async (req) => {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     const today = israelDate()
 
-    // Once per Israel day — claim the run.
-    const { error: claimErr } = await supabase.from('gift_summary_runs').insert({ run_date: today })
-    if (claimErr) return json({ skipped: true, reason: 'already ran today' })
-
     // Gifts completed during the last 24h whose Israel date is today.
     const since = new Date(Date.now() - 26 * 3600 * 1000).toISOString()
     const { data: txs } = await supabase
@@ -33,6 +29,11 @@ Deno.serve(async (req) => {
       .order('created_at', { ascending: true })
     const todays = (txs ?? []).filter((t) => israelDate(new Date(t.created_at)) === today)
     if (todays.length === 0) return json({ sent: 0, reason: 'no gifts today' })
+
+    // Once per Israel day — claim the run.
+    const { error: claimErr } = await supabase.from('gift_summary_runs').insert({ run_date: today })
+    if (claimErr) return json({ skipped: true, reason: 'already ran today' })
+
 
     const eventIds = [...new Set(todays.map((t) => t.event_id))]
     const { data: events } = await supabase
