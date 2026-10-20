@@ -35,3 +35,5 @@ project_id = "xadihaigjkbvphzphxxk"
     verify_jwt = false
   [functions.nedarim-form]
     verify_jwt = false
+  [functions.send-daily-gift-summary]
+    verify_jwt = false

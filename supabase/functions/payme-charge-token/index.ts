@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { dispatchPartnerWebhooks } from '../_shared/partner-webhooks.ts'
+import { sendGiftReceipt } from '../_shared/gift-emails.ts';
 
 
 const corsHeaders = {
@@ -215,6 +216,9 @@ Deno.serve(async (req) => {
         payme_transaction_id: paymeResult.payme_transaction_id,
       })
       .eq('id', transaction.id);
+
+    // Gift confirmation email to the giver (only if they entered their own email).
+    await sendGiftReceipt(supabase, transaction.id);
 
     // Notify the referring partner (if any) that a sale was paid.
     if (partnerId) {
