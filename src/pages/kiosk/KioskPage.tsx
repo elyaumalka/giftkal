@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Gift, Monitor, Download } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { Loader2, Gift, Monitor, Download, Smartphone } from "lucide-react";
+import { QRCodeCanvas } from "@/components/QRCodeCanvas";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import logoAsset from "@/assets/logo.png.asset.json";
@@ -197,12 +197,27 @@ export default function KioskPage() {
         </div>
 
         {/* Gift page iframe - responsive, fills screen */}
-        <div className="flex justify-center" style={{ height: "calc(100vh - 56px)" }}>
+        <div className="flex min-h-[calc(100dvh-64px)] flex-col lg:h-[calc(100dvh-64px)] lg:min-h-0 lg:flex-row">
+          <aside className="flex shrink-0 items-center justify-center gap-4 border-b border-border bg-card px-4 py-5 text-card-foreground lg:w-72 lg:flex-col lg:gap-5 lg:border-b-0 lg:border-l lg:px-6" aria-label="מתנה מהירה מהסמארטפון">
+            <div className="shrink-0 rounded-lg border border-border p-1" role="img" aria-label={`קוד QR להענקת מתנה ל${eventTitle}`}>
+              <div className="h-36 w-36 lg:h-56 lg:w-56 [&_canvas]:!h-full [&_canvas]:!w-full">
+                <QRCodeCanvas value={`${window.location.origin}/gift/${activeEvent.id}/send`} size={224} />
+              </div>
+            </div>
+            <div className="min-w-0 space-y-2 text-right lg:text-center">
+              <Smartphone className="h-7 w-7 text-primary lg:mx-auto" aria-hidden="true" />
+              <h2 className="text-xl font-bold">מתנה מהירה מהסמארטפון</h2>
+              <p className="text-sm text-muted-foreground">סרקו ותנו מתנה</p>
+              <p className="break-words text-sm font-medium">{eventTitle}</p>
+            </div>
+          </aside>
+          <div className="h-[calc(100dvh-64px)] min-w-0 flex-1 lg:h-full">
           <iframe
             src={`/gift/${activeEvent.id}`}
             className="border-0 w-full h-full"
             title={`מתנה ל${eventTitle}`}
           />
+          </div>
         </div>
       </div>
     );
@@ -262,23 +277,6 @@ export default function KioskPage() {
             </Button>
           </div>
         )}
-
-        {/* QR Code */}
-        <div className="pt-4">
-          {activeEvent ? (
-            <div className="bg-white p-4 rounded-2xl inline-block shadow-xl">
-              <QRCodeSVG
-                value={`${window.location.origin}/gift/${activeEvent.id}`}
-                size={160}
-                level="H"
-                fgColor="#051839"
-              />
-              <p className="text-[#051839] text-xs mt-2 font-medium text-center">סרקו לשליחת מתנה</p>
-            </div>
-          ) : (
-            <Gift className="w-12 h-12 mx-auto text-[#C4A35A]/30" />
-          )}
-        </div>
 
         {/* Powered by */}
         <div className="absolute bottom-6 left-0 right-0 text-center">
