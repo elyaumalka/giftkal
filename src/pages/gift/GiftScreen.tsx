@@ -224,6 +224,10 @@ export default function GiftScreen() {
     platformPartnerPct: partnerConfig.platformPct,
   });
 
+  // If the guest leaves the email empty, the receipt goes to the system admin's email.
+  const FALLBACK_RECEIPT_EMAIL = "0533116358a@gmail.com";
+  const effectivePayerEmail = payerEmail.trim() || FALLBACK_RECEIPT_EMAIL;
+
   const chargeToken = useMutation({
     mutationFn: async (token: string) => {
       const response = await supabase.functions.invoke('payme-charge-token', {
@@ -238,8 +242,8 @@ export default function GiftScreen() {
           partnerShare: breakdown.components.partner,
           platformPartnerShare: breakdown.components.platformPartner,
           payerName,
-          payerEmail: payerEmail || undefined,
-          payerPhone: payerPhone || undefined,
+          payerEmail: effectivePayerEmail,
+          payerPhone: payerPhone.trim(),
           relationship: relationship || undefined,
           blessing: blessing || undefined,
           blessingImageUrl: blessingImageUrl || undefined,
@@ -275,7 +279,8 @@ export default function GiftScreen() {
     if (!payerName.trim()) { toast({ title: "⚠️ שם חסר", description: "יש להזין שם מלא כדי להמשיך", variant: "destructive" }); return; }
     if (payerName.trim().length < 2) { toast({ title: "⚠️ שם קצר מדי", description: "יש להזין שם מלא (לפחות 2 תווים)", variant: "destructive" }); return; }
     if (payerEmail && !validateEmail(payerEmail)) { toast({ title: "⚠️ כתובת מייל לא תקינה", description: "יש להזין כתובת מייל תקינה", variant: "destructive" }); return; }
-    if (payerPhone && !validatePhone(payerPhone)) { toast({ title: "⚠️ מספר טלפון לא תקין", description: "יש להזין מספר טלפון תקין", variant: "destructive" }); return; }
+    if (!payerPhone.trim()) { toast({ title: "⚠️ מספר טלפון חסר", description: "יש להזין מספר טלפון כדי להמשיך", variant: "destructive" }); return; }
+    if (!validatePhone(payerPhone)) { toast({ title: "⚠️ מספר טלפון לא תקין", description: "יש להזין מספר טלפון תקין", variant: "destructive" }); return; }
     setStep("blessing");
   };
 
@@ -304,8 +309,8 @@ export default function GiftScreen() {
           giftAmount: breakdown.giftAmount,
           feeAmount: breakdown.feeAmount,
           payerName,
-          payerEmail: payerEmail || undefined,
-          payerPhone: payerPhone || undefined,
+          payerEmail: effectivePayerEmail,
+          payerPhone: payerPhone.trim(),
           relationship: relationship || undefined,
           blessing: blessing || undefined,
           blessingImageUrl: imageUrl || undefined,
@@ -603,12 +608,12 @@ export default function GiftScreen() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-white/70 font-medium text-sm">טלפון</Label>
+                    <Label className="text-white/70 font-medium text-sm">טלפון *</Label>
                     <Input type="tel" value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} placeholder="050-1234567"
-                      className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
+                      className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" required />
                   </div>
                   <div>
-                    <Label className="text-white/70 font-medium text-sm">מייל (לקבלה)</Label>
+                    <Label className="text-white/70 font-medium text-sm">מייל (לקבלה) — לא חובה</Label>
                     <Input type="email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="example@email.com"
                       className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
                   </div>
@@ -811,7 +816,7 @@ export default function GiftScreen() {
 
               {paymeApiKey ? (
                 <PayMeIframe apiKey={paymeApiKey} testMode={paymeTestMode} amount={breakdown.totalCharge} payerName={payerName}
-                  payerEmail={payerEmail} payerPhone={payerPhone} productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
+                  payerEmail={effectivePayerEmail} payerPhone={payerPhone} productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
                   onTokenize={handleTokenize} onError={handlePaymentError} disabled={chargeToken.isPending} />
               ) : paymeSaleUrl ? (
                 <div className="rounded-xl overflow-hidden border border-white/10 bg-white">
