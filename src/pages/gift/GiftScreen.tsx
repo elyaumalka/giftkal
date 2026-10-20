@@ -613,7 +613,7 @@ export default function GiftScreen() {
                       className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" required />
                   </div>
                   <div>
-                    <Label className="text-white/70 font-medium text-sm">מייל (לקבלה)</Label>
+                    <Label className="text-white/70 font-medium text-sm">מייל (לקבלה) — לא חובה</Label>
                     <Input type="email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="example@email.com"
                       className="mt-1 h-12 rounded-xl bg-white/5 border-white/15 text-white placeholder:text-white/25 focus:border-[#C4A35A]" />
                   </div>
@@ -816,7 +816,7 @@ export default function GiftScreen() {
 
               {paymeApiKey ? (
                 <PayMeIframe apiKey={paymeApiKey} testMode={paymeTestMode} amount={breakdown.totalCharge} payerName={payerName}
-                  payerEmail={payerEmail} payerPhone={payerPhone} productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
+                  payerEmail={effectivePayerEmail} payerPhone={payerPhone} productLabel={`מתנה ל${event.groom_name} & ${event.bride_name}`}
                   onTokenize={handleTokenize} onError={handlePaymentError} disabled={chargeToken.isPending} />
               ) : paymeSaleUrl ? (
                 <div className="rounded-xl overflow-hidden border border-white/10 bg-white">
