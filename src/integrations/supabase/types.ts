@@ -334,6 +334,7 @@ export type Database = {
           child_name: string | null
           created_at: string
           created_by_partner_id: string | null
+          created_via: string | null
           custom_venue_location: string | null
           custom_venue_name: string | null
           device_rental_cost: number | null
@@ -378,6 +379,7 @@ export type Database = {
           child_name?: string | null
           created_at?: string
           created_by_partner_id?: string | null
+          created_via?: string | null
           custom_venue_location?: string | null
           custom_venue_name?: string | null
           device_rental_cost?: number | null
@@ -422,6 +424,7 @@ export type Database = {
           child_name?: string | null
           created_at?: string
           created_by_partner_id?: string | null
+          created_via?: string | null
           custom_venue_location?: string | null
           custom_venue_name?: string | null
           device_rental_cost?: number | null
