@@ -43,6 +43,27 @@ export default function EventGifts() {
     },
   });
 
+  const { data: payouts } = useQuery({
+    queryKey: ["event-payouts"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: event } = await supabase
+        .from("events")
+        .select("id")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+      if (!event) return [];
+      const { data } = await (supabase.from as any)("payouts")
+        .select("id, amount, status, created_at, completed_at")
+        .eq("event_id", event.id)
+        .neq("status", "failed")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+  });
+
   const handleExportExcel = () => {
     if (!gifts || gifts.length === 0) {
       toast({ title: "אין נתונים לייצוא", variant: "destructive" });
@@ -132,6 +153,34 @@ export default function EventGifts() {
           <p className="text-2xl font-bold text-green-600">₪{totalCompleted.toLocaleString()}</p>
         </div>
       </div>
+
+      {/* Bank releases — tells the owner when gift money was sent to their bank */}
+      {payouts && payouts.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm p-5 text-right">
+          <h3 className="font-bold text-[#051839] mb-3">העברות המתנות לחשבון הבנק</h3>
+          <div className="space-y-2">
+            {payouts.map((p: any) => {
+              const label =
+                p.status === "completed"
+                  ? { text: "הכסף הועבר לחשבון הבנק", cls: "bg-green-100 text-green-700" }
+                  : p.status === "submitted"
+                  ? { text: "ההעברה אושרה ונשלחה לבנק (עד כמה ימי עסקים)", cls: "bg-amber-100 text-amber-700" }
+                  : p.status === "failed"
+                  ? { text: "ההעברה נכשלה — ניצור איתך קשר", cls: "bg-red-100 text-red-700" }
+                  : { text: p.status, cls: "bg-gray-100 text-gray-600" };
+              return (
+                <div key={p.id} className="flex items-center justify-between gap-3 border border-gray-100 rounded-xl px-4 py-3">
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${label.cls}`}>{label.text}</span>
+                  <span className="text-sm text-gray-600">
+                    {p.amount ? `₪${Number(p.amount).toLocaleString()} · ` : ""}
+                    {new Date(p.completed_at ?? p.created_at).toLocaleDateString("he-IL")}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="flex items-center justify-end gap-3 flex-wrap">
