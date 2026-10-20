@@ -206,18 +206,18 @@ export default function KioskPage() {
 
           {/* Smartphone-gift QR integrated into the design - floating glass card, never blocks the gift flow */}
           <div
-            className="pointer-events-none absolute left-3 top-3 z-10 flex w-[168px] flex-col items-center gap-1.5 rounded-2xl border border-[#C4A35A]/40 bg-[#051839]/75 p-3 text-center shadow-2xl backdrop-blur-md lg:left-6 lg:top-6 lg:w-[220px] lg:gap-2 lg:p-4"
+            className="pointer-events-none absolute left-2 top-2 z-10 flex w-[104px] flex-col items-center gap-1 rounded-xl border border-[#C4A35A]/40 bg-[#051839]/75 p-1.5 text-center shadow-xl backdrop-blur-md lg:left-6 lg:top-6 lg:w-[220px] lg:gap-2 lg:rounded-2xl lg:p-4 lg:shadow-2xl"
             aria-label="מתנה מהירה מהסמארטפון"
           >
-            <div className="rounded-xl bg-white p-1.5 shadow-inner">
-              <div className="h-32 w-32 lg:h-40 lg:w-40 [&_canvas]:!h-full [&_canvas]:!w-full" role="img" aria-label={`קוד QR להענקת מתנה ל${eventTitle}`}>
+            <div className="rounded-lg bg-white p-1 shadow-inner lg:rounded-xl lg:p-1.5">
+              <div className="h-16 w-16 lg:h-40 lg:w-40 [&_canvas]:!h-full [&_canvas]:!w-full" role="img" aria-label={`קוד QR להענקת מתנה ל${eventTitle}`}>
                 <QRCodeCanvas value={`${window.location.origin}/gift/${activeEvent.id}/send`} size={160} />
               </div>
             </div>
-            <Smartphone className="h-5 w-5 text-[#C4A35A]" aria-hidden="true" />
-            <p className="text-sm font-bold leading-tight text-white lg:text-base">מתנה מהירה מהסמארטפון</p>
-            <p className="text-xs font-medium text-[#C4A35A] lg:text-sm">סרקו ותנו מתנה</p>
-            <p className="text-[10px] leading-tight text-white/60 lg:text-xs">{eventTitle}</p>
+            <Smartphone className="hidden h-5 w-5 text-[#C4A35A] lg:block" aria-hidden="true" />
+            <p className="text-[10px] font-bold leading-tight text-white lg:text-base">מתנה מהירה מהסמארטפון</p>
+            <p className="hidden text-xs font-medium text-[#C4A35A] lg:block lg:text-sm">סרקו ותנו מתנה</p>
+            <p className="hidden text-[10px] leading-tight text-white/60 lg:block lg:text-xs">{eventTitle}</p>
           </div>
         </div>
       </div>
