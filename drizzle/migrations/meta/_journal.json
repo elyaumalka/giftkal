@@ -15,6 +15,13 @@
       "when": 1791233890541,
       "tag": "0001_restore_payouts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792494030666,
+      "tag": "0002_events_created_via",
+      "breakpoints": true
     }
   ]
 }
